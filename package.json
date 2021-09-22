@@ -1,0 +1,20 @@
+{
+  "name": "navimi",
+  "version": "0.0.1",  
+  "author": {
+    "name": "Ivan Valadares",
+    "email": "ivanvaladares@hotmail.com"
+  },
+  "description": "",
+  "homepage": "https://github.com/ivanvaladares/navimi",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ivanvaladares/navimi.git"
+  }
+}
