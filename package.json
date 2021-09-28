@@ -1,6 +1,6 @@
 {
   "name": "navimi",
-  "version": "0.0.1",  
+  "version": "0.0.1",
   "author": {
     "name": "Ivan Valadares",
     "email": "ivanvaladares@hotmail.com"
@@ -16,5 +16,12 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/ivanvaladares/navimi.git"
+  },
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-minify": "^3.1.0",
+    "gulp-sourcemaps": "^3.0.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "typescript": "^4.3.5"
   }
 }
