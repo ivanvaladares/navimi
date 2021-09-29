@@ -70,7 +70,7 @@ class Navimi {
                     params[name] = decodeURIComponent(path[i]);
                 }
                 else {
-                    if (pattern[i].toLocaleLowerCase() !== path[i].toLocaleLowerCase())
+                    if (!path[i] || pattern[i].toLocaleLowerCase() !== path[i].toLocaleLowerCase())
                         return null;
                 }
             }
@@ -109,7 +109,7 @@ class Navimi {
             if (observedKeys.length > 0) {
                 this.prevState = JSON.parse(JSON.stringify(this.state));
             }
-            this.mergeState(newState);
+            this.mergeState(this.state, newState);
             if (observedKeys.length > 0) {
                 this.getStateDiff(observedKeys);
                 this.invokeStateWatchers();
@@ -718,29 +718,29 @@ class Navimi {
             this.middlewareStack.push(...middlewares.filter(mdw => mdw !== undefined));
         }
         (async () => {
-            if (options.globalCssUrl || options.globalTemplatesUrl) {
+            if (this.options.globalCssUrl || this.options.globalTemplatesUrl) {
                 await Promise.all([
-                    this.fetchCss(options.globalCssUrl, true),
-                    this.fetchTemplate(false, [options.globalTemplatesUrl]),
+                    this.fetchCss(this.options.globalCssUrl, true),
+                    this.fetchTemplate(false, [this.options.globalTemplatesUrl]),
                 ]).catch(this.reportError);
-                this.insertCss(this.loadedCsss[options.globalCssUrl], "globalCss");
+                this.insertCss(this.loadedCsss[this.options.globalCssUrl], "globalCss");
             }
         })();
         this.initRoute();
-        if (options.hot && 'WebSocket' in this.win) {
-            setTimeout(this.openHotWs, 1000, options.hot);
+        if (this.options.hot && 'WebSocket' in this.win) {
+            setTimeout(this.openHotWs, 1000, this.options.hot);
         }
     }
-    mergeState(newState) {
+    mergeState(state, newState) {
         const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item) && item !== null;
-        if (isObject(this.state) && isObject(newState)) {
+        if (isObject(state) && isObject(newState)) {
             for (const key in newState) {
                 if (isObject(newState[key])) {
-                    !this.state[key] && Object.assign(this.state, { [key]: {} });
-                    this.mergeState(newState[key]);
+                    !state[key] && Object.assign(state, { [key]: {} });
+                    this.mergeState(state[key], newState[key]);
                 }
                 else {
-                    Object.assign(this.state, { [key]: newState[key] });
+                    Object.assign(state, { [key]: newState[key] });
                 }
             }
         }

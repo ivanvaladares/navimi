@@ -1,0 +1,59 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+nav {
+    background-color: #333;
+    overflow: auto;
+    white-space: nowrap;
+    margin-bottom: 20px;
+  }
+  
+  nav a {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px 10px;
+    text-decoration: none;
+    margin: 0px;
+  }
+  
+  nav a:hover, nav a.active {
+    background-color: #777;
+  }
+
+  .my-slider, .tns-nav {
+    display: none;
+  }
+
+  .tns-item {
+    user-select: none;
+  }
+
+  .img {
+    font-size: 100px;
+    font-weight: 100;
+    color: #fff;
+    text-align: center;
+    cursor: grab;
+  }
+
+  .img:active {
+    cursor: grabbing;
+  }
+
+  .img a {
+    display: block;
+    padding: 22% 0;
+    color: inherit;
+    text-decoration: none;
+    pointer-events: none;
+  }
+
+  .img-1 { background: #D6D65B; background: hsl(60, 60%, 60%); }
+  .img-2 { background: #5BD6AD; background: hsl(160, 60%, 60%); }
+  .img-3 { background: #5B99D6; background: hsl(210, 60%, 60%); }
+  .img-4 { background: #D65BC1; background: hsl(310, 60%, 60%); }
+  .img-5 { background: #70D65B; background: hsl(110, 60%, 60%); }
+  .img-6 { background: #D65B5B; background: hsl(0, 60%, 60%); }
+  .img-7 { background: #D6995B; background: hsl(30, 60%, 60%); }

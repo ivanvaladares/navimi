@@ -1,2 +1,4 @@
 node_modules
 package-lock.json
+examples/06.hot/node_modules
+examples/06.hot/package-lock.json

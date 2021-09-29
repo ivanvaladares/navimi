@@ -1,0 +1,8 @@
+nav {
+    background-color: darkgreen;
+  }
+
+nav a:first-child {
+    color: chartreuse;
+    background-color: green;
+}

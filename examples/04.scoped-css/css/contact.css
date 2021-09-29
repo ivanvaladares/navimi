@@ -1,0 +1,8 @@
+nav {
+    background-color: darkblue;
+  }
+
+nav a.active {
+    color: aquamarine;
+    background-color: blueviolet;
+}
