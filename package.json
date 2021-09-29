@@ -18,6 +18,7 @@
     "url": "git://github.com/ivanvaladares/navimi.git"
   },
   "devDependencies": {
+    "glob": "^7.2.0",
     "gulp": "^4.0.2",
     "gulp-minify": "^3.1.0",
     "gulp-sourcemaps": "^3.0.0",
