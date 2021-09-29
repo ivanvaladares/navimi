@@ -117,19 +117,19 @@ class Navimi {
         }
 
         (async () => {
-            if (options.globalCssUrl || options.globalTemplatesUrl) {
+            if (this.options.globalCssUrl || this.options.globalTemplatesUrl) {
                 await Promise.all([
-                    this.fetchCss(options.globalCssUrl, true),
-                    this.fetchTemplate(false, [options.globalTemplatesUrl]),
+                    this.fetchCss(this.options.globalCssUrl, true),
+                    this.fetchTemplate(false, [this.options.globalTemplatesUrl]),
                 ]).catch(this.reportError);
-                this.insertCss(this.loadedCsss[options.globalCssUrl], "globalCss");
+                this.insertCss(this.loadedCsss[this.options.globalCssUrl], "globalCss");
             }
         })();
 
         this.initRoute();
 
-        if (options.hot && 'WebSocket' in this.win) {
-            setTimeout(this.openHotWs, 1000, options.hot);
+        if (this.options.hot && 'WebSocket' in this.win) {
+            setTimeout(this.openHotWs, 1000, this.options.hot);
         }
     }
 
