@@ -249,16 +249,16 @@ class Navimi {
     }, 10);
 
 
-    private mergeState(newState: any): void {
+    private mergeState(state: any, newState: any): void {
         const isObject = (item: any): boolean =>
             item && typeof item === 'object' && !Array.isArray(item) && item !== null;
-        if (isObject(this.state) && isObject(newState)) {
+        if (isObject(state) && isObject(newState)) {
             for (const key in newState) {
                 if (isObject(newState[key])) {
-                    !this.state[key] && Object.assign(this.state, { [key]: {} });
-                    this.mergeState(newState[key]);
+                    !state[key] && Object.assign(state, { [key]: {} });
+                    this.mergeState(state[key], newState[key]);
                 } else {
-                    Object.assign(this.state, { [key]: newState[key] });
+                    Object.assign(state, { [key]: newState[key] });
                 }
             }
         }
@@ -269,7 +269,7 @@ class Navimi {
         if (observedKeys.length > 0) {
             this.prevState = JSON.parse(JSON.stringify(this.state));
         }
-        this.mergeState(newState);
+        this.mergeState(this.state, newState);
         if (observedKeys.length > 0) {
             this.getStateDiff(observedKeys);
             this.invokeStateWatchers();
