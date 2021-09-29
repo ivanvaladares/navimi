@@ -209,7 +209,7 @@ class Navimi {
                 params[name] = decodeURIComponent(path[i]);
             }
             else {
-                if (pattern[i].toLocaleLowerCase() !== path[i].toLocaleLowerCase())
+                if (!path[i] || pattern[i].toLocaleLowerCase() !== path[i].toLocaleLowerCase())
                     return null;
             }
         }
