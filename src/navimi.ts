@@ -169,6 +169,9 @@ class Navimi {
             return [];
         }
 
+        const queryPos = path.indexOf("?");
+        path = queryPos >= 0 ? path.substr(0, queryPos) : path;
+
         return path.split("/").filter(p => p.length > 0);
     };
 
@@ -189,7 +192,7 @@ class Navimi {
     private parsePath = (urlPath: string, urlPattern: string): { [key: string]: any } => {
         const queryPos = urlPath.indexOf("?");
         const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
-        const path = queryPos > 0 ? this.splitPath(urlPath.substr(0, queryPos)) : this.splitPath(urlPath);
+        const path = this.splitPath(urlPath);
         const pattern = this.splitPath(urlPattern);
 
         let params: any = {};
