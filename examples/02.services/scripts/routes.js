@@ -2,7 +2,7 @@ new Navimi({
     "/": {
         title: "Home",
         jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/home",
+        templatesUrl: "/templates/home.html",
         dependsOn: ["myfx"],
         metadata: {
             templateName: "home-template"
@@ -11,7 +11,7 @@ new Navimi({
     "/about": {
         title: "About",
         jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/about",
+        templatesUrl: "/templates/about.html",
         dependsOn: ["myfx"],
         metadata: {
             templateName: "about-template"
@@ -20,7 +20,7 @@ new Navimi({
     "/contact": {
         title: "Contact",
         jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/contact",
+        templatesUrl: "/templates/contact.html",
         dependsOn: ["myfx"],
         metadata: {
             templateName: "contact-template"
@@ -36,7 +36,7 @@ new Navimi({
     }
 },
     {
-        globalTemplatesUrl: "/templates/global",
+        globalTemplatesUrl: "/templates/global.html",
         globalCssUrl: "/css/global.css",
         services: {
             "myfx": "/scripts/functions.js"

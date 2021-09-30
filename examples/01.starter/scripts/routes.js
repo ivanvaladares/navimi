@@ -2,17 +2,17 @@ new Navimi({
     "/": {
         title: "Home",
         jsUrl: "/scripts/home.js",
-        templatesUrl: "/templates/home",
+        templatesUrl: "/templates/home.html",
     },
     "/about": {
         title: "About",
         jsUrl: "/scripts/about.js",
-        templatesUrl: "/templates/about"
+        templatesUrl: "/templates/about.html"
     },
     "/contact": {
-        title: "Features",
+        title: "Contact",
         jsUrl: "/scripts/contact.js",
-        templatesUrl: "/templates/contact"
+        templatesUrl: "/templates/contact.html"
     },
     "*": {
         title: "Not found",
