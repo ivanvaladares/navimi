@@ -28,7 +28,7 @@ new Navimi({
         jsUrl: "/scripts/slides.js",
         templatesUrl: "/templates/slides.html",
         metadata: {
-            templateName: "slides-template.html"
+            templateName: "slides-template"
         }
     },
     "/mustache": {

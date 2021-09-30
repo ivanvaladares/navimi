@@ -20,9 +20,9 @@
 
             tns({
                 container: '.my-slider',
-                "controls": false,
+                controls: false,
                 items: 1,
-                "mouseDrag": true,
+                mouseDrag: true,
                 responsive: {
                     640: {
                         gutter: 0,
