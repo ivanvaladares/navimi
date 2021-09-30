@@ -1,4 +1,9 @@
 node_modules
 package-lock.json
+test-results.xml
 examples/06.hot/node_modules
 examples/06.hot/package-lock.json
+cypress/plugins
+cypress/screenshots
+cypress/support
+cypress/videos

@@ -7,7 +7,8 @@ const sourcemaps = require('gulp-sourcemaps');
 const paths = {
     tsSource: './src/**/*.ts',
     dirOutput: './dist',
-    examples: './examples/*/scripts'
+    examples: './examples/*/scripts',
+    test: './cypress/site/scripts',
 };
 
 function TSScripts() {
@@ -23,9 +24,12 @@ function TSScripts() {
 function copyMinToExamples(done) {
     const subDirectories = glob.sync(paths.examples);
     subDirectories.forEach(function (subDirectory) {
-        return gulp.src(paths.dirOutput + "/navimi-min.js")
+        gulp.src(paths.dirOutput + "/navimi-min.js")
           .pipe(gulp.dest(subDirectory));
     });
+
+    gulp.src(paths.dirOutput + "/navimi-min.js")
+        .pipe(gulp.dest(paths.test));
 
     done();
 }

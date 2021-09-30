@@ -1,0 +1,5 @@
+{
+    "reporter": "junit",
+    "browser": "chrome",
+    "video": false
+}
