@@ -38,7 +38,8 @@ new Navimi({
         globalTemplatesUrl: "/templates/global.html",
         globalCssUrl: "/css/global.css",
         services: {
-            "myfx": "/scripts/functions.js"
+            "myfx": "/scripts/service1.js",
+            "linksFx": "/scripts/service2.js"
         },        
         middlewares: [
             async (ctx, navigateTo, next) => {
@@ -46,8 +47,8 @@ new Navimi({
                 if (document.querySelector("#global-template")) {
                     document.querySelector("#div-content").innerHTML = "loading..."
                 }
-                //adding common service to all routes
-                ctx.routeItem.dependsOn = ["myfx"];
+                //adding common services to all routes
+                ctx.routeItem.dependsOn = ["myfx", "linksFx"];
                 next();
             }
         ],

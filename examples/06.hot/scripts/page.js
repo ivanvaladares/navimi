@@ -1,9 +1,10 @@
 (() => {
     return class main {
 
-        constructor(navimiFunctions, { myfx }) {
+        constructor(navimiFunctions, { myfx, linksFx }) {
             this.nfx = navimiFunctions;
             this.myfx = myfx;
+            this.linksFx = linksFx;
 
             //watch state
             this.nfx.watchState("test.clicks", (clicks) => {
@@ -14,21 +15,23 @@
         init = (context) => {
             this.myfx.renderWrapper(this.nfx);
             this.myfx.renderRoutePage(this.nfx, context);
+            this.linksFx.setActiveMenu(context.url);
 
             this.showCounter();
 
-            document.querySelector(".counter_btn")
-                .addEventListener('click', this.setNewState);
+            const button = document.querySelector(".counter_btn");
+            button && button.addEventListener('click', this.setNewState);
         };
 
         showCounter = (clicks) => {
-            document.querySelector(".counter").innerText = 
-                clicks || this.nfx.getState("test.clicks") || 0;
+            const counterEl = document.querySelector(".counter");
+            if (counterEl) {
+                counterEl.innerText = clicks || this.nfx.getState("test.clicks") || 0;
+            }
         }
 
         setNewState = () => {
             let clicks = this.nfx.getState("test.clicks") || 0;
-
             this.nfx.setState({
                 test: {
                     clicks: ++clicks
@@ -37,8 +40,8 @@
         }
 
         destroy = () => {
-            document.querySelector(".counter_btn")
-                .removeEventListener('click', this.setNewState);
+            const button = document.querySelector(".counter_btn");
+            button && button.removeEventListener('click', this.setNewState);
         }
     };
 })();

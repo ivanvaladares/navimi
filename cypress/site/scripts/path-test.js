@@ -19,7 +19,6 @@
                 document.querySelector("#q2").innerHTML = `q2: ${context.params.queryString.q2}`;
             }
            
-            this.myfx.hookNavigation(this.nfx);
         };
 
     };

@@ -3,7 +3,7 @@ new Navimi({
         title: "Home",
         jsUrl: "/scripts/page.js",
         templatesUrl: "/templates/home.html",
-        dependsOn: ["myfx"],
+        dependsOn: ["myfx", "linksFx"],
         metadata: {
             templateName: "home-template"
         }
@@ -12,7 +12,7 @@ new Navimi({
         title: "About",
         jsUrl: "/scripts/page.js",
         templatesUrl: "/templates/about.html",
-        dependsOn: ["myfx"],
+        dependsOn: ["myfx", "linksFx"],
         metadata: {
             templateName: "about-template"
         }
@@ -21,7 +21,7 @@ new Navimi({
         title: "Contact",
         jsUrl: "/scripts/page.js",
         templatesUrl: "/templates/contact.html",
-        dependsOn: ["myfx"],
+        dependsOn: ["myfx", "linksFx"],
         metadata: {
             templateName: "contact-template"
         }
@@ -29,7 +29,7 @@ new Navimi({
     "*": {
         title: "Not found",
         jsUrl: "/scripts/page.js",
-        dependsOn: ["myfx"],
+        dependsOn: ["myfx", "linksFx"],
         metadata: {
             notFound: true
         }
@@ -39,6 +39,7 @@ new Navimi({
         globalTemplatesUrl: "/templates/global.html",
         globalCssUrl: "/css/global.css",
         services: {
-            "myfx": "/scripts/functions.js"
+            "myfx": "/scripts/service1.js",
+            "linksFx": "/scripts/service2.js"
         },
     });

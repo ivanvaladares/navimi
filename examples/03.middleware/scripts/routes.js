@@ -35,7 +35,8 @@ new Navimi({
         globalTemplatesUrl: "/templates/global.html",
         globalCssUrl: "/css/global.css",
         services: {
-            "myfx": "/scripts/functions.js"
+            "myfx": "/scripts/service1.js",
+            "linksFx": "/scripts/service2.js"
         },        
         middlewares: [
             //that's where you would check if a route is protected and the user is logged in
@@ -59,8 +60,8 @@ new Navimi({
             },
             (ctx, navigateTo, next) => {
                 console.log("middleware 3", ctx);
-                //adding common service to all routes
-                ctx.routeItem.dependsOn = ["myfx"];
+                //adding common services to all routes
+                ctx.routeItem.dependsOn = ["myfx", "linksFx"];
                 next();
             },
         ],

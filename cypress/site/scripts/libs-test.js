@@ -20,7 +20,6 @@
             document.querySelector("body").innerHTML = 
                 Mustache.render(template, {date, name: "Navimi SPA"});
            
-            this.myfx.hookNavigation(this.nfx);
         };
 
     };
