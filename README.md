@@ -44,7 +44,7 @@
 
 <br>
 
-## Usage
+## Basic Usage "no-code"
 
 index.html
 ```html
@@ -65,12 +65,10 @@ routes.js
 new Navimi({
     "/": {
         title: "Home",
-        jsUrl: "/home.js",
         templatesUrl: "/home.html",
     },
     "/about": {
         title: "About",
-        jsUrl: "/about.js",
         templatesUrl: "/about.html"
     }
 });
@@ -79,58 +77,18 @@ new Navimi({
 
 home.html
 ```html
-<t id="home-template">
-    <div>
-        <h1>It's working</h1>
-        <a href="javascript:navigateTo('/about')">About</a>        
-    </div>
-</t>
-```
-
-home.js
-```js
-(() => {
-    return class main {
-
-        constructor(navimiFunctions) {
-            this.nfx = navimiFunctions;
-        }
-
-        init() {
-            document.querySelector("body").innerHTML = 
-                this.nfx.getTemplate("home-template");
-        };
-    
-    };
-})();
+<div>
+    <h1>It's working</h1>
+    <a href="/about" navimi-link>About</a>        
+</div>
 ```
 
 about.html
 ```html
-<t id="about-template">
-    <div>
-        <h1>Boom! Done!</h1>
-        <a href="javascript:navigateTo('/')">Home</a>
-    </div>
-</t>
-```
-
-about.js
-```js
-(() => {
-    return class main {
-
-        constructor(navimiFunctions) {
-            this.nfx = navimiFunctions;
-        }
-
-        init() {
-            document.querySelector("body").innerHTML = 
-                this.nfx.getTemplate("about-template");
-        };
-    
-    };
-})();
+<div>
+    <h1>Boom! Done!</h1>
+    <a href="/" navimi-link>Home</a>
+</div>
 ```
 
 <br>

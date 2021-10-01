@@ -7,7 +7,7 @@
 
 interface Route {
     title: string;
-    jsUrl: string;
+    jsUrl?: string;
     cssUrl?: string;
     templatesUrl?: string;
     dependsOn?: string[];
@@ -43,6 +43,7 @@ interface Options {
 class Navimi {
 
     private controller: AbortController;
+    private currentRouteItem: Route;
     private currentJS: string;
     private currentUrl: string;
     private currentParams: { [url: string]: any };
@@ -69,7 +70,7 @@ class Navimi {
     private stateWatchers: { [key: string]: any };
     private middlewareStack: Middleware[];
     private callId: number;
-    
+
     /**
     * @typedef {Object} Route - An route definition
     * @property {string} routes.title - The title that will be displayed on the browser
@@ -95,6 +96,7 @@ class Navimi {
         this.callbackNS = "_callback_";
         this.win = window ? window : {};
         this.controller = new AbortController();
+        this.currentRouteItem = undefined;
         this.currentJS = undefined;
         this.currentUrl = undefined;
         this.currentParams = {};
@@ -166,6 +168,17 @@ class Navimi {
             timeout = setTimeout(func, ms);
         };
     };
+
+    private setNavimiLinks = (): void => {
+        document.querySelectorAll("[navimi-link]").forEach(el => {
+            el.removeAttribute("navimi-link");
+            el.setAttribute("navimi-linked", "");
+            el.addEventListener('click', (e: any) => {
+                e.preventDefault();
+                this.navigateTo(e.target.pathname);
+            });
+        });
+    }
 
     private navigateTo = (url: string, params?: { [key: string]: any }): void => {
         this.initRoute(url, params);
@@ -394,14 +407,15 @@ class Navimi {
                 return;
             }
 
-            if (isSameFile(this.options.globalTemplatesUrl, filePath)) {
+            if (this.currentJS && isSameFile(this.options.globalTemplatesUrl, filePath)) {
                 console.log(`${file.filePath} updated.`);
-                this.parseTemplate(file.data);
+                this.parseTemplate(file.data, this.options.globalTemplatesUrl);
                 this.initJS(this.currentJS);
+                this.setNavimiLinks();
                 return;
             }
 
-            if (this.externalJSsMap[filePath]) {
+            if (this.currentJS && this.externalJSsMap[filePath]) {
                 console.log(`${file.filePath} updated.`);
                 pages[this.callbackNS + filePath] = () => {
                     Object.keys(this.externalJSsMap[filePath]).map(s => {
@@ -415,7 +429,7 @@ class Navimi {
                 return;
             }
 
-            if (this.externalTemplatesMap[filePath]) {
+            if (this.currentJS && this.externalTemplatesMap[filePath]) {
                 console.log(`${file.filePath} updated.`);
                 this.parseTemplate(file.data);
                 Object.keys(this.externalTemplatesMap[filePath])
@@ -427,7 +441,7 @@ class Navimi {
             for (const routeUrl in this.routingList) {
                 const routeItem = this.routingList[routeUrl];
 
-                if (isSameFile(routeItem.jsUrl, filePath)) {
+                if (this.currentJS && isSameFile(routeItem.jsUrl, filePath)) {
                     if (this.routesJSs[routeItem.jsUrl]) {
                         console.log(`${file.filePath} updated.`);
                         this.routesJSs[routeItem.jsUrl] = undefined;
@@ -436,6 +450,7 @@ class Navimi {
                                 this.initJS(this.currentJS);
                         };
                         this.insertJS(file.data, routeItem.jsUrl, false);
+                        this.setNavimiLinks();
                     }
                     return;
                 }
@@ -443,16 +458,19 @@ class Navimi {
                 if (isSameFile(routeItem.cssUrl, filePath)) {
                     console.log(`${file.filePath} updated.`);
                     this.loadedCsss[routeItem.cssUrl] = file.data;
-                    this.currentJS === routeItem.jsUrl &&
-                        this.insertCss(file.data, "pageCss");
+                    (this.currentJS && this.currentJS === routeItem.jsUrl ||
+                        routeItem.cssUrl === this.currentRouteItem.cssUrl) &&
+                            this.insertCss(file.data, "pageCss");
                     return;
                 }
 
                 if (isSameFile(routeItem.templatesUrl, filePath)) {
                     console.log(`${file.filePath} updated.`);
-                    this.parseTemplate(file.data);
-                    this.currentJS === routeItem.jsUrl &&
-                        this.initJS(this.currentJS);
+                    this.parseTemplate(file.data, routeItem.templatesUrl);
+                    (this.currentJS && this.currentJS === routeItem.jsUrl  ||
+                        routeItem.templatesUrl === this.currentRouteItem.templatesUrl) &&
+                            this.initJS(this.currentJS);
+                    this.setNavimiLinks();
                     return;
                 }
             }
@@ -482,11 +500,16 @@ class Navimi {
         });
     };
 
-    private parseTemplate = (templateCode: string): void => {
+    private parseTemplate = (templateCode: string, url?: string): void => {
         const regIni = new RegExp("<t ([^>]+)>");
         const regEnd = new RegExp("</t>");
         const regId = new RegExp("id=\"([^\"]+)\"");
         let tempCode = templateCode;
+
+        if (!regIni.exec(tempCode)) {
+            this.templatesCache[url] = tempCode;
+            return;
+        }
 
         while (templateCode && templateCode.length > 0) {
             const iniTemplate = regIni.exec(tempCode);
@@ -522,7 +545,7 @@ class Navimi {
                         signal: isCancelable ? this.controller.signal : undefined
                     });
 
-                    this.parseTemplate(templateCode);
+                    this.parseTemplate(templateCode, url);
                     this.loadedTemplates[url] = true;
                     resolve();
 
@@ -549,7 +572,7 @@ class Navimi {
 
                 if (autoInsert) {
                     this.insertCss(cssCode, undefined, true);
-                    this.loadedCsss[url] = "";
+                    this.loadedCsss[url] = "loaded";
                 } else {
                     this.loadedCsss[url] = cssCode;
                 }
@@ -813,6 +836,10 @@ class Navimi {
         this.fetchCss(cssUrl).catch(_ => { });
         this.fetchTemplate(true, [templatesUrl]).catch(_ => { });
 
+        if (!jsUrl) {
+            return;
+        }
+
         this.routesJSsServices[jsUrl] = this.routesJSsServices[jsUrl] || [];
 
         if (dependsOn && dependsOn.length > 0) {
@@ -915,36 +942,52 @@ class Navimi {
             return;
         }
 
-        const { title, jsUrl, cssUrl, templatesUrl } = routeItem || {};
-
-        this.currentJS = jsUrl;
+        this.currentRouteItem = routeItem;
         this.currentUrl = url;
-        this.currentParams[jsUrl] = { url, routeItem, params };
-
-        if (pushState) {
-            history.pushState(null, null, urlToGo);
-        }
 
         try {
+
+            const { title, jsUrl, cssUrl, templatesUrl } = routeItem || {};
+
+            if (!jsUrl && !templatesUrl) {
+                throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
+            }
+
+            if (jsUrl) {
+                this.currentJS = jsUrl;
+                this.currentParams[jsUrl] = { url, routeItem, params };
+            }
+
+            if (pushState) {
+                history.pushState(null, null, urlToGo);
+            }
+
             await this.setupRoute(routeItem);
 
             //wait css and template to load if any
-            if (cssUrl || templatesUrl) {
-                while (this.loadedCsss[cssUrl] === undefined ||
-                    this.loadedTemplates[templatesUrl] === undefined) {
-                    await this.timeout(10);
-                    if (callId < this.callId) {
-                        return;
-                    }
-                    if ((!cssUrl || this.loadedCsss[cssUrl] !== undefined) &&
-                        (!templatesUrl || this.loadedTemplates[templatesUrl] !== undefined)) {
-                        break;
-                    }
-                    if ((cssUrl && this.loadErrors[cssUrl]) ||
-                        (templatesUrl && this.loadErrors[templatesUrl])) {
-                        this.reportError(this.loadErrors[cssUrl] || this.loadErrors[templatesUrl]);
-                        return;
-                    }
+            while ((cssUrl && !this.loadedCsss[cssUrl]) ||
+                (templatesUrl && !this.loadedTemplates[templatesUrl]) ||
+                (this.options.globalCssUrl &&
+                    !this.loadedCsss[this.options.globalCssUrl]) ||
+                (this.options.globalTemplatesUrl &&
+                    !this.loadedTemplates[this.options.globalTemplatesUrl])) {
+
+                await this.timeout(10);
+                if (callId < this.callId) {
+                    return;
+                }
+                if ((cssUrl && this.loadErrors[cssUrl]) ||
+                    (templatesUrl && this.loadErrors[templatesUrl]) ||
+                    (this.options.globalCssUrl &&
+                        this.loadErrors[this.options.globalCssUrl]) ||
+                    (this.options.globalTemplatesUrl &&
+                        this.loadErrors[this.options.globalTemplatesUrl])) {
+                    this.reportError(
+                        this.loadErrors[cssUrl] ||
+                        this.loadErrors[templatesUrl] ||
+                        this.loadErrors[this.options.globalCssUrl] ||
+                        this.loadErrors[this.options.globalTemplatesUrl]);
+                    return;
                 }
             }
 
@@ -955,6 +998,7 @@ class Navimi {
                 return;
             }
 
+            this.setNavimiLinks();
             this.insertCss(this.loadedCsss[cssUrl], "pageCss");
 
         } catch (ex) {
@@ -964,6 +1008,12 @@ class Navimi {
 
     private initJS = async (jsUrl: string): Promise<void> => {
         if (!jsUrl) {
+            const url = this.currentRouteItem ? this.currentRouteItem.templatesUrl : null;
+            const template = this.getTemplate(url) as string;
+            const body = document.querySelector("body");
+            if (template && body) {
+                body.innerHTML = template;
+            }
             return;
         }
 
