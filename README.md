@@ -72,10 +72,7 @@ new Navimi({
         title: "About",
         jsUrl: "/about.js",
         templatesUrl: "/about.html"
-    },
-    .
-    .
-    .
+    }
 });
 
 ```
@@ -85,6 +82,7 @@ home.html
 <t id="home-template">
     <div>
         <h1>It's working</h1>
+        <a href="javascript:navigateTo('/about')">About</a>        
     </div>
 </t>
 ```
@@ -98,7 +96,7 @@ home.js
             this.nfx = navimiFunctions;
         }
 
-        init = () => {
+        init() {
             document.querySelector("body").innerHTML = 
                 this.nfx.getTemplate("home-template");
         };
@@ -106,6 +104,35 @@ home.js
     };
 })();
 ```
+
+about.html
+```html
+<t id="about-template">
+    <div>
+        <h1>Boom! Done!</h1>
+        <a href="javascript:navigateTo('/')">Home</a>
+    </div>
+</t>
+```
+
+about.js
+```js
+(() => {
+    return class main {
+
+        constructor(navimiFunctions) {
+            this.nfx = navimiFunctions;
+        }
+
+        init() {
+            document.querySelector("body").innerHTML = 
+                this.nfx.getTemplate("about-template");
+        };
+    
+    };
+})();
+```
+
 <br>
 
 Check the examples folder for more details.
