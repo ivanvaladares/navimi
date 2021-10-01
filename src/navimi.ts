@@ -69,7 +69,25 @@ class Navimi {
     private stateWatchers: { [key: string]: any };
     private middlewareStack: Middleware[];
     private callId: number;
-
+    
+    /**
+    * @typedef {Object} Route - An route definition
+    * @property {string} routes.title - The title that will be displayed on the browser
+    * @property {string} routes.jsUrl - The path to the route script
+    * @property {string=} routes.cssUrl - The path to the route css
+    * @property {string=} routes.templatesUrl - The path to the templates file of this route 
+    * @property {string[]=} routes.dependsOn - An array of services names for this route
+    * @property {Object.<string, *>=} routes.metadata - Any literal you need to pass down to this route and middlewares 
+    * @param {Object.<string, Route>} routes - A collection of Route
+    * @param {Object} [options] - Navimi options 
+    * @param {string=} options.globalCssUrl - The path to the global css
+    * @param {string=} options.globalTemplatesUrl - The path to the global templates file
+    * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
+    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void, next:() => void) => void)[]=} options.middlewares - An array of functions to capture the request
+    * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
+    * @param {function(Error): void=} options.onError - A function to capture erros from routes
+    * @returns {Object} - The Navimi instance 
+    */
     constructor(routes: { [url: string]: Route }, options?: Options) {
 
         this.pagesNamespace = "__spaPages";

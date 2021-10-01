@@ -5,6 +5,24 @@
  * https://github.com/ivanvaladares/navimi
  */
 class Navimi {
+    /**
+    * @typedef {Object} Route - An route definition
+    * @property {string} routes.title - The title that will be displayed on the browser
+    * @property {string} routes.jsUrl - The path to the route script
+    * @property {string=} routes.cssUrl - The path to the route css
+    * @property {string=} routes.templatesUrl - The path to the templates file of this route
+    * @property {string[]=} routes.dependsOn - An array of services names for this route
+    * @property {Object.<string, *>=} routes.metadata - Any literal you need to pass down to this route and middlewares
+    * @param {Object.<string, Route>} routes - A collection of Route
+    * @param {Object} [options] - Navimi options
+    * @param {string=} options.globalCssUrl - The path to the global css
+    * @param {string=} options.globalTemplatesUrl - The path to the global templates file
+    * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
+    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void, next:() => void) => void)[]=} options.middlewares - An array of functions to capture the request
+    * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
+    * @param {function(Error): void=} options.onError - A function to capture erros from routes
+    * @returns {Object} - The Navimi instance
+    */
     constructor(routes, options) {
         this.timeout = (ms) => {
             return new Promise(resolve => setTimeout(resolve, ms));
@@ -85,6 +103,7 @@ class Navimi {
                     const sNew = JSON.stringify(this.getState(key, this.state) || "");
                     if (sOld !== sNew) {
                         this.stateDiff[key] = true;
+                        //set upper keys as changed so we don't test them again
                         keys.map(upperKey => {
                             if (key !== upperKey && key.indexOf(upperKey) === 0) {
                                 this.stateDiff[upperKey] = true;
@@ -267,6 +286,7 @@ class Navimi {
         this.fetchFile = (url, options) => {
             return new Promise((resolve, reject) => {
                 delete this.loadErrors[url];
+                //todo: add retry
                 fetch(url, options)
                     .then(async (data) => {
                     if (!data || !data.ok) {
@@ -446,11 +466,13 @@ class Navimi {
         this.setupRoute = async (routeItem) => {
             const pages = this.win[this.pagesNamespace];
             const instantiateJS = async (jsUrl, external, JsClass) => {
+                //remove callbacks
                 setTimeout(() => {
                     delete pages[this.callbackNS + jsUrl];
                     delete pages[this.callbackNS + jsUrl + "_reject"];
                 }, 1000);
                 if (external) {
+                    //keep this instance to reuse later
                     this.externalJSs[jsUrl] = JsClass;
                     return Object.freeze(JsClass);
                 }
@@ -496,6 +518,7 @@ class Navimi {
                 try {
                     this.unwatchState(jsUrl);
                     let jsInstance = new JsClass(routerFunctions, services);
+                    //keep this instance to reuse later
                     this.routesJSs[jsUrl] = jsInstance;
                     return jsInstance;
                 }
@@ -520,6 +543,7 @@ class Navimi {
             const fetchJS = (external, urls) => {
                 const init = (url) => {
                     return new Promise(async (resolve, reject) => {
+                        // return the instance if this js is already loaded
                         if (external) {
                             if (this.externalJSs[url]) {
                                 return resolve(this.externalJSs[url]);
@@ -530,12 +554,14 @@ class Navimi {
                                 return resolve(this.routesJSs[url]);
                             }
                         }
+                        // route repeated calls to an awaiter
                         if (pages[this.callbackNS + url]) {
                             await awaitJS(url)
                                 .then(resolve)
                                 .catch(reject);
                             return;
                         }
+                        // let the js resolve the promise itself (*1)
                         pages[this.callbackNS + url] = resolve;
                         pages[this.callbackNS + url + "_reject"] = reject;
                         this.fetchJS(url, external).catch(ex => {
@@ -546,8 +572,11 @@ class Navimi {
                 };
                 return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
             };
+            // setup main callback
             if (!pages[this.pagesMainCallBack]) {
+                // create the function to be called from the loaded js
                 pages[this.pagesMainCallBack] = (jsUrl, external, JsClass) => {
+                    // resolve the promise (*2)
                     pages[this.callbackNS + jsUrl](instantiateJS(jsUrl, external, JsClass));
                 };
             }
@@ -647,6 +676,7 @@ class Navimi {
             }
             try {
                 await this.setupRoute(routeItem);
+                //wait css and template to load if any
                 if (cssUrl || templatesUrl) {
                     while (this.loadedCsss[cssUrl] === undefined ||
                         this.loadedTemplates[templatesUrl] === undefined) {
@@ -710,11 +740,15 @@ class Navimi {
         this.stateWatchers = {};
         this.middlewareStack = [];
         this.callId = 0;
+        //@ts-ignore
         this.win.addEventListener('popstate', () => {
             this.initRoute();
         });
+        //@ts-ignore
         this.win.navigateTo = this.navigateTo;
+        // initialize JS loader namespace
         this.win[this.pagesNamespace] = {};
+        //add middlewares
         const middlewares = this.options.middlewares;
         if (Array.isArray(middlewares)) {
             this.middlewareStack.push(...middlewares.filter(mdw => mdw !== undefined));

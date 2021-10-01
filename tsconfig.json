@@ -6,7 +6,7 @@
     "rootDir": "src",
     "noImplicitAny": true,
     "sourceMap": true,
-    "removeComments": true,
+    "removeComments": false,
     "allowJs": false,
     "noEmitOnError": true
   },  
