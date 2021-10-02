@@ -142,7 +142,9 @@ Check the examples folder for more details.
 
 ### Your Route Script constructor
 
-The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`.
+The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. \
+
+List of function provided by Navimi to your Route Constructor.
 
 | Name                | Signature                                                                          |
 |---------------------|------------------------------------------------------------------------------------|
@@ -161,7 +163,8 @@ example:
 ```js
 (() => {
     return class main {
-      constructor(navimiFunctions, { yourService1, yourService2, ... }) {
+      constructor(functions, { yourService1, yourService2, ... }) {
+                      ^
     ...
 ```
 
