@@ -94,3 +94,74 @@ about.html
 <br>
 
 Check the examples folder for more details.
+
+
+## Api
+
+### Navimi constructor
+
+- (routes: { [url: string]: Route }, options?: Options)
+
+### - Route
+| Property     | Type                   | Decscription                                                    |
+|--------------|------------------------|-----------------------------------------------------------------|
+| title*       | string                 | The title that will be displayed on the browser                 |
+| jsUrl        | string                 | The path to the route script                                    |
+| cssUrl       | string                 | The path to the route css                                       |
+| templatesUrl | string                 | The path to the templates file of this route                    |
+| dependsOn    | string[]               | An array of services names for this route                       |
+| metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
+
+\* required
+<br />
+<br />
+
+### - Options
+| Property            | Type                     | Decscription                                                    |
+|---------------------|--------------------------|-----------------------------------------------------------------|
+| globalCssUrl        | string                   | The path to the global css                                      |
+| globalTemplatesUrl  | string                   | The path to the global templates file                           |
+| services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
+| middlewares         | Middleware[]             | An array of functions to capture the request                    |
+| hot                 | number \| boolean        | The port to the websocket at localhost                          |
+| onAfterRoute        | Function                 | A function invoked after the routing is done                    |
+| onBeforeRoute       | Function                 | A function invoked before middlewares and routing               |
+| onError             | Function                 | A function to capture erros from routes                         |
+
+### Types
+
+| Name                | Type                                                                                                                         |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Next                | () => Promise<void> \| void;                                                                                                 |
+| Context             | { url: string, routeItem: Route, params: { [key: string]: any } };                                                           |
+| Middleware          | (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void, next: Next) => Promise<void> \| void; |
+
+<br />
+<br />
+
+### Your Route Script constructor
+
+The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`.
+
+| Name                | Signature                                                                          |
+|---------------------|------------------------------------------------------------------------------------|
+| addLibrary          | (jsOrCssUrl: string \| string[]) => Promise<void>;                                 |
+| fetchJS             | (jsUrl: string \| string[]) => Promise<InstanceType<any> \| InstanceType<any>[]>;  |
+| fetchTemplate       | (templateUrl: string \| string[]) => Promise<void \| void[]>;                      |
+| getState            | (key?: string) => any;                                                             |
+| getTemplate         | (templateId: string \| string[]) => string | string[];                             |
+| navigateTo          | (url: string, params?: { [key: string]: any }) => void;                            |
+| setTitle            | (title: string) => void;                                                           |
+| setState            | (state: { [key: string]: any }) => void;                                           |
+| unwatchState        | (key?: string \| string[]) => void;                                                |
+| watchState          | (key: string, callback: (state: any) => void) => void;                             |
+
+example:
+```js
+(() => {
+    return class main {
+      constructor(navimiFunctions, { yourService1, yourService2, ... }) {
+    ...
+```
+
+Check the services example in the examples folder.
