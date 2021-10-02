@@ -93,8 +93,6 @@ about.html
 
 <br>
 
-Check the examples folder for more details.
-
 
 ## Api
 
@@ -138,34 +136,24 @@ Check the examples folder for more details.
 | Middleware          | (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void, next: Next) => Promise<void> \| void; |
 
 <br />
-<br />
 
 ### Your Route Script constructor
 
-The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. \
+The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. 
 
 List of function provided by Navimi to your Route Constructor.
 
-| Name                | Signature                                                                          |
-|---------------------|------------------------------------------------------------------------------------|
-| addLibrary          | (jsOrCssUrl: string \| string[]) => Promise<void>;                                 |
-| fetchJS             | (jsUrl: string \| string[]) => Promise<InstanceType<any> \| InstanceType<any>[]>;  |
-| fetchTemplate       | (templateUrl: string \| string[]) => Promise<void \| void[]>;                      |
-| getState            | (key?: string) => any;                                                             |
-| getTemplate         | (templateId: string \| string[]) => string | string[];                             |
-| navigateTo          | (url: string, params?: { [key: string]: any }) => void;                            |
-| setTitle            | (title: string) => void;                                                           |
-| setState            | (state: { [key: string]: any }) => void;                                           |
-| unwatchState        | (key?: string \| string[]) => void;                                                |
-| watchState          | (key: string, callback: (state: any) => void) => void;                             |
+| Name                | Signature                                               | Description                                             |
+|---------------------|---------------------------------------------------------|---------------------------------------------------------|
+| addLibrary          | (jsOrCssUrl: string[]) => Promise<void>;                | Add one or more js and css to the page (global)         |
+| fetchJS             | (jsUrl: string[]) => Promise<InstanceType<any>[]>;      | Fetch and return to your script one or many scripts     |
+| fetchTemplate       | (templateUrl: string[]) => Promise<void[]>;             | Fetch and parse one or many templates                   |
+| getState            | (key?: string) => any;                                  | Returns the state at any level using . notation         |
+| getTemplate         | (templateId: string[]) => string[];                     | Returns one or many templates by templateId             |
+| navigateTo          | (url: string, params?: { [key: string]: any }) => void; | Navigates to an url using the router                    |
+| setTitle            | (title: string) => void;                                | Set the navigator title                                 |
+| setState            | (state: { [key: string]: any }) => void;                | Set the state at any level using . notation             |
+| unwatchState        | (key?: string \| string[]) => void;                     | Unwatch one or many state at any level using . notation | 
+| watchState          | (key: string, callback: (state: any) => void) => void;  | Set a watcher to state at any level using . notation    |
 
-example:
-```js
-(() => {
-    return class main {
-      constructor(functions, { yourService1, yourService2, ... }) {
-                      ^
-    ...
-```
-
-Check the services example in the examples folder.
+Check the examples folder for more details.
