@@ -663,8 +663,12 @@ class Navimi {
             if (navParams !== undefined) {
                 params = Object.assign(Object.assign({}, params), navParams);
             }
-            this.options.onBeforeRoute &&
-                await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
+            if (this.options.onBeforeRoute) {
+                const shouldContinue = await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
+                if (shouldContinue === false) {
+                    return;
+                }
+            }
             if (this.currentJS && !force) {
                 const beforeLeave = this.routesJSs[this.currentJS] &&
                     this.routesJSs[this.currentJS].beforeLeave;

@@ -38,7 +38,7 @@ interface Options {
     middlewares?: Middleware[];
     hot?: number | boolean;
     onAfterRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => void;
-    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => void;
+    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => boolean;
     onError?: (error: Error) => void;
 }
 
@@ -915,8 +915,12 @@ class Navimi {
             };
         }
 
-        this.options.onBeforeRoute && 
-            await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
+        if (this.options.onBeforeRoute) {
+            const shouldContinue = await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
+            if (shouldContinue === false) {
+                return;
+            }
+        } 
 
         if (this.currentJS && !force) {
             const beforeLeave = this.routesJSs[this.currentJS] &&
