@@ -20,6 +20,8 @@ class Navimi {
     * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void, next:() => void) => void)[]=} options.middlewares - An array of functions to capture the request
     * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
+    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
+    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
     * @param {function(Error): void=} options.onError - A function to capture erros from routes
     * @returns {Object} - The Navimi instance
     */
@@ -661,6 +663,8 @@ class Navimi {
             if (navParams !== undefined) {
                 params = Object.assign(Object.assign({}, params), navParams);
             }
+            this.options.onBeforeRoute &&
+                await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
             if (this.currentJS && !force) {
                 const beforeLeave = this.routesJSs[this.currentJS] &&
                     this.routesJSs[this.currentJS].beforeLeave;
@@ -735,6 +739,8 @@ class Navimi {
                 }
                 this.setNavimiLinks();
                 this.insertCss(this.loadedCsss[cssUrl], "pageCss");
+                this.options.onAfterRoute &&
+                    this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
             }
             catch (ex) {
                 callId === this.callId && this.reportError(ex.message);
