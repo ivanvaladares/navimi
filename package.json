@@ -9,7 +9,8 @@
   "homepage": "https://github.com/ivanvaladares/navimi",
   "main": "index.js",
   "scripts": {
-    "test": "node cypress.js"
+    "test": "node cypress.js",
+    "build": "gulp build"
   },
   "keywords": [],
   "license": "MIT",
