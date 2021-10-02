@@ -103,7 +103,7 @@ Check the examples folder for more details.
 - (routes: { [url: string]: Route }, options?: Options)
 
 ### - Route
-| Property     | Type                   | Decscription                                                    |
+| Property     | Type                   | Description                                                    |
 |--------------|------------------------|-----------------------------------------------------------------|
 | title*       | string                 | The title that will be displayed on the browser                 |
 | jsUrl        | string                 | The path to the route script                                    |
@@ -114,10 +114,9 @@ Check the examples folder for more details.
 
 \* required
 <br />
-<br />
 
 ### - Options
-| Property            | Type                     | Decscription                                                    |
+| Property            | Type                     | Description                                                    |
 |---------------------|--------------------------|-----------------------------------------------------------------|
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
@@ -127,6 +126,8 @@ Check the examples folder for more details.
 | onAfterRoute        | Function                 | A function invoked after the routing is done                    |
 | onBeforeRoute       | Function                 | A function invoked before middlewares and routing               |
 | onError             | Function                 | A function to capture erros from routes                         |
+
+<br />
 
 ### Types
 
