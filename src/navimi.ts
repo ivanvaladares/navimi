@@ -21,6 +21,7 @@ interface Functions {
     getState: (key?: string) => any;
     getTemplate: (templateId: string | string[]) => string | string[];
     navigateTo: (url: string, params?: { [key: string]: any }) => void;
+    setNavimiLinks: () => void;
     setTitle: (title: string) => void;
     setState: (state: { [key: string]: any }) => void;
     unwatchState: (key?: string | string[]) => void;
@@ -732,6 +733,7 @@ class Navimi {
                 },
                 setState: this.setState,
                 getState: this.getState,
+                setNavimiLinks: this.setNavimiLinks,
                 unwatchState: (key: string) => this.unwatchState(jsUrl, key),
                 watchState: (key: string, callback: (state: any) => void) =>
                     this.watchState(jsUrl, key, callback),

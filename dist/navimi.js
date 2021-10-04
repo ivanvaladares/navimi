@@ -518,6 +518,7 @@ class Navimi {
                     },
                     setState: this.setState,
                     getState: this.getState,
+                    setNavimiLinks: this.setNavimiLinks,
                     unwatchState: (key) => this.unwatchState(jsUrl, key),
                     watchState: (key, callback) => this.watchState(jsUrl, key, callback),
                 });
