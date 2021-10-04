@@ -201,7 +201,7 @@ Check the examples folder for more details.
 
 Navimi will automatically hook click event to links with 'navimi-link' attributte rendered during the 'init()'. 
 
-If you render any links after the 'init()', you should call functions.setNavimiLinks() again or
+If you render any links after the 'init()', you should call functions.setNavimiLinks() or
 hook those links to functions.navigateTo yourself.
 
 You can also call functions.navigateTo whenever you need to navigate.
