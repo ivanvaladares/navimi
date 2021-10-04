@@ -7,9 +7,7 @@
             this.linksFx = linksFx;
 
             //watch state
-            this.nfx.watchState("test.clicks", (clicks) => {
-                this.showCounter(clicks);
-            })
+            this.nfx.watchState("test.clicks", this.showCounter);
         }
 
         init = (context) => {

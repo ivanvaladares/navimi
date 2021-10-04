@@ -16,9 +16,7 @@
             this.showClicks(clicks);
 
             //watch state
-            this.nfx.watchState("test.clicks", (clicks) => {
-                this.showClicks(clicks);
-            })
+            this.nfx.watchState("test.clicks", this.showClicks);
 
             //button event
             document.querySelector(".counter_btn").addEventListener('click', () => {
