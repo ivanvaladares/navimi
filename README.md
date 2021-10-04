@@ -100,7 +100,7 @@ about.html
 
 - (routes: { [url: string]: Route }, options?: Options)
 
-### - Route
+### Route
 | Property     | Type                   | Description                                                    |
 |--------------|------------------------|-----------------------------------------------------------------|
 | title*       | string                 | The title that will be displayed on the browser                 |
@@ -113,7 +113,7 @@ about.html
 \* required
 <br />
 
-### - Options
+### Options
 | Property            | Type                     | Description                                                    |
 |---------------------|--------------------------|-----------------------------------------------------------------|
 | globalCssUrl        | string                   | The path to the global css                                      |
@@ -151,9 +151,57 @@ List of function provided by Navimi to your Route Constructor.
 | getState            | (key?: string) => any;                                  | Returns the state at any level using . notation         |
 | getTemplate         | (templateId: string[]) => string[];                     | Returns one or many templates by templateId             |
 | navigateTo          | (url: string, params?: { [key: string]: any }) => void; | Navigates to an url using the router                    |
+| setNavimiLinks      | () => void;                                             | Hook click event to links with 'navimi-link' attributte |
 | setTitle            | (title: string) => void;                                | Set the navigator title                                 |
 | setState            | (state: { [key: string]: any }) => void;                | Set the state at any level using . notation             |
 | unwatchState        | (key?: string \| string[]) => void;                     | Unwatch one or many state at any level using . notation | 
 | watchState          | (key: string, callback: (state: any) => void) => void;  | Set a watcher to state at any level using . notation    |
 
 Check the examples folder for more details.
+
+<br />
+
+### Route Script life-cycle
+
+```js
+(() => {
+    return class className {
+        constructor(functions, {yourService1, yourService2 ... }) {
+            // 1 - optional
+            // variables initialization
+            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked before options.onAfterRoute
+        }
+
+        init(context) {
+            // 2
+            // here you should render your page components
+            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked before options.onAfterRoute
+        };
+
+        beforeLeave(context) {
+            // 3 - optional
+            // return false if you wish to maintain the user on the current page
+            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked before options.onAfterRoute
+        }
+
+        destroy() {
+            // 4 - optional
+            // destroy timers and event handlers if you need
+            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked before options.onAfterRoute
+        }
+    };
+})();
+```
+
+### Page navigation
+
+Navimi will automatically hook click event to links with 'navimi-link' attributte rendered during the 'init()'. 
+
+If you render any links after the 'init()', you should call functions.setNavimiLinks() again or
+hook those links to functions.navigateTo yourself.
+
+You can also call functions.navigateTo whenever you need to navigate.
