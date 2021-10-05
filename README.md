@@ -139,7 +139,7 @@ about.html
 
 ### Your Route Script constructor
 
-The fisrt param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. 
+The first param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. 
 
 List of function provided by Navimi to your Route Constructor.
 
@@ -169,28 +169,28 @@ Check the examples folder for more details.
         constructor(functions, {yourService1, yourService2 ... }) {
             // 1 - optional
             // variables initialization
-            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         }
 
         init(context) {
             // 2
             // here you should render your page components
-            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         };
 
         beforeLeave(context) {
             // 3 - optional
             // return false if you wish to maintain the user on the current page
-            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         }
 
         destroy() {
             // 4 - optional
             // destroy timers and event handlers if you need
-            // invoked after options.onBerforeRoute and options.middlewares
+            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         }
     };
