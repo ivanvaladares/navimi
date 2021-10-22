@@ -52,7 +52,7 @@ new Navimi({
             "linksFx": "/scripts/service2.js"
         },        
         middlewares: [
-            async (ctx, navigateTo, next) => {
+            (ctx, next) => {
                 //show loading
                 if (document.querySelector("#global-template")) {
                     document.querySelector("#div-content").innerHTML = "loading..."

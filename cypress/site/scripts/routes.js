@@ -47,14 +47,13 @@ new Navimi({
             "myfx": "/scripts/functions.js"
         },        
         middlewares: [
-            async (ctx, navigateTo, next) => {
+            (ctx, next) => {
                 ctx.routeItem.dependsOn = ["myfx"];
                 next();
             },
-            (ctx, navigateTo, next) => {
+            (ctx, next) => {
                 if (ctx.params && ctx.params.queryString && ctx.params.queryString.notFound) {
-                    navigateTo("/notFound");
-                    return;
+                    return next("/notFound");
                 }
                 next();
             }

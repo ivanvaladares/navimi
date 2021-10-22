@@ -1,5 +1,5 @@
 /*! 
- * Navimi v0.0.1
+ * Navimi v0.1.0
  * Developed by Ivan Valadares 
  * ivanvaladares@hotmail.com
  * https://github.com/ivanvaladares/navimi
@@ -14,7 +14,7 @@ interface Route {
     metadata?: { [key: string]: any };
 }
 
-interface Functions {
+interface RouterFunctions {
     addLibrary: (jsOrCssUrl: string | string[]) => Promise<void>;
     fetchJS: (jsUrl: string | string[]) => Promise<InstanceType<any> | InstanceType<any>[]>;
     fetchTemplate: (templateUrl: string | string[]) => Promise<void | void[]>;
@@ -28,9 +28,9 @@ interface Functions {
     watchState: (key: string, callback: (state: any) => void) => void;
 }
 
-type Next = () => Promise<void> | void;
+type Next = (url?: string, params?: { [key: string]: any }) => Promise<void> | void;
 type Context = { url: string, routeItem: Route, params: { [key: string]: any } };
-type Middleware = (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void, next: Next) => Promise<void> | void;
+type Middleware = (context: Context, next: Next) => Promise<void> | void;
 
 interface Options {
     globalCssUrl?: string;
@@ -87,7 +87,7 @@ class Navimi {
     * @param {string=} options.globalCssUrl - The path to the global css
     * @param {string=} options.globalTemplatesUrl - The path to the global templates file
     * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
-    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void, next:() => void) => void)[]=} options.middlewares - An array of functions to capture the request
+    * @param {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
     * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
@@ -465,16 +465,16 @@ class Navimi {
                     this.loadedCsss[routeItem.cssUrl] = file.data;
                     (this.currentJS && this.currentJS === routeItem.jsUrl ||
                         routeItem.cssUrl === this.currentRouteItem.cssUrl) &&
-                            this.insertCss(file.data, "pageCss");
+                        this.insertCss(file.data, "pageCss");
                     return;
                 }
 
                 if (isSameFile(routeItem.templatesUrl, filePath)) {
                     console.log(`${file.filePath} updated.`);
                     this.parseTemplate(file.data, routeItem.templatesUrl);
-                    (this.currentJS && this.currentJS === routeItem.jsUrl  ||
+                    (this.currentJS && this.currentJS === routeItem.jsUrl ||
                         routeItem.templatesUrl === this.currentRouteItem.templatesUrl) &&
-                            this.initJS(this.currentJS);
+                        this.initJS(this.currentJS);
                     this.setNavimiLinks();
                     return;
                 }
@@ -671,16 +671,16 @@ class Navimi {
             prevIndex = index;
             const middleware = this.middlewareStack[index];
             if (middleware) {
-                let didNext = false;
-                await middleware(context, this.navigateTo, () => {
-                    didNext = true;
+                await middleware(context, (url: string, params?: { [key: string]: any }) => {
                     if (callId === this.callId) {
-                        runner(index + 1, resolve, reject);
+                        if (!url) {
+                            runner(index + 1, resolve, reject);
+                        } else {
+                            reject();
+                            this.initRoute(url, params, true);
+                        }
                     }
                 });
-                if (!didNext) {
-                    reject();
-                }
             } else {
                 resolve();
             }
@@ -922,7 +922,7 @@ class Navimi {
             if (shouldContinue === false) {
                 return;
             }
-        } 
+        }
 
         if (this.currentJS && !force) {
             const beforeLeave = this.routesJSs[this.currentJS] &&
@@ -947,7 +947,7 @@ class Navimi {
 
         try {
             await this.executeMiddlewares({ url, routeItem, params }, callId);
-        } catch (error) {
+        } catch {
             return;
         }
 
@@ -1014,7 +1014,7 @@ class Navimi {
             this.setNavimiLinks();
             this.insertCss(this.loadedCsss[cssUrl], "pageCss");
 
-            this.options.onAfterRoute && 
+            this.options.onAfterRoute &&
                 this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
 
         } catch (ex) {
@@ -1037,4 +1037,47 @@ class Navimi {
             this.routesJSs[jsUrl].init &&
             await this.routesJSs[jsUrl].init(this.currentParams[jsUrl]);
     };
+}
+
+class NavimiRoute {
+
+    /**
+    * @typedef {Object} Functions - A collection of functions
+    * @property {string} functions.title - The title that will be displayed on the browser
+    * @property {string} functions.jsUrl - The path to the route script
+    * @property {string=} functions.cssUrl - The path to the route css
+    * @property {string=} functions.templatesUrl - The path to the templates file of this route 
+    * @property {string[]=} functions.dependsOn - An array of services names for this route
+    * @property {Object.<string, *>=} functions.metadata - Any literal you need to pass down to this route and middlewares 
+    * @param {Object[]} services - A collection of services
+    * @returns {Object} - The Navimi route 
+    */
+    constructor(functions: RouterFunctions, services: any[]) {
+
+    }
+
+    /**
+    * @typedef {Object} RouterFunctions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    */
+    init(context: Context) {
+
+    };
+
+    /**
+    * @typedef {Object} functions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    * @returns {boolean} - False if you need to keep the user on this page
+    */
+    beforeLeave(context: Context) {
+    }
+
+    /**
+    * @typedef {Object} functions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    * @returns {boolean} - False if you need to keep the user on this page
+    */
+    destroy() {
+    }
+
 }

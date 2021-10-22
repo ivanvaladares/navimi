@@ -32,6 +32,11 @@
 
 <br>
 
+## Example of usage
+https://navimi.web.app
+
+<br>
+
 ## Browser compatibility
 | Browser Version  | Date     |
 |------------------|-------   |

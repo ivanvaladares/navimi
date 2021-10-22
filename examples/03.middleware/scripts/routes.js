@@ -40,16 +40,15 @@ new Navimi({
         },        
         middlewares: [
             //that's where you would check if a route is protected and the user is logged in
-            (ctx, navigateTo, next) => {
+            (ctx, next) => {
                 console.log("middleware 1", ctx);
                 const user = sessionStorage["user"];
                 if (ctx.routeItem.metadata.isProtected && !user) {
-                    navigateTo("/login");
-                    return;
+                    return next("/login");
                 }
                 next();
             },
-            async (ctx, navigateTo, next) => {
+            async (ctx, next) => {
                 if (document.querySelector("#global-template")) {
                     document.querySelector("#div-content").innerHTML = "loading..."
                     console.log("wait 100ms", ctx);
@@ -58,7 +57,7 @@ new Navimi({
                 console.log("middleware 2", ctx);
                 next();
             },
-            (ctx, navigateTo, next) => {
+            (ctx, next) => {
                 console.log("middleware 3", ctx);
                 //adding common services to all routes
                 ctx.routeItem.dependsOn = ["myfx", "linksFx"];

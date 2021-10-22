@@ -1,5 +1,5 @@
 /*!
- * Navimi v0.0.1
+ * Navimi v0.1.0
  * Developed by Ivan Valadares
  * ivanvaladares@hotmail.com
  * https://github.com/ivanvaladares/navimi
@@ -18,7 +18,7 @@ class Navimi {
     * @param {string=} options.globalCssUrl - The path to the global css
     * @param {string=} options.globalTemplatesUrl - The path to the global templates file
     * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
-    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void, next:() => void) => void)[]=} options.middlewares - An array of functions to capture the request
+    * @param {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
     * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
@@ -465,16 +465,17 @@ class Navimi {
                 prevIndex = index;
                 const middleware = this.middlewareStack[index];
                 if (middleware) {
-                    let didNext = false;
-                    await middleware(context, this.navigateTo, () => {
-                        didNext = true;
+                    await middleware(context, (url, params) => {
                         if (callId === this.callId) {
-                            runner(index + 1, resolve, reject);
+                            if (!url) {
+                                runner(index + 1, resolve, reject);
+                            }
+                            else {
+                                reject();
+                                this.initRoute(url, params, true);
+                            }
                         }
                     });
-                    if (!didNext) {
-                        reject();
-                    }
                 }
                 else {
                     resolve();
@@ -692,7 +693,7 @@ class Navimi {
             try {
                 await this.executeMiddlewares({ url, routeItem, params }, callId);
             }
-            catch (error) {
+            catch (_a) {
                 return;
             }
             if (callId < this.callId) {
@@ -832,6 +833,42 @@ class Navimi {
                 }
             }
         }
+    }
+}
+class NavimiRoute {
+    /**
+    * @typedef {Object} Functions - A collection of functions
+    * @property {string} functions.title - The title that will be displayed on the browser
+    * @property {string} functions.jsUrl - The path to the route script
+    * @property {string=} functions.cssUrl - The path to the route css
+    * @property {string=} functions.templatesUrl - The path to the templates file of this route
+    * @property {string[]=} functions.dependsOn - An array of services names for this route
+    * @property {Object.<string, *>=} functions.metadata - Any literal you need to pass down to this route and middlewares
+    * @param {Object[]} services - A collection of services
+    * @returns {Object} - The Navimi route
+    */
+    constructor(functions, services) {
+    }
+    /**
+    * @typedef {Object} RouterFunctions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    */
+    init(context) {
+    }
+    ;
+    /**
+    * @typedef {Object} functions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    * @returns {boolean} - False if you need to keep the user on this page
+    */
+    beforeLeave(context) {
+    }
+    /**
+    * @typedef {Object} functions - A collection of functions
+    * @param {Object[]} services - A collection of services
+    * @returns {boolean} - False if you need to keep the user on this page
+    */
+    destroy() {
     }
 }
 
