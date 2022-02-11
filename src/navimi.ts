@@ -1,5 +1,5 @@
 /*! 
- * Navimi v0.1.0
+ * Navimi v0.2.0
  * Developed by Ivan Valadares 
  * ivanvaladares@hotmail.com
  * https://github.com/ivanvaladares/navimi
@@ -256,11 +256,72 @@ class Navimi {
         return params;
     };
 
+    private stringify = (obj: any) => {
+        const visited: any[] = [];
+
+        const iterateObject = (obj: any) : any => {
+
+            if (typeof obj === 'function') {
+                return String(obj);
+            }
+
+            if (obj instanceof Error) {
+                return obj.message;
+            }
+
+            if (obj === null || typeof obj !== 'object') {
+                return obj;
+            }
+
+            if (visited.indexOf(obj) !== -1) {
+                return `[Circular: ${visited.indexOf(obj)}]`;
+            }
+
+            visited.push(obj);
+
+            if (Array.isArray(obj)) {
+                const aResult = obj.map(iterateObject);
+                visited.pop();
+                return aResult;
+            }
+
+            const result = Object.keys(obj).reduce((result: any, prop: string) => {
+                result[prop] = iterateObject(((obj, prop) => {
+                    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+                        try {
+                            return obj[prop];
+                        }
+                        catch (err) {
+                            return err.message;
+                        }
+                    }
+                    return obj[prop];
+                })(obj, prop));
+                return result;
+            }, {});
+
+            visited.pop();
+
+            return result;
+        };
+
+        return JSON.stringify(iterateObject(obj));
+    };
+
+    private cloneObject = (obj: any) : { [key: string]: any } => {
+        var ot = Array.isArray(obj);
+        return obj === null || typeof obj !== "object" ? obj :  
+                Object.keys(obj).reduce((prev: any, current: string) => 
+                    obj[current] !== null && typeof obj[current] === "object" ? 
+                        (prev[current] = this.cloneObject(obj[current]), prev) : 
+                        (prev[current] = obj[current], prev), ot ? [] : {});
+    };
+
     private getStateDiff = (keys: string[]): void => {
         keys.sort((a, b) => b.length - a.length).map(key => {
             if (!this.stateDiff[key]) {
-                const sOld = JSON.stringify(this.getState(key, this.prevState) || "");
-                const sNew = JSON.stringify(this.getState(key, this.state) || "");
+                const sOld = this.stringify(this.getState(key, this.prevState) || "");
+                const sNew = this.stringify(this.getState(key, this.state) || "");
                 if (sOld !== sNew) {
                     this.stateDiff[key] = true;
                     //set upper keys as changed so we don't test them again
@@ -287,8 +348,14 @@ class Navimi {
         });
     }, 10);
 
-
     private mergeState(state: any, newState: any): void {
+        if (newState instanceof Error) {
+            newState = { 
+                ...newState,
+                message: newState.message,
+                stack: newState.stack,
+            };
+        }
         const isObject = (item: any): boolean =>
             item && typeof item === 'object' && !Array.isArray(item) && item !== null;
         if (isObject(state) && isObject(newState)) {
@@ -306,7 +373,7 @@ class Navimi {
     private setState = (newState: { [key: string]: any }): void => {
         const observedKeys = Object.keys(this.stateWatchers);
         if (observedKeys.length > 0) {
-            this.prevState = JSON.parse(JSON.stringify(this.state));
+            this.prevState = this.cloneObject(this.state);
         }
         this.mergeState(this.state, newState);
         if (observedKeys.length > 0) {
@@ -319,7 +386,7 @@ class Navimi {
         const st = key ?
             key.split('.').reduce((v, k) => (v && v[k]) || undefined, state || this.state) :
             state || this.state;
-        return st ? Object.freeze(JSON.parse(JSON.stringify(st))) : undefined;
+        return st ? Object.freeze(this.cloneObject(st)) : undefined;
     };
 
     private watchState = (jsUrl: string, key: string, callback: (state: any) => void): void => {
@@ -358,12 +425,12 @@ class Navimi {
         Object.keys(this.stateWatchers).map(remove);
     };
 
-    private reportError = (error: string): void => {
+    private reportError = (error: Error): void => {
         if (this.options.onError) {
-            this.options.onError(Error(error));
+            this.options.onError(error);
             return;
         }
-        console.error(error);
+        throw error;
     }
 
     private openHotWs = (hotOption: number | boolean): void => {
@@ -851,7 +918,7 @@ class Navimi {
         if (dependsOn && dependsOn.length > 0) {
             let notFoundServices: string[] = [];
             const servicesUrls = dependsOn.map(sn => {
-                const su: string = this.options.services[sn];
+                const su: string = this.options.services && this.options.services[sn];
                 if (su === undefined) {
                     notFoundServices.push(sn);
                 } else {
@@ -865,7 +932,7 @@ class Navimi {
                 return su;
             });
             if (notFoundServices.length > 0) {
-                this.reportError("Service(s) not defined: " + notFoundServices.join(", "));
+                this.reportError(new Error("Service(s) not defined: " + notFoundServices.join(", ")));
                 return;
             }
             Promise.all(servicesUrls.filter(su => su !== undefined)
@@ -941,7 +1008,7 @@ class Navimi {
         }
 
         if (!routeItem) {
-            callId === this.callId && this.reportError("No route match for url: " + url);
+            callId === this.callId && this.reportError(new Error("No route match for url: " + url));
             return;
         }
 
@@ -972,7 +1039,11 @@ class Navimi {
             }
 
             if (pushState) {
-                history.pushState(null, null, urlToGo);
+                if (navParams?.replaceUrl) {
+                    history.replaceState(null, null, urlToGo);
+                } else {
+                    history.pushState(null, null, urlToGo);
+                }
             }
 
             await this.setupRoute(routeItem);
@@ -996,29 +1067,40 @@ class Navimi {
                     (this.options.globalTemplatesUrl &&
                         this.loadErrors[this.options.globalTemplatesUrl])) {
                     this.reportError(
-                        this.loadErrors[cssUrl] ||
-                        this.loadErrors[templatesUrl] ||
-                        this.loadErrors[this.options.globalCssUrl] ||
-                        this.loadErrors[this.options.globalTemplatesUrl]);
+                        new Error(
+                            this.loadErrors[cssUrl] ||
+                            this.loadErrors[templatesUrl] ||
+                            this.loadErrors[this.options.globalCssUrl] ||
+                            this.loadErrors[this.options.globalTemplatesUrl]
+                        )
+                    );
                     return;
                 }
             }
 
             this.setTitle(title);
-            await this.initJS(jsUrl);
 
-            if (callId < this.callId) {
-                return;
+            try {
+                await this.initJS(jsUrl);
+
+            } catch (ex) {
+                this.reportError(ex);
+
+            } finally {
+
+                if (callId < this.callId) {
+                    return;
+                }
+    
+                this.setNavimiLinks();
+                this.insertCss(this.loadedCsss[cssUrl], "pageCss");
+    
+                this.options.onAfterRoute &&
+                    this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
             }
 
-            this.setNavimiLinks();
-            this.insertCss(this.loadedCsss[cssUrl], "pageCss");
-
-            this.options.onAfterRoute &&
-                this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
-
         } catch (ex) {
-            callId === this.callId && this.reportError(ex.message);
+            callId === this.callId && this.reportError(ex);
         }
     };
 
@@ -1033,9 +1115,9 @@ class Navimi {
             return;
         }
 
-        this.routesJSs[jsUrl] &&
-            this.routesJSs[jsUrl].init &&
+        this.routesJSs[jsUrl] && this.routesJSs[jsUrl].init &&
             await this.routesJSs[jsUrl].init(this.currentParams[jsUrl]);
+
     };
 }
 
