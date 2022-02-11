@@ -1,5 +1,5 @@
 /*! 
- * Navimi v0.2.0
+ * Navimi v0.1.1
  * Developed by Ivan Valadares 
  * ivanvaladares@hotmail.com
  * https://github.com/ivanvaladares/navimi
