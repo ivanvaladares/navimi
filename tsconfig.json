@@ -2,13 +2,16 @@
   "compilerOptions": {
     "target": "es2017",
     "module": "none",
+    "moduleResolution": "classic",
     "outDir": "dist",
+    "outFile": "navimi.js",
     "rootDir": "src",
     "noImplicitAny": true,
     "sourceMap": true,
     "removeComments": false,
     "allowJs": false,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "composite": true,
   },  
   "lib": ["dom", "es2015", "es2016"],
   "exclude": [
@@ -17,5 +20,8 @@
   ],
   "include": [
     "src"
-  ]
+  ],
+  "paths": {
+    "navimi": ["./src/"],
+  }
 }
