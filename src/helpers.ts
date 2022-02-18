@@ -26,7 +26,7 @@ namespace __Navimi_Helpers {
         const path = splitPath(urlPath);
         const pattern = splitPath(urlPattern);
 
-        let params: any = {};
+        let params: { [key: string]: any } = {};
 
         if (queryPos > 0) {
             params = {
@@ -43,7 +43,7 @@ namespace __Navimi_Helpers {
                 params[name] = decodeURIComponent(path[i]);
             }
             else {
-                if (!path[i] || pattern[i].toLocaleLowerCase() !== path[i].toLocaleLowerCase())
+                if (!path[i] || pattern[i].toLowerCase() !== path[i].toLowerCase())
                     return null;
             }
         }
@@ -114,8 +114,8 @@ namespace __Navimi_Helpers {
                         try {
                             return obj[prop];
                         }
-                        catch (err) {
-                            return err.message;
+                        catch {
+                            return;
                         }
                     }
                     return obj[prop];
@@ -132,12 +132,11 @@ namespace __Navimi_Helpers {
     };
 
     export const cloneObject = (obj: any) : { [key: string]: any } => {
-        var ot = Array.isArray(obj);
         return obj === null || typeof obj !== "object" ? obj :  
                 Object.keys(obj).reduce((prev: any, current: string) => 
                     obj[current] !== null && typeof obj[current] === "object" ? 
                         (prev[current] = cloneObject(obj[current]), prev) : 
-                        (prev[current] = obj[current], prev), ot ? [] : {});
+                        (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
     export const getRouteAndParams = (url: string, routingList: { [url: string]: Route }): any => {

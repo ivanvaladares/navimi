@@ -7,18 +7,14 @@
 
 class Navimi {
 
-    private controller: AbortController;
+    private callId: number;
+    private abortController: AbortController;
     private currentJS: string;
     private currentUrl: string;
     private routesParams: { [url: string]: any };
     private routesList: { [url: string]: Route };
     private options: Options;
-
-    private pagesNamespace: string;
-    private pagesMainCallBack: string;
-
     private win: any;
-    private callId: number;
 
     /**
     * @typedef {Object} Route - An route definition
@@ -42,16 +38,14 @@ class Navimi {
     */
     constructor(routes: { [url: string]: Route }, options?: Options) {
 
-        this.pagesNamespace = "__spaPages";
-        this.pagesMainCallBack = "_mainCallback";
-        this.win = window ? window : {};
-        this.controller = new AbortController();
+        this.callId = 0;
+        this.abortController = new AbortController();
         this.currentJS = undefined;
         this.currentUrl = undefined;
         this.routesParams = {};       
         this.routesList = routes || {};
         this.options = options || {};
-        this.callId = 0;
+        this.win = window ? window : {};
 
         //@ts-ignore
         this.win.addEventListener('popstate', () => {
@@ -62,8 +56,6 @@ class Navimi {
         this.win.navigateTo = this.navigateTo;
 
         __Navimi_JSs.init({
-            pagesNamespace: this.pagesNamespace,
-            pagesMainCallBack: this.pagesMainCallBack,
             navigateTo: this.navigateTo.bind(this),
             options: this.options,
         });
@@ -109,8 +101,8 @@ class Navimi {
             if (this.currentUrl === url) {
                 return;
             }
-            this.controller.abort();
-            this.controller = new AbortController();
+            this.abortController.abort();
+            this.abortController = new AbortController();
         }
 
         const callId = ++this.callId;
@@ -157,15 +149,12 @@ class Navimi {
             return;
         }
 
-        try {
-            await __Navimi_Middleware.executeMiddlewares(this.controller, { url, routeItem, params }, (url: string, params: any) => {
-                this.initRoute(url, params, true);
-            });
-        } catch {
-            return;
-        }
+        await __Navimi_Middleware.executeMiddlewares(this.abortController, { url, routeItem, params }, (url: string, params: any) => {
+            this.initRoute(url, params, true);
+        });
 
         if (callId < this.callId) {
+            console.warn("Navimi: A middleware has called navigateTo()");
             return;
         }
 
@@ -192,16 +181,16 @@ class Navimi {
                 }
             }
 
-            __Navimi_CSSs.fetchCss(this.controller, cssUrl).catch(_ => { }); //todo: should report error?
-            __Navimi_Templates.fetchTemplate(this.controller, [templatesUrl]).catch(_ => { }); //todo: should report error?
+            __Navimi_CSSs.fetchCss(this.abortController, cssUrl).catch(_ => { }); //todo: should report error?
+            __Navimi_Templates.fetchTemplate(this.abortController, [templatesUrl]).catch(_ => { }); //todo: should report error?
             try {
-                __Navimi_JSs.loadServices(this.controller, jsUrl, dependsOn); //todo: should report error?
+                __Navimi_JSs.loadServices(this.abortController, jsUrl, dependsOn); //todo: should report error?
             } catch (ex) {
                 this.reportError(ex);
             }
     
             if (jsUrl) {
-                await __Navimi_JSs.fetchJS(this.controller, [jsUrl], false);
+                await __Navimi_JSs.fetchJS(this.abortController, [jsUrl], false);
             }
 
             //wait css and template to load if any
@@ -260,7 +249,7 @@ class Navimi {
     
                 __Navimi_Dom.setNavimiLinks(this.navigateTo);
                 
-                __Navimi_Dom.insertCss(__Navimi_CSSs.getCss(cssUrl), "pageCss");
+                __Navimi_Dom.insertCss(__Navimi_CSSs.getCss(cssUrl), "routeCss");
     
                 this.options.onAfterRoute &&
                     this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
@@ -269,6 +258,7 @@ class Navimi {
         } catch (ex) {
             this.reportError(ex);
         }
+        
     };
 
 }

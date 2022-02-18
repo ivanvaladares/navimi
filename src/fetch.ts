@@ -1,10 +1,11 @@
 namespace __Navimi_Fetch {
 
-    export let loadErrors: { [key: string]: any } = {};
+    export let loadErrors: { [key: string]: string } = {};
 
     export const fetchFile = (url: string, options?: RequestInit): Promise<string> => {
         return new Promise((resolve, reject) => {
             delete loadErrors[url];
+
             //todo: add retry
             fetch(url, options)
                 .then(async (data) => {
@@ -19,7 +20,9 @@ namespace __Navimi_Fetch {
                     loadErrors[url] = ex.message;
                     reject(ex);
                 });
+                
         });
+
     };
 
 }

@@ -40,8 +40,8 @@ namespace __Navimi_Hot {
     
     // private digestHot = (file: any): void => {
     //     const isSameFile = (path1: string, path2: string) => {
-    //         return path1 && path2 && path1.split("?").shift().toLocaleLowerCase() ==
-    //             path2.split("?").shift().toLocaleLowerCase();
+    //         return path1 && path2 && path1.split("?").shift().toLowerCase() ==
+    //             path2.split("?").shift().toLowerCase();
     //     }
 
     //     try {
@@ -108,7 +108,7 @@ namespace __Navimi_Hot {
     //                 __Navimi_CSSs.loadCss(routeItem.cssUrl, file.data);
     //                 (this.currentJS && this.currentJS === routeItem.jsUrl ||
     //                     routeItem.cssUrl === this.currentRouteItem.cssUrl) &&
-    //                     __Navimi_Dom.insertCss(file.data, "pageCss");
+    //                     __Navimi_Dom.insertCss(file.data, "routeCss");
     //                 return;
     //             }
 

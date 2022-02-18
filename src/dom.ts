@@ -47,15 +47,15 @@ namespace __Navimi_Dom {
 
         urls.length > 0 && await Promise.all(urls.map(url => {
             const type = url.split(".").pop();
-            if (type.toLocaleLowerCase() === "css") {
-                return __Navimi_CSSs.fetchCss(undefined, url, true);
+            if (type.toLowerCase() === "css") {
+                __Navimi_CSSs.fetchCss(undefined, url, true);
+            } else {
+                return __Navimi_JSs.fetchJS(undefined, [url]);
             }
-            return __Navimi_JSs.fetchJS(undefined, [url]);
         })).catch(ex => {
             throw new Error(ex)
         });
 
-        return;
     };
 
 }

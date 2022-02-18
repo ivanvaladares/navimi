@@ -11,32 +11,34 @@ class NavimiRoute {
     * @param {Object[]} services - A collection of services
     * @returns {Object} - The Navimi route 
     */
-    constructor(functions: RouterFunctions, services: any[]) {
-
-    }
 
     /**
-    * @typedef {Object} RouterFunctions - A collection of functions
+    * @param {Object} RouterFunctions - A collection of functions
     * @param {Object[]} services - A collection of services
+    * optional
+    * variables initialization
+    * Invoked after options.onBeforeRoute and options.middlewares
+    * Invoked before options.onAfterRoute
     */
-    init(context: Context) {
-
-    };
+    constructor(functions: RouterFunctions, services: any[]) { }
 
     /**
-    * @typedef {Object} functions - A collection of functions
-    * @param {Object[]} services - A collection of services
+     * @param {((context: Object.<string, *>} context - The context of the route ({ url, Route, params })
+    * Here you should render your page components
+    * Invoked after options.onBeforeRoute and options.middlewares
+    * Invoked before options.onAfterRoute
+     */
+    init(context: Context) { };
+
+    /**
+     * @param {((context: Object.<string, *>} context - The context of the route ({ url, Route, params })
     * @returns {boolean} - False if you need to keep the user on this page
     */
-    beforeLeave(context: Context) {
-    }
+    beforeLeave(context: Context) { }
 
     /**
-    * @typedef {Object} functions - A collection of functions
-    * @param {Object[]} services - A collection of services
     * @returns {boolean} - False if you need to keep the user on this page
     */
-    destroy() {
-    }
+    destroy() { }
 
 }

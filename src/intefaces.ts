@@ -34,6 +34,6 @@ interface Options {
     middlewares?: Middleware[];
     hot?: number | boolean;
     onAfterRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => void;
-    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => boolean;
+    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => boolean | Promise<boolean>;
     onError?: (error: Error) => void;
 }
