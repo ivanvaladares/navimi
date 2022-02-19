@@ -42,7 +42,7 @@ class Navimi {
         this.abortController = new AbortController();
         this.currentJS = undefined;
         this.currentUrl = undefined;
-        this.routesParams = {};       
+        this.routesParams = {};
         this.routesList = routes || {};
         this.options = options || {};
         this.win = window ? window : {};
@@ -77,8 +77,8 @@ class Navimi {
 
         this.initRoute();
 
-        if (this.options.hot && this.win["__Navimi_Hot"]) {
-            setTimeout(this.win["__Navimi_Hot"], 1000, this.options.hot);
+        if (this.options.hot) {
+            setTimeout(__Navimi_Hot.openHotWs, 1000, this.options.hot, this.digestHot);
         }
     }
 
@@ -93,6 +93,87 @@ class Navimi {
         }
         console.error(error);
     }
+
+    private digestHot = (payload: hotPayload): void => {
+
+        const isSameFile = (path1: string, path2: string) => {
+            return path1 && path2 && path1.split("?").shift().toLowerCase() ==
+                path2.split("?").shift().toLowerCase();
+        }
+
+        const isCurrrentRouteAsset = (path: string, key: string) => {
+            for (const routeUrl in this.routesList) {
+                const routeItem = this.routesList[routeUrl];
+                //@ts-ignore
+                if (isSameFile(routeItem[key], path) && routeItem.jsUrl === this.currentJS) {
+                    return true;
+                }
+            }
+        }
+
+        try {
+            const filePath = payload.filePath.replace(/\\/g, "/");
+            const fileType = filePath.split(".").pop();
+            const data = payload.data;
+
+            if (fileType === "css") {
+                const isGlobalCss = isSameFile(this.options.globalCssUrl, filePath);
+                const isCurrentRouteCss = isCurrrentRouteAsset(filePath, "cssUrl");              
+
+                __Navimi_CSSs.loadCss(filePath, data);
+                
+                if (isGlobalCss || isCurrentRouteCss) {
+                    __Navimi_Dom.insertCss(data, isGlobalCss ? "globalCss" : "routeCss");
+                    console.warn(`${filePath} updated.`);
+                }
+
+                return;
+            }
+
+            if (fileType === "html" || fileType === "htm") {
+                const isGlobalTemplate = isSameFile(this.options.globalTemplatesUrl, filePath);
+                const isDependentTemplate = __Navimi_JSs.isDependent(filePath, this.currentJS);
+                const isCurrentRouteTemplate = isCurrrentRouteAsset(filePath, "templatesUrl");
+
+                __Navimi_Templates.loadTemplate(data, filePath);
+
+                if (isGlobalTemplate || isDependentTemplate || isCurrentRouteTemplate) {
+                    this.initRoute(undefined, this.routesParams[this.currentJS], true);
+                    console.warn(`${filePath} updated.`);
+                }
+
+                return;
+            }
+
+            if (fileType === "js") {
+                const isDependentJS = __Navimi_JSs.isDependent(filePath, this.currentJS);
+                const isCurrentRouteJS = isCurrrentRouteAsset(filePath, "jsUrl");
+
+                //todo: fix this to accept files that are not the current route or related to it
+
+                if (isDependentJS || isCurrentRouteJS) {
+
+                    if (isDependentJS) {
+                        __Navimi_JSs.unloadJs(filePath, data, false, this.currentJS, () => {
+                            this.initRoute(undefined, this.routesParams[this.currentJS], true);
+                        });
+                    }
+
+                    if (isCurrentRouteJS) {
+                        __Navimi_JSs.unloadJs(this.currentJS, data, true, this.currentJS, () => {
+                            __Navimi_JSs.initJS(this.currentJS, this.routesParams[this.currentJS]);
+                        });
+                    }
+                    
+                    console.warn(`${filePath} updated.`);
+                }
+
+            }            
+
+        } catch (ex) {
+            console.error("Could not digest HOT payload: ", ex);
+        }
+    };
 
     private initRoute = async (urlToGo?: string, navParams?: { [key: string]: any }, force?: boolean): Promise<void> => {
         const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());

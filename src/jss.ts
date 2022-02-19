@@ -5,7 +5,7 @@ namespace __Navimi_JSs {
     const promiseNS: string = "_promise_";
     
     let navimiLoader: any;
-    let loadedJSs: { [url: string]: boolean } = {};
+    let loadedJSs: { [url: string]: boolean | string } = {};
     let externalJSs: { [url: string]: InstanceType<any> } = {};
     let routesJSs: { [url: string]: InstanceType<any> } = {};
     let externalJSsMap: { [url: string]: { [url: string]: boolean } } = {};
@@ -46,20 +46,22 @@ namespace __Navimi_JSs {
     const fetch = (abortController: AbortController, url: string, external?: boolean): Promise<void | void[]> => {
         return new Promise<void>(async (resolve, reject) => {
             try {
-                const jsCode = await __Navimi_Fetch.fetchFile(url, {
-                    headers: {
-                        Accept: "application/javascript"
-                    },
-                    signal: abortController ? abortController.signal : undefined
-                });
+                let jsCode: string;
+                if (typeof loadedJSs[url] === "string") {
+                    jsCode = loadedJSs[url] as string;
+                } else {
+                    jsCode = await __Navimi_Fetch.fetchFile(url, {
+                        headers: {
+                            Accept: "application/javascript"
+                        },
+                        signal: abortController ? abortController.signal : undefined
+                    });
 
-                loadedJSs[url] = true;
+                }
 
-                let jsHtmlBody = external !== undefined ?
-                    `(function(){window.${navimiLoaderNS}.${callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
-                    })())}())` : jsCode;
-
-                __Navimi_Dom.insertJS(jsHtmlBody, url);
+                loadedJSs[url] = external ? true : jsCode;
+            
+                insertJS(url, jsCode, external);
 
                 if (external === undefined) {
                     navimiLoader[promiseNS + url](true); // resolve the promise - script is loaded
@@ -78,16 +80,19 @@ namespace __Navimi_JSs {
         external: boolean, //todo: change to isRouteScript
         JsClass: InstanceType<any>): Promise<void> => {
 
+        const promiseToResolve: any = navimiLoader[promiseNS + jsUrl];
+        const promiseToReject: any = navimiLoader[promiseNS + jsUrl + "_reject"];
+
         // remove callbacks
         setTimeout(() => {
             delete navimiLoader[promiseNS + jsUrl];
             delete navimiLoader[promiseNS + jsUrl + "_reject"];
-        }, 1000);
+        }, 10);        
 
         if (external) {
             // keep this instance to reuse later
             externalJSs[jsUrl] = JsClass;
-            navimiLoader[promiseNS + jsUrl](Object.freeze(JsClass));
+            promiseToResolve && promiseToResolve(Object.freeze(JsClass));
             return;
         }
 
@@ -154,10 +159,10 @@ namespace __Navimi_JSs {
 
             //keep this instance to reuse later
             routesJSs[jsUrl] = jsInstance;
-            navimiLoader[promiseNS + jsUrl](jsInstance);
+            promiseToResolve && promiseToResolve(jsInstance);
 
         } catch (error) {
-            navimiLoader[promiseNS + jsUrl + "_reject"](error);
+            promiseToReject && promiseToReject(error);
 
         }
 
@@ -167,8 +172,34 @@ namespace __Navimi_JSs {
         return loadedJSs[url] !== undefined;
     };
 
+    export const unloadJs = (url: string, jsCode: string, isRouteJs: boolean, currentJS: string, callback: any): void => {
+        isRouteJs && delete routesJSs[url];
+        !isRouteJs && delete externalJSs[url];
+        !isRouteJs && delete routesJSs[currentJS];
+
+        navimiLoader[promiseNS + url] = () => {
+            callback();
+        };
+
+        insertJS(url, jsCode, !isRouteJs);
+
+    };
+
+    export const isDependent = (url: string, jsUrl: string): boolean => {
+        return Object.keys(externalTemplatesMap[url] || {}).find(s => s === jsUrl) !== undefined ||
+            Object.keys(externalJSsMap[url] || {}).find(s => s === jsUrl) !== undefined;
+    }
+
     export const getInstance = (url: string): InstanceType<any> => {
         return routesJSs[url];
+    };
+
+    export const insertJS = (url: string, jsCode: string, external?: boolean): void => {
+        let jsHtmlBody = external !== undefined ?
+            `(function(){window.${navimiLoaderNS}.${callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
+            })())}())` : jsCode;
+
+        __Navimi_Dom.insertJS(jsHtmlBody, url);
     };
 
     export const fetchJS = (abortController: AbortController, urls: string[], external?: boolean): Promise<InstanceType<any> | InstanceType<any>[]> => {
@@ -198,7 +229,6 @@ namespace __Navimi_JSs {
                 navimiLoader[promiseNS + url + "_reject"] = reject;
 
                 fetch(abortController, url, external).catch(ex => {
-                    delete navimiLoader[promiseNS + url];
                     navimiLoader[promiseNS + url + "_reject"](ex);
                 });
             });

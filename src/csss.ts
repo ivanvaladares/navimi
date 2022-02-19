@@ -28,7 +28,8 @@ namespace __Navimi_CSSs {
                 });
 
                 if (autoInsert) {
-                    __Navimi_Dom.insertCss(cssCode, undefined, true);
+                    //todo: fix this bug, the url must be a string to be user as a selector
+                    __Navimi_Dom.insertCss(cssCode, url, true);
                     loadedCsss[url] = "loaded";
                 } else {
                     loadedCsss[url] = cssCode;

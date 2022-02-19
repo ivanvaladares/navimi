@@ -139,7 +139,7 @@ namespace __Navimi_Helpers {
                         (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
-    export const getRouteAndParams = (url: string, routingList: { [url: string]: Route }): any => {
+    export const getRouteAndParams = (url: string, routingList: { [url: string]: Route }): RouteItem => {
         const urlParams = splitPath(url);
         const catchAll = routingList["*"];
         let routeItem, params;
