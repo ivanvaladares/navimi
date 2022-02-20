@@ -1,6 +1,6 @@
 namespace __Navimi_CSSs {
 
-    let loadedCsss: { [url: string]: string } = {};
+    let loadedCsss: KeyList<string> = {};
 
     export const isCssLoaded = (url: string): boolean => {
         return loadedCsss[url] !== undefined;
@@ -28,7 +28,6 @@ namespace __Navimi_CSSs {
                 });
 
                 if (autoInsert) {
-                    //todo: fix this bug, the url must be a string to be user as a selector
                     __Navimi_Dom.insertCss(cssCode, url, true);
                     loadedCsss[url] = "loaded";
                 } else {

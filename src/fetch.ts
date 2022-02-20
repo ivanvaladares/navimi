@@ -6,7 +6,7 @@ namespace __Navimi_Fetch {
         return new Promise((resolve, reject) => {
             delete loadErrors[url];
 
-            //todo: add retry
+            //todo: add retry with options
             fetch(url, options)
                 .then(async (data) => {
                     if (!data || !data.ok) {

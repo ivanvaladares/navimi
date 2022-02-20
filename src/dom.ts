@@ -4,7 +4,7 @@ namespace __Navimi_Dom {
         document.title = title;
     };
 
-    export const setNavimiLinks = (navigateTo: (url: string, params?: { [key: string]: any }) => void): void => {
+    export const setNavimiLinks = (navigateTo: (url: string, params?: KeyList<any>) => void): void => {
         document.querySelectorAll("[navimi-link]").forEach(el => {
             el.removeAttribute("navimi-link");
             el.setAttribute("navimi-linked", "");
@@ -16,7 +16,7 @@ namespace __Navimi_Dom {
     };
 
     export const insertCss = (cssCode: string, type?: string, prepend?: boolean): void => {
-        const oldTag = type ? document.querySelector(`[${type}]`) : undefined;
+        const oldTag = type ? document.querySelector(`[cssId='${type}']`) : undefined;
         oldTag && oldTag.remove();
         if (!cssCode) {
             return;

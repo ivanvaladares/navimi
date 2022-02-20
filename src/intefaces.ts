@@ -1,4 +1,6 @@
-
+interface KeyList<T> {
+    [key: string]: T
+}
 
 interface Route {
     title: string;
@@ -6,12 +8,12 @@ interface Route {
     cssUrl?: string;
     templatesUrl?: string;
     dependsOn?: string[];
-    metadata?: { [key: string]: any };
+    metadata?: KeyList<any>;
 }
 
 interface RouteItem {
     routeItem: Route;
-    params: { [key: string]: any };
+    params: KeyList<any>;
 }
 
 interface RouterFunctions {
@@ -20,16 +22,16 @@ interface RouterFunctions {
     fetchTemplate: (templateUrl: string | string[]) => Promise<void | void[]>;
     getState: (key?: string) => any;
     getTemplate: (templateId: string | string[]) => string | string[];
-    navigateTo: (url: string, params?: { [key: string]: any }) => void;
+    navigateTo: (url: string, params?: KeyList<any>) => void;
     setNavimiLinks: () => void;
     setTitle: (title: string) => void;
-    setState: (state: { [key: string]: any }) => void;
+    setState: (state: KeyList<any>) => void;
     unwatchState: (key?: string | string[]) => void;
     watchState: (key: string, callback: (state: any) => void) => void;
 }
 
-type Next = (url?: string, params?: { [key: string]: any }) => Promise<void> | void;
-type Context = { url: string, routeItem: Route, params: { [key: string]: any } };
+type Next = (url?: string, params?: KeyList<any>) => Promise<void> | void;
+type Context = { url: string, routeItem: Route, params: KeyList<any> };
 type Middleware = (context: Context, next: Next) => Promise<void> | void;
 
 interface Options {
@@ -38,8 +40,8 @@ interface Options {
     services?: { [serviceName: string]: string };
     middlewares?: Middleware[];
     hot?: number | boolean;
-    onAfterRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => void;
-    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void) => boolean | Promise<boolean>;
+    onAfterRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => void;
+    onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => boolean | Promise<boolean>;
     onError?: (error: Error) => void;
 }
 

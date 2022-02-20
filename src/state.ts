@@ -1,9 +1,9 @@
 namespace __Navimi_State {
 
-    let state: { [key: string]: any } = {};
-    let prevState: { [key: string]: any } = {};
+    let state: KeyList<any> = {};
+    let prevState: KeyList<any> = {};
     let stateDiff: { [key: string]: boolean } = {};
-    let stateWatchers: { [key: string]: any } = {};
+    let stateWatchers: KeyList<any> = {};
 
     const getStateDiff = (keys: string[]): void => {
         keys.sort((a, b) => b.length - a.length).map(key => {
@@ -58,7 +58,7 @@ namespace __Navimi_State {
         }
     };
 
-    export const setState = (newState: { [key: string]: any }): void => {
+    export const setState = (newState: KeyList<any>): void => {
         const observedKeys = Object.keys(stateWatchers);
         if (observedKeys.length > 0) {
             prevState = __Navimi_Helpers.cloneObject(state);
@@ -70,7 +70,7 @@ namespace __Navimi_State {
         }
     };
 
-    export const getState = (key?: string, _state?: any): { [key: string]: any } => {
+    export const getState = (key?: string, _state?: any): KeyList<any> => {
         const st = key ?
             key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || state) :
             _state || state;

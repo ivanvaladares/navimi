@@ -20,13 +20,13 @@ namespace __Navimi_Helpers {
         return path.split("/").filter(p => p.length > 0);
     };
 
-    const parsePath = (urlPath: string, urlPattern: string): { [key: string]: any } => {
+    const parsePath = (urlPath: string, urlPattern: string): KeyList<any> => {
         const queryPos = urlPath.indexOf("?");
         const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
         const path = splitPath(urlPath);
         const pattern = splitPath(urlPattern);
 
-        let params: { [key: string]: any } = {};
+        let params: KeyList<any> = {};
 
         if (queryPos > 0) {
             params = {
@@ -50,6 +50,28 @@ namespace __Navimi_Helpers {
 
         return params;
     };
+
+    export const isSameFile = (path1: string, path2: string) => {
+        return path1 && path2 && path1.split("?").shift().toLowerCase() ==
+            path2.split("?").shift().toLowerCase();
+    }
+
+    export const isRouteAsset = (path: string, key: string, routesList: KeyList<Route>, currentJS?: string) => {
+        for (const routeUrl in routesList) {
+            const routeItem = routesList[routeUrl];
+            if (currentJS) {
+                //@ts-ignore
+                if (isSameFile(routeItem[key], path) && routeItem.jsUrl === currentJS) {
+                    return true;
+                }
+            } else {
+                //@ts-ignore
+                if (isSameFile(routeItem[key], path)) {
+                    return true;
+                }
+            }
+        }
+    }
 
     export const timeout = (ms: number): Promise<void> => {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -131,7 +153,7 @@ namespace __Navimi_Helpers {
         return JSON.stringify(iterateObject(obj));
     };
 
-    export const cloneObject = (obj: any) : { [key: string]: any } => {
+    export const cloneObject = (obj: any) : KeyList<any> => {
         return obj === null || typeof obj !== "object" ? obj :  
                 Object.keys(obj).reduce((prev: any, current: string) => 
                     obj[current] !== null && typeof obj[current] === "object" ? 
@@ -139,7 +161,7 @@ namespace __Navimi_Helpers {
                         (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
-    export const getRouteAndParams = (url: string, routingList: { [url: string]: Route }): RouteItem => {
+    export const getRouteAndParams = (url: string, routingList: KeyList<Route>): RouteItem => {
         const urlParams = splitPath(url);
         const catchAll = routingList["*"];
         let routeItem, params;

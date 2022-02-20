@@ -8,7 +8,7 @@ namespace __Navimi_Middleware {
         }
     };
 
-    export const executeMiddlewares = async (abortController: AbortController, context: Context, callback: (url: string, params: { [key: string]: any }) => void): Promise<void> => {
+    export const executeMiddlewares = async (abortController: AbortController, context: Context, callback: (url: string, params: KeyList<any>) => void): Promise<void> => {
         let prevIndex = -1;
         const runner = async (resolve: any, reject: any, index: number = 0): Promise<void> => {
             if (index === prevIndex) {
@@ -17,7 +17,7 @@ namespace __Navimi_Middleware {
             prevIndex = index;
             const middleware = middlewareStack[index];
             if (middleware) {
-                await middleware(context, async (url: string, params?: { [key: string]: any }) => {
+                await middleware(context, async (url: string, params?: KeyList<any>) => {
                     if (abortController.signal.aborted) {
                         reject();
                     } else {

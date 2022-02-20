@@ -3,16 +3,18 @@ namespace __Navimi_JSs {
     const navimiLoaderNS: string = "__navimiLoader";
     const callBackNS: string = "_jsLoaderCallback";
     const promiseNS: string = "_promise_";
+
+    const isSameFile = __Navimi_Helpers.isSameFile;
     
     let navimiLoader: any;
-    let loadedJSs: { [url: string]: boolean | string } = {};
-    let externalJSs: { [url: string]: InstanceType<any> } = {};
-    let routesJSs: { [url: string]: InstanceType<any> } = {};
-    let externalJSsMap: { [url: string]: { [url: string]: boolean } } = {};
-    let externalTemplatesMap: { [url: string]: { [url: string]: boolean } } = {};
-    let routesJSsServices: { [url: string]: string[] } = {};
+    let loadedJSs: KeyList<boolean | string> = {};
+    let externalJSs: KeyList<InstanceType<any>> = {};
+    let routesJSs: KeyList<InstanceType<any>> = {};
+    let dependencyJSsMap: KeyList<KeyList<boolean>> = {};
+    let dependencyTemplatesMap: KeyList<KeyList<boolean>> = {};
+    let routesJSsServices: KeyList<string[]> = {};
 
-    let navigateTo: (url: string, params?: { [key: string]: any }) => void;
+    let navigateTo: (url: string, params?: KeyList<any>) => void;
     let options: Options;
 
     export const init = (config: any): void => {
@@ -107,8 +109,8 @@ namespace __Navimi_JSs {
                 fetchJS: (url: string | string[]) => {
                     const urls = Array.isArray(url) ? url : [url];
                     urls.map(u => {
-                        externalJSsMap[u] = {
-                            ...externalJSsMap[u] || {},
+                        dependencyJSsMap[u] = {
+                            ...dependencyJSsMap[u] || {},
                             [jsUrl]: true
                         };
                     });
@@ -117,8 +119,8 @@ namespace __Navimi_JSs {
                 fetchTemplate: (url: string) => {
                     const urls: string[] = Array.isArray(url) ? url : [url];
                     urls.map((u: string) => {
-                        externalTemplatesMap[u] = {
-                            ...externalTemplatesMap[u] || {},
+                        dependencyTemplatesMap[u] = {
+                            ...dependencyTemplatesMap[u] || {},
                             [jsUrl]: true
                         };
                     });
@@ -128,7 +130,7 @@ namespace __Navimi_JSs {
                 getState: __Navimi_State.getState,
                 setNavimiLinks: () => __Navimi_Dom.setNavimiLinks(navigateTo),
                 unwatchState: (key: string) => __Navimi_State.unwatchState(jsUrl, key),
-                watchState: (key: string, callback: (state: { [key: string]: any }) => void) =>
+                watchState: (key: string, callback: (state: KeyList<any>) => void) =>
                     __Navimi_State.watchState(jsUrl, key, callback),
             });
 
@@ -172,22 +174,47 @@ namespace __Navimi_JSs {
         return loadedJSs[url] !== undefined;
     };
 
-    export const unloadJs = (url: string, jsCode: string, isRouteJs: boolean, currentJS: string, callback: any): void => {
-        isRouteJs && delete routesJSs[url];
-        !isRouteJs && delete externalJSs[url];
-        !isRouteJs && delete routesJSs[currentJS];
+    export const reloadJs = (filePath: string, 
+                            jsCode: string, 
+                            routeList: KeyList<Route>, 
+                            routesParams: KeyList<any>, 
+                            currentJS: string, 
+                            callback: any): void => 
+    {
 
-        navimiLoader[promiseNS + url] = () => {
-            callback();
-        };
+        const isDependentJS = isDependent(filePath);
+        const isRouteJs = __Navimi_Helpers.isRouteAsset(filePath, "jsUrl", routeList);
+        const isCurrentRouteJs = __Navimi_Helpers.isRouteAsset(filePath, "jsUrl", routeList, currentJS);
 
-        insertJS(url, jsCode, !isRouteJs);
+        if (isDependentJS || isRouteJs) {
 
+            isRouteJs && delete routesJSs[filePath];
+            
+            if (isDependentJS) {
+                delete externalJSs[filePath];
+                delete routesJSs[currentJS];
+            }
+
+            navimiLoader[promiseNS + filePath] = () => {
+                isDependentJS && callback();
+                isCurrentRouteJs && initJS(currentJS, routesParams[currentJS]);
+            };
+
+            insertJS(filePath, jsCode, isDependentJS);
+
+            console.warn(`${filePath} updated.`);
+        }
     };
 
-    export const isDependent = (url: string, jsUrl: string): boolean => {
-        return Object.keys(externalTemplatesMap[url] || {}).find(s => s === jsUrl) !== undefined ||
-            Object.keys(externalJSsMap[url] || {}).find(s => s === jsUrl) !== undefined;
+    export const isDependent = (url: string, jsUrl?: string): boolean => {
+        //todo: sanitize url in and here for externalTemplatesMap and externalJSsMap
+
+        if (!jsUrl) {
+            return dependencyTemplatesMap[url] !== undefined || dependencyJSsMap[url] !== undefined 
+        }
+
+        return Object.keys(dependencyTemplatesMap[url] || {}).find(s => s === jsUrl) !== undefined ||
+            Object.keys(dependencyJSsMap[url] || {}).find(s => s === jsUrl) !== undefined;
     }
 
     export const getInstance = (url: string): InstanceType<any> => {
@@ -253,8 +280,8 @@ namespace __Navimi_JSs {
                     notFoundServices.push(sn);
                 } else {
                     routesJSsServices[jsUrl].indexOf(sn) === -1 && routesJSsServices[jsUrl].push(sn);
-                    externalJSsMap[su] = {
-                        ...externalJSsMap[su] || {},
+                    dependencyJSsMap[su] = {
+                        ...dependencyJSsMap[su] || {},
                         [jsUrl]: true
                     };
                 }
@@ -271,7 +298,7 @@ namespace __Navimi_JSs {
 
     };
 
-    export const initJS = async (jsUrl: string, params: { [key: string]: any }): Promise<void> => {
+    export const initJS = async (jsUrl: string, params: KeyList<any>): Promise<void> => {
 
         const jsInstance = getInstance(jsUrl);
 

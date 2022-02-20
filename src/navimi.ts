@@ -11,8 +11,8 @@ class Navimi {
     private abortController: AbortController;
     private currentJS: string;
     private currentUrl: string;
-    private routesParams: { [url: string]: any };
-    private routesList: { [url: string]: Route };
+    private routesParams: KeyList<any>;
+    private routesList: KeyList<Route>;
     private options: Options;
     private win: any;
 
@@ -36,7 +36,7 @@ class Navimi {
     * @param {function(Error): void=} options.onError - A function to capture erros from routes
     * @returns {Object} - The Navimi instance 
     */
-    constructor(routes: { [url: string]: Route }, options?: Options) {
+    constructor(routes: KeyList<Route>, options?: Options) {
 
         this.callId = 0;
         this.abortController = new AbortController();
@@ -82,7 +82,7 @@ class Navimi {
         }
     }
 
-    private navigateTo = (url: string, params?: { [key: string]: any }): void => {
+    private navigateTo = (url: string, params?: KeyList<any>): void => {
         this.initRoute(url, params);
     };
 
@@ -96,20 +96,11 @@ class Navimi {
 
     private digestHot = (payload: hotPayload): void => {
 
-        const isSameFile = (path1: string, path2: string) => {
-            return path1 && path2 && path1.split("?").shift().toLowerCase() ==
-                path2.split("?").shift().toLowerCase();
-        }
-
-        const isCurrrentRouteAsset = (path: string, key: string) => {
-            for (const routeUrl in this.routesList) {
-                const routeItem = this.routesList[routeUrl];
-                //@ts-ignore
-                if (isSameFile(routeItem[key], path) && routeItem.jsUrl === this.currentJS) {
-                    return true;
-                }
-            }
-        }
+        const { isSameFile, isRouteAsset } = __Navimi_Helpers;
+        const { isDependent, reloadJs } = __Navimi_JSs;
+        const { globalCssUrl, globalTemplatesUrl } = this.options;
+        const currentJs = this.currentJS;
+        const currentParams = this.routesParams[currentJs];
 
         try {
             const filePath = payload.filePath.replace(/\\/g, "/");
@@ -117,65 +108,54 @@ class Navimi {
             const data = payload.data;
 
             if (fileType === "css") {
-                const isGlobalCss = isSameFile(this.options.globalCssUrl, filePath);
-                const isCurrentRouteCss = isCurrrentRouteAsset(filePath, "cssUrl");              
+                const isGlobalCss = isSameFile(globalCssUrl, filePath);
+                const isRouteCss = isRouteAsset(filePath, "cssUrl", this.routesList);
+                const isCurrentRouteCss = isRouteAsset(filePath, "cssUrl", this.routesList, currentJs);
 
-                __Navimi_CSSs.loadCss(filePath, data);
-                
-                if (isGlobalCss || isCurrentRouteCss) {
-                    __Navimi_Dom.insertCss(data, isGlobalCss ? "globalCss" : "routeCss");
-                    console.warn(`${filePath} updated.`);
-                }
-
-                return;
-            }
-
-            if (fileType === "html" || fileType === "htm") {
-                const isGlobalTemplate = isSameFile(this.options.globalTemplatesUrl, filePath);
-                const isDependentTemplate = __Navimi_JSs.isDependent(filePath, this.currentJS);
-                const isCurrentRouteTemplate = isCurrrentRouteAsset(filePath, "templatesUrl");
-
-                __Navimi_Templates.loadTemplate(data, filePath);
-
-                if (isGlobalTemplate || isDependentTemplate || isCurrentRouteTemplate) {
-                    this.initRoute(undefined, this.routesParams[this.currentJS], true);
-                    console.warn(`${filePath} updated.`);
-                }
-
-                return;
-            }
-
-            if (fileType === "js") {
-                const isDependentJS = __Navimi_JSs.isDependent(filePath, this.currentJS);
-                const isCurrentRouteJS = isCurrrentRouteAsset(filePath, "jsUrl");
-
-                //todo: fix this to accept files that are not the current route or related to it
-
-                if (isDependentJS || isCurrentRouteJS) {
-
-                    if (isDependentJS) {
-                        __Navimi_JSs.unloadJs(filePath, data, false, this.currentJS, () => {
-                            this.initRoute(undefined, this.routesParams[this.currentJS], true);
-                        });
+                if (isGlobalCss || isRouteCss || isCurrentRouteCss) {
+                    __Navimi_CSSs.loadCss(filePath, data);
+                    
+                    if (isGlobalCss || isCurrentRouteCss) {
+                        __Navimi_Dom.insertCss(data, isGlobalCss ? "globalCss" : "routeCss");
                     }
 
-                    if (isCurrentRouteJS) {
-                        __Navimi_JSs.unloadJs(this.currentJS, data, true, this.currentJS, () => {
-                            __Navimi_JSs.initJS(this.currentJS, this.routesParams[this.currentJS]);
-                        });
+                    console.warn(`${filePath} updated.`);
+                }
+
+            } else if (fileType === "html" || fileType === "htm") {
+                const isGlobalTemplate = isSameFile(globalTemplatesUrl, filePath);
+                const isDependentTemplate = isDependent(filePath);
+                const isCurrentRouteTemplate = isRouteAsset(filePath, "templatesUrl", this.routesList, currentJs);
+                const isCurrentRouteDependentTemplate = isDependent(filePath, currentJs);
+                
+                if (isGlobalTemplate || isDependentTemplate || isCurrentRouteTemplate) {
+
+                    __Navimi_Templates.loadTemplate(data, filePath);
+
+                    if (isGlobalTemplate || isCurrentRouteTemplate || isCurrentRouteDependentTemplate) {
+                        this.initRoute(undefined, currentParams, true);
                     }
                     
                     console.warn(`${filePath} updated.`);
                 }
 
-            }            
+            } else if (fileType === "js") {
+
+                //todo: must get the currentJs url from the routeList
+                reloadJs(filePath, data, this.routesList, this.routesParams, currentJs, () => {
+                    this.initRoute(undefined, currentParams, true);
+                });
+                
+            } else if (["gif", "jpg", "jpeg", "png", "svg"].includes(fileType)) {
+                this.initRoute(undefined, currentParams, true);
+            }
 
         } catch (ex) {
             console.error("Could not digest HOT payload: ", ex);
         }
     };
 
-    private initRoute = async (urlToGo?: string, navParams?: { [key: string]: any }, force?: boolean): Promise<void> => {
+    private initRoute = async (urlToGo?: string, navParams?: KeyList<any>, force?: boolean): Promise<void> => {
         const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());
 
         if (!force) {
@@ -265,7 +245,7 @@ class Navimi {
             __Navimi_CSSs.fetchCss(this.abortController, cssUrl).catch(_ => { }); //todo: should report error?
             __Navimi_Templates.fetchTemplate(this.abortController, [templatesUrl]).catch(_ => { }); //todo: should report error?
             try {
-                __Navimi_JSs.loadServices(this.abortController, jsUrl, dependsOn); //todo: should report error?
+                __Navimi_JSs.loadServices(this.abortController, jsUrl, dependsOn);
             } catch (ex) {
                 this.reportError(ex);
             }
@@ -283,9 +263,12 @@ class Navimi {
                     !__Navimi_Templates.isTemplateLoaded(this.options.globalTemplatesUrl))) {
 
                 await __Navimi_Helpers.timeout(10);
+
                 if (callId < this.callId) {
                     return;
                 }
+
+                //check if any load error occured
                 if ((cssUrl && __Navimi_Fetch.loadErrors[cssUrl]) ||
                     (templatesUrl && __Navimi_Fetch.loadErrors[templatesUrl]) ||
                     (this.options.globalCssUrl &&

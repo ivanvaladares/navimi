@@ -1,7 +1,7 @@
 namespace __Navimi_Templates {
 
-    let templatesCache: { [templateId: string]: string } = {};
-    let loadedTemplates: { [url: string]: boolean } = {};
+    let templatesCache: KeyList<string> = {};
+    let loadedTemplates: KeyList<boolean> = {};
 
     export const isTemplateLoaded = (url: string): boolean => {
         return loadedTemplates[url] !== undefined;
