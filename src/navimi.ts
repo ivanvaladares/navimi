@@ -1,10 +1,3 @@
-/*! 
- * Navimi v0.1.1
- * Developed by Ivan Valadares 
- * ivanvaladares@hotmail.com
- * https://github.com/ivanvaladares/navimi
- */
-
 class Navimi {
 
     private callId: number;

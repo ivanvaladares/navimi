@@ -7,7 +7,7 @@
     "outFile": "navimi.js",
     "rootDir": "src",
     "noImplicitAny": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "removeComments": false,
     "allowJs": false,
     "noEmitOnError": true,
