@@ -77,7 +77,8 @@ namespace __Navimi_Hot {
                     __Navimi_JSs.reloadJs(filePath, data, routesList, currentJs, () => {
                         initRoute();
                     });
-
+                    break;
+                    
                 case "gif":
                 case "jpg":
                 case "jpeg":
