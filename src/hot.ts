@@ -2,16 +2,13 @@ namespace __Navimi_Hot {
     let wsHotClient: WebSocket;
 
     export const openHotWs = (hotOption: number | boolean, callback: any): void => {
-        if (PROD) {
-            console.warn('HOT is disabled! Use the unminified version to enable it.');
-        }
-        if (DEV) {
+        if (INCLUDEHOT) {
             try {
-                if (!('WebSocket' in window)) { 
+                if (!('WebSocket' in window)) {
                     console.error("Websocket is not supported by your browser!");
                     return;
                 }
-    
+
                 console.warn("Connecting HOT...");
                 const port = hotOption === true ? 8080 : hotOption;
                 wsHotClient = null;
@@ -24,18 +21,18 @@ namespace __Navimi_Hot {
                             return;
                         }
                         if (json.filePath) {
-                            callback((globalCssUrl: string, 
-                                        globalTemplatesUrl: string, 
-                                        currentJs: string, 
-                                        routesList: KeyList<Route>,
-                                        initRoute: any) => {
-    
-                                digestHot(json, 
-                                            globalCssUrl, 
-                                            globalTemplatesUrl, 
-                                            currentJs, 
-                                            routesList,
-                                            initRoute);
+                            callback((globalCssUrl: string,
+                                globalTemplatesUrl: string,
+                                currentJs: string,
+                                routesList: KeyList<Route>,
+                                initRoute: any) => {
+
+                                digestHot(json,
+                                    globalCssUrl,
+                                    globalTemplatesUrl,
+                                    currentJs,
+                                    routesList,
+                                    initRoute);
                             });
                         }
                     } catch (ex) {
@@ -52,10 +49,10 @@ namespace __Navimi_Hot {
         }
     };
 
-    const digestHot = (payload: hotPayload, 
-        globalCssUrl: string, 
-        globalTemplatesUrl: string, 
-        currentJs: string, 
+    const digestHot = (payload: hotPayload,
+        globalCssUrl: string,
+        globalTemplatesUrl: string,
+        currentJs: string,
         routesList: KeyList<Route>,
         initRoute: any): void => {
 
@@ -70,7 +67,7 @@ namespace __Navimi_Hot {
                     break;
 
                 case "html":
-                case "htm":	
+                case "htm":
                     __Navimi_Templates.reloadTemplate(filePath, data, routesList, currentJs, globalTemplatesUrl, () => {
                         initRoute();
                     });
@@ -94,5 +91,5 @@ namespace __Navimi_Hot {
         }
 
     };
-    
+
 }

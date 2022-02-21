@@ -71,20 +71,25 @@ class Navimi {
         this.initRoute();
 
         if (this.options.hot) {
-            setTimeout(__Navimi_Hot.openHotWs, 1000, this.options.hot, 
-                (callback: (globalCssUrl: string, 
-                    globalTemplatesUrl: string, 
-                    currentJs: string, 
-                    routesList: KeyList<Route>,
-                    initRoute: any) => void) => {
+            if (EXCLUDEHOT) {
+                console.warn('HOT is disabled! Use the unminified version to enable it.');
+            }     
+            if (INCLUDEHOT) {       
+                setTimeout(__Navimi_Hot.openHotWs, 1000, this.options.hot, 
+                    (callback: (globalCssUrl: string, 
+                        globalTemplatesUrl: string, 
+                        currentJs: string, 
+                        routesList: KeyList<Route>,
+                        initRoute: any) => void) => {
 
-                    callback(this.options.globalCssUrl, 
-                        this.options.globalTemplatesUrl, 
-                        this.currentJS, 
-                        this.routesList, () => {
-                        this.initRoute(undefined, this.routesParams[this.currentJS], true);
+                        callback(this.options.globalCssUrl, 
+                            this.options.globalTemplatesUrl, 
+                            this.currentJS, 
+                            this.routesList, () => {
+                            this.initRoute(undefined, this.routesParams[this.currentJS], true);
+                        });
                     });
-                });
+            }
         }
     }
 

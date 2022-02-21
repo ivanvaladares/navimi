@@ -36,6 +36,7 @@ function TSScripts() {
     return gulp.src(paths.tsSource)
         .pipe(sourcemaps.init())
         .pipe(tsProject())
+        .pipe(header(banner, { pkg : pkg } ))
         .pipe(gulp.dest(paths.dirOutput));
 }
 
@@ -44,9 +45,11 @@ function minify() {
         .pipe(uglify({
             compress: {
                 global_defs: {
-                    DEV: false,
-                    PROD: true
-                }
+                    INCLUDEHOT: false,
+                    EXCLUDEHOT: true
+                },
+                unused: true, 
+                dead_code: true
             }
         }))
         .pipe(header(banner, { pkg : pkg } ))
