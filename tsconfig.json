@@ -3,7 +3,7 @@
     "target": "es2017",
     "module": "none",
     "moduleResolution": "classic",
-    "outDir": "dist",
+    "outDir": "./dist",
     "outFile": "navimi.js",
     "rootDir": "src",
     "noImplicitAny": true,
@@ -20,8 +20,5 @@
   ],
   "include": [
     "src"
-  ],
-  "paths": {
-    "navimi": ["./src/"],
-  }
+  ]
 }

@@ -49,5 +49,5 @@ new Navimi({
                 next();
             }
         ],
-        hot: 5000
+        hot: 5000,
     });

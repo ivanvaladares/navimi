@@ -2,7 +2,6 @@
 const clean = require('gulp-clean');
 const gulp = require('gulp');
 const ts = require('gulp-typescript');
-//const minify = require('gulp-minify');
 const uglify = require('gulp-uglify');
 const rename = require("gulp-rename");
 const header = require('gulp-header');
@@ -15,6 +14,7 @@ const paths = {
     dirOutput: './dist',
     examples: './examples/*/scripts',
     test: './cypress/site/scripts',
+    hotPath: './examples/06.hot/scripts',
 };
 
 const banner = ['/**',
@@ -57,18 +57,25 @@ function minify() {
         .pipe(gulp.dest(paths.dirOutput));
 }
 
-function copyMinToExamples(done) {
+function copyJsToExamplesAndTest(done) {
     const subDirectories = glob.sync(paths.examples);
-    subDirectories.forEach(function (subDirectory) {
-        gulp.src(paths.dirOutput + "/navimi-min.js")
-          .pipe(gulp.dest(subDirectory));
-    });
+    
+    subDirectories
+        .filter(path => path !== paths.hotPath)
+        .forEach(path => {
+            gulp.src(paths.dirOutput + "/navimi-min.js")
+            .pipe(gulp.dest(path));
+        });
 
     gulp.src(paths.dirOutput + "/navimi-min.js")
         .pipe(gulp.dest(paths.test));
 
+
+    gulp.src(paths.dirOutput + "/navimi.js")
+        .pipe(gulp.dest(paths.hotPath));        
+
     done();
 }
 
-exports.build = gulp.series(cleanDist, TSScripts, minify, copyMinToExamples);
-exports.default = gulp.series(cleanDist, TSScripts, minify, copyMinToExamples);
+exports.build = gulp.series(cleanDist, TSScripts, minify, copyJsToExamplesAndTest);
+exports.default = gulp.series(cleanDist, TSScripts, minify, copyJsToExamplesAndTest);

@@ -1,9 +1,17 @@
+/**
+ * Navimi v0.1.1 
+ * Developed by Ivan Valadares 
+ * ivanvaladares@hotmail.com 
+ * https://github.com/ivanvaladares/navimi 
+ */ 
 declare namespace __Navimi_CSSs {
     const isCssLoaded: (url: string) => boolean;
     const getCss: (url: string) => string;
     const fetchCss: (abortController: AbortController, url: string, autoInsert?: boolean) => Promise<void | void[]>;
     const reloadCss: (filePath: string, cssCode: string, routeList: KeyList<Route>, currentJS: string, globalCssUrl: string) => void;
 }
+declare const INCLUDEHOT = true;
+declare const EXCLUDEHOT = false;
 declare namespace __Navimi_Dom {
     const setTitle: (title: string) => void;
     const setNavimiLinks: (navigateTo: (url: string, params?: KeyList<any>) => void) => void;
@@ -15,6 +23,7 @@ declare namespace __Navimi_Fetch {
     let loadErrors: {
         [key: string]: string;
     };
+    const init: (options: Options) => void;
     const fetchFile: (url: string, options?: RequestInit) => Promise<string>;
 }
 declare namespace __Navimi_Helpers {
@@ -73,6 +82,7 @@ interface Options {
     };
     middlewares?: Middleware[];
     hot?: number | boolean;
+    bustCache?: string;
     onAfterRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => void;
     onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => boolean | Promise<boolean>;
     onError?: (error: Error) => void;
@@ -133,12 +143,6 @@ declare namespace __Navimi_Middleware {
     const addMiddlewares: (middlewares: Middleware[]) => void;
     const executeMiddlewares: (abortController: AbortController, context: Context, callback: (url: string, params: KeyList<any>) => void) => Promise<void>;
 }
-/*!
- * Navimi v0.1.1
- * Developed by Ivan Valadares
- * ivanvaladares@hotmail.com
- * https://github.com/ivanvaladares/navimi
- */
 declare class Navimi {
     private callId;
     private abortController;
@@ -163,6 +167,7 @@ declare class Navimi {
     * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
     * @param {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
     * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
+    * @param {string=} options.bustCache - Some string to add to the url to bust the cache. eg: /somepath/somefile.js?v=[string will be added to the url]
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
     * @param {function(Error): void=} options.onError - A function to capture erros from routes
