@@ -123,7 +123,7 @@ namespace __Navimi_JSs {
 
             let services: { [serviceName: string]: InstanceType<any> };
 
-            if (routesJSsServices[jsUrl].length > 0) {
+            if (routesJSsServices[jsUrl] && routesJSsServices[jsUrl].length > 0) {
                 while (true) {
                     if (routesJSsServices[jsUrl].map((sn: string) =>
                         externalJSs[options.services[sn]] === undefined).indexOf(true) === -1) {
