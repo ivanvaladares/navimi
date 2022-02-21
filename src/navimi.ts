@@ -24,6 +24,7 @@ class Navimi {
     * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
     * @param {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
     * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
+    * @param {string=} options.bustCache - Some string to add to the url to bust the cache. eg: /somepath/somefile.js?v=[string will be added to the url] 
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
     * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
     * @param {function(Error): void=} options.onError - A function to capture erros from routes
@@ -52,6 +53,8 @@ class Navimi {
             navigateTo: this.navigateTo.bind(this),
             options: this.options,
         });
+
+        __Navimi_Fetch.init(this.options);
 
         //add middlewares
         __Navimi_Middleware.addMiddlewares(this.options.middlewares);

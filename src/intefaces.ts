@@ -40,6 +40,7 @@ interface Options {
     services?: { [serviceName: string]: string };
     middlewares?: Middleware[];
     hot?: number | boolean;
+    bustCache?: string;
     onAfterRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => void;
     onBeforeRoute?: (context: Context, navigateTo: (url: string, params?: KeyList<any>) => void) => boolean | Promise<boolean>;
     onError?: (error: Error) => void;

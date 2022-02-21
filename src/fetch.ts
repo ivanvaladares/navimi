@@ -1,13 +1,21 @@
 namespace __Navimi_Fetch {
 
+    let bustCache: string;
+
     export let loadErrors: { [key: string]: string } = {};
+    
+    export const init = (options: Options): void => {
+        bustCache = options.bustCache;
+    };
 
     export const fetchFile = (url: string, options?: RequestInit): Promise<string> => {
         return new Promise((resolve, reject) => {
             delete loadErrors[url];
 
+            const requestUrl = url + (bustCache ? '?v=' + bustCache : '');
+
             //todo: add retry with options
-            fetch(url, options)
+            fetch(requestUrl, options)
                 .then(async (data) => {
                     if (!data || !data.ok) {
                         const error = `Could not load the file! - ${url}`;
