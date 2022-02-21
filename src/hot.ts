@@ -2,7 +2,7 @@ namespace __Navimi_Hot {
 
     let wsHotClient: WebSocket;
 
-    export const openHotWs = (hotOption: number | boolean, digestHot: (json: hotPayload) => void): void => {
+    export const openHotWs = (hotOption: number | boolean, callback: any): void => {
         try {
             if (!('WebSocket' in window)) { 
                 console.error("Websocket is not supported by your browser!");
@@ -21,7 +21,19 @@ namespace __Navimi_Hot {
                         return;
                     }
                     if (json.filePath) {
-                        digestHot(json);
+                        callback((globalCssUrl: string, 
+                                    globalTemplatesUrl: string, 
+                                    currentJs: string, 
+                                    routesList: KeyList<Route>,
+                                    initRoute: any) => {
+
+                            digestHot(json, 
+                                        globalCssUrl, 
+                                        globalTemplatesUrl, 
+                                        currentJs, 
+                                        routesList,
+                                        initRoute);
+                        });
                     }
                 } catch (ex) {
                     console.error("Could not parse HOT message:", ex);
@@ -34,6 +46,49 @@ namespace __Navimi_Hot {
         } catch (ex) {
             console.error(ex);
         }
+    };
+
+    const digestHot = (payload: hotPayload, 
+        globalCssUrl: string, 
+        globalTemplatesUrl: string, 
+        currentJs: string, 
+        routesList: KeyList<Route>,
+        initRoute: any): void => {
+
+        try {
+            const filePath = payload.filePath.replace(/\\/g, "/");
+            const fileType = filePath.split(".").pop();
+            const data = payload.data;
+
+            switch (fileType) {
+                case "css":
+                    __Navimi_CSSs.reloadCss(filePath, data, routesList, currentJs, globalCssUrl);
+                    break;
+
+                case "html":
+                case "htm":	
+                    __Navimi_Templates.reloadTemplate(filePath, data, routesList, currentJs, globalTemplatesUrl, () => {
+                        initRoute();
+                    });
+                    break;
+
+                case "js":
+                    __Navimi_JSs.reloadJs(filePath, data, routesList, currentJs, () => {
+                        initRoute();
+                    });
+
+                case "gif":
+                case "jpg":
+                case "jpeg":
+                case "png":
+                case "svg":
+                    initRoute();
+                    break;
+            }
+        } catch (ex) {
+            console.error("Could not digest HOT payload: ", ex);
+        }
+
     };
     
 }

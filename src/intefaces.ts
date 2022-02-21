@@ -51,7 +51,7 @@ interface hotPayload {
     message?: string;
 }
 
-declare class NavimiRoute {
+declare class NavimiRoute { //todo: fix this documentation
     /**
     * @typedef {Object} Functions - A collection of functions
     * @property {string} functions.title - The title that will be displayed on the browser

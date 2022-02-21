@@ -1,6 +1,6 @@
 namespace __Navimi_Middleware {
    
-    let middlewareStack: Middleware[] = [];
+    const middlewareStack: Middleware[] = [];
 
     export const addMiddlewares = (middlewares: Middleware[]): void => {
         if (Array.isArray(middlewares)) {

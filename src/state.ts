@@ -1,9 +1,9 @@
 namespace __Navimi_State {
 
-    let state: KeyList<any> = {};
+    const state: KeyList<any> = {};
+    const stateWatchers: KeyList<any> = {};
     let prevState: KeyList<any> = {};
     let stateDiff: { [key: string]: boolean } = {};
-    let stateWatchers: KeyList<any> = {};
 
     const getStateDiff = (keys: string[]): void => {
         keys.sort((a, b) => b.length - a.length).map(key => {

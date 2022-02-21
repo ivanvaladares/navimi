@@ -3,30 +3,16 @@ namespace __Navimi_JSs {
     const navimiLoaderNS: string = "__navimiLoader";
     const callBackNS: string = "_jsLoaderCallback";
     const promiseNS: string = "_promise_";
-
-    const isSameFile = __Navimi_Helpers.isSameFile;
+    
+    const loadedJSs: KeyList<boolean | string> = {};
+    const externalJSs: KeyList<InstanceType<any>> = {};
+    const routesJSs: KeyList<InstanceType<any>> = {};
+    const dependencyJSsMap: KeyList<KeyList<boolean>> = {};
+    const routesJSsServices: KeyList<string[]> = {};
     
     let navimiLoader: any;
-    let loadedJSs: KeyList<boolean | string> = {};
-    let externalJSs: KeyList<InstanceType<any>> = {};
-    let routesJSs: KeyList<InstanceType<any>> = {};
-    let dependencyJSsMap: KeyList<KeyList<boolean>> = {};
-    let dependencyTemplatesMap: KeyList<KeyList<boolean>> = {};
-    let routesJSsServices: KeyList<string[]> = {};
-
     let navigateTo: (url: string, params?: KeyList<any>) => void;
     let options: Options;
-
-    export const init = (config: any): void => {
-        navigateTo = config.navigateTo;
-        options = config.options;
-        
-        // @ts-ignore
-        navimiLoader = window[navimiLoaderNS] = {
-            [callBackNS]: instantiateJS, // initialize JS loader namespace
-        };
-
-    };
 
     const awaitJS = (jsUrl: string) => {
         return new Promise<InstanceType<any>>((resolve, reject) => {
@@ -60,8 +46,6 @@ namespace __Navimi_JSs {
                     });
 
                 }
-
-                loadedJSs[url] = external ? true : jsCode;
             
                 insertJS(url, jsCode, external);
 
@@ -75,6 +59,15 @@ namespace __Navimi_JSs {
                 reject(ex);
             }
         });
+    };
+
+    const insertJS = (url: string, jsCode: string, external?: boolean): void => {
+        let jsHtmlBody = external !== undefined ?
+            `(function(){window.${navimiLoaderNS}.${callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
+            })())}())` : jsCode;
+
+        loadedJSs[url] = external ? true : jsCode;            
+        __Navimi_Dom.insertJS(jsHtmlBody, url);
     };
 
     const instantiateJS = async (
@@ -118,13 +111,7 @@ namespace __Navimi_JSs {
                 },
                 fetchTemplate: (url: string) => {
                     const urls: string[] = Array.isArray(url) ? url : [url];
-                    urls.map((u: string) => {
-                        dependencyTemplatesMap[u] = {
-                            ...dependencyTemplatesMap[u] || {},
-                            [jsUrl]: true
-                        };
-                    });
-                    return __Navimi_Templates.fetchTemplate(undefined, urls);
+                    return __Navimi_Templates.fetchTemplate(undefined, urls, jsUrl);
                 },
                 setState: __Navimi_State.setState,
                 getState: __Navimi_State.getState,
@@ -169,64 +156,23 @@ namespace __Navimi_JSs {
         }
 
     };
+
+    export const init = (config: any): void => {
+        navigateTo = config.navigateTo;
+        options = config.options;
+        
+        // @ts-ignore
+        navimiLoader = window[navimiLoaderNS] = {
+            [callBackNS]: instantiateJS, // initialize JS loader namespace
+        };
+    };
     
     export const isJsLoaded = (url: string): boolean => {
         return loadedJSs[url] !== undefined;
     };
 
-    export const reloadJs = (filePath: string, 
-                            jsCode: string, 
-                            routeList: KeyList<Route>, 
-                            routesParams: KeyList<any>, 
-                            currentJS: string, 
-                            callback: any): void => 
-    {
-
-        const isDependentJS = isDependent(filePath);
-        const isRouteJs = __Navimi_Helpers.isRouteAsset(filePath, "jsUrl", routeList);
-        const isCurrentRouteJs = __Navimi_Helpers.isRouteAsset(filePath, "jsUrl", routeList, currentJS);
-
-        if (isDependentJS || isRouteJs) {
-
-            isRouteJs && delete routesJSs[filePath];
-            
-            if (isDependentJS) {
-                delete externalJSs[filePath];
-                delete routesJSs[currentJS];
-            }
-
-            navimiLoader[promiseNS + filePath] = () => {
-                isDependentJS && callback();
-                isCurrentRouteJs && initJS(currentJS, routesParams[currentJS]);
-            };
-
-            insertJS(filePath, jsCode, isDependentJS);
-
-            console.warn(`${filePath} updated.`);
-        }
-    };
-
-    export const isDependent = (url: string, jsUrl?: string): boolean => {
-        //todo: sanitize url in and here for externalTemplatesMap and externalJSsMap
-
-        if (!jsUrl) {
-            return dependencyTemplatesMap[url] !== undefined || dependencyJSsMap[url] !== undefined 
-        }
-
-        return Object.keys(dependencyTemplatesMap[url] || {}).find(s => s === jsUrl) !== undefined ||
-            Object.keys(dependencyJSsMap[url] || {}).find(s => s === jsUrl) !== undefined;
-    }
-
     export const getInstance = (url: string): InstanceType<any> => {
         return routesJSs[url];
-    };
-
-    export const insertJS = (url: string, jsCode: string, external?: boolean): void => {
-        let jsHtmlBody = external !== undefined ?
-            `(function(){window.${navimiLoaderNS}.${callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
-            })())}())` : jsCode;
-
-        __Navimi_Dom.insertJS(jsHtmlBody, url);
     };
 
     export const fetchJS = (abortController: AbortController, urls: string[], external?: boolean): Promise<InstanceType<any> | InstanceType<any>[]> => {
@@ -305,6 +251,60 @@ namespace __Navimi_JSs {
         jsInstance && jsInstance.init &&
             await jsInstance.init(params);
 
+    };
+
+    export const reloadJs = (filePath: string, 
+                            jsCode: string, 
+                            routeList: KeyList<Route>, 
+                            currentJS: string, 
+                            callback: any): void => 
+    {
+
+        const isSameFile = __Navimi_Helpers.isSameFile;
+
+        for (const routeUrl in routeList) {
+            const { jsUrl } = routeList[routeUrl];
+
+            if (isSameFile(jsUrl, filePath)) {
+
+                console.log(`${filePath} updated.`);
+
+                delete routesJSs[jsUrl];
+
+                navimiLoader[promiseNS + jsUrl] = () => {
+                    if (jsUrl === currentJS) {
+                        //reload route if current JS is updated
+                        callback();
+                    }
+                };
+
+                insertJS(jsUrl, jsCode, false);
+
+                return;
+            }
+        }
+
+        for (const jsUrl in dependencyJSsMap) {
+            if (isSameFile(jsUrl, filePath)) {
+                console.log(`${filePath} updated.`);
+
+                delete externalJSs[jsUrl];
+
+                navimiLoader[promiseNS + jsUrl] = () => {
+                    Object.keys(dependencyJSsMap[jsUrl]).map(s => {
+                        //clear all dependent JSs that depends of this JS
+                        delete routesJSs[s];
+
+                        if (s === currentJS) {
+                            //reload route if current JS is updated
+                            callback();
+                        }
+                    });
+                };
+
+                insertJS(filePath, jsCode, true);
+            }
+        }
     };
 
 }

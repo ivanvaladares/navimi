@@ -23,7 +23,7 @@ namespace __Navimi_Dom {
         }
         const style: HTMLStyleElement = document.createElement("style");
         style.innerHTML = cssCode;
-        type && style.setAttribute(type, "");
+        type && style.setAttribute("cssId", type);
         const head = document.getElementsByTagName("head")[0];
         const target = (head || document.body);
         prepend ? target.prepend(style) : target.appendChild(style);

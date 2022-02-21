@@ -56,23 +56,6 @@ namespace __Navimi_Helpers {
             path2.split("?").shift().toLowerCase();
     }
 
-    export const isRouteAsset = (path: string, key: string, routesList: KeyList<Route>, currentJS?: string) => {
-        for (const routeUrl in routesList) {
-            const routeItem = routesList[routeUrl];
-            if (currentJS) {
-                //@ts-ignore
-                if (isSameFile(routeItem[key], path) && routeItem.jsUrl === currentJS) {
-                    return true;
-                }
-            } else {
-                //@ts-ignore
-                if (isSameFile(routeItem[key], path)) {
-                    return true;
-                }
-            }
-        }
-    }
-
     export const timeout = (ms: number): Promise<void> => {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
