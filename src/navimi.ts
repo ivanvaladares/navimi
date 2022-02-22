@@ -9,27 +9,6 @@ class Navimi {
     private options: Options;
     private win: any;
 
-    /**
-    * @typedef {Object} Route - An route definition
-    * @property {string} routes.title - The title that will be displayed on the browser
-    * @property {string} routes.jsUrl - The path to the route script
-    * @property {string=} routes.cssUrl - The path to the route css
-    * @property {string=} routes.templatesUrl - The path to the templates file of this route 
-    * @property {string[]=} routes.dependsOn - An array of services names for this route
-    * @property {Object.<string, *>=} routes.metadata - Any literal you need to pass down to this route and middlewares 
-    * @param {Object.<string, Route>} routes - A collection of Route
-    * @param {Object} [options] - Navimi options 
-    * @param {string=} options.globalCssUrl - The path to the global css
-    * @param {string=} options.globalTemplatesUrl - The path to the global templates file
-    * @param {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
-    * @param {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
-    * @param {(number | boolean)=} options.hot - The port to the websocket at localhost
-    * @param {string=} options.bustCache - Some string to add to the url to bust the cache. eg: /somepath/somefile.js?v=[string will be added to the url] 
-    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
-    * @param {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
-    * @param {function(Error): void=} options.onError - A function to capture erros from routes
-    * @returns {Object} - The Navimi instance 
-    */
     constructor(routes: KeyList<Route>, options?: Options) {
 
         this.callId = 0;

@@ -5,7 +5,6 @@ const ts = require('gulp-typescript');
 const uglify = require('gulp-uglify');
 const rename = require("gulp-rename");
 const header = require('gulp-header');
-const sourcemaps = require('gulp-sourcemaps');
 const pkg = require('./package.json');
 
 const paths = {
@@ -13,7 +12,7 @@ const paths = {
     jsSource: './dist/**/*.js',
     dirOutput: './dist',
     examples: './examples/*/scripts',
-    test: './cypress/site/scripts',
+    testPath: './cypress/site/scripts',
     hotPath: './examples/06.hot/scripts',
 };
 
@@ -28,13 +27,14 @@ const banner = ['/**',
 function cleanDist() {
     return gulp.src(paths.dirOutput, 
             {read: false, force: true})
+            .on('error', function () { this.emit('end')})
             .pipe(clean());
 }
 
 function TSScripts() {
-    var tsProject = ts.createProject('./tsconfig.json');
+    let tsProject = ts.createProject('./tsconfig.json');
+    tsProject.options.outFile = './navimi.js';
     return gulp.src(paths.tsSource)
-        .pipe(sourcemaps.init())
         .pipe(tsProject())
         .pipe(header(banner, { pkg : pkg } ))
         .pipe(gulp.dest(paths.dirOutput));
@@ -59,7 +59,7 @@ function minify() {
 
 function copyJsToExamplesAndTest(done) {
     const subDirectories = glob.sync(paths.examples);
-    
+
     subDirectories
         .filter(path => path !== paths.hotPath)
         .forEach(path => {
@@ -68,7 +68,7 @@ function copyJsToExamplesAndTest(done) {
         });
 
     gulp.src(paths.dirOutput + "/navimi-min.js")
-        .pipe(gulp.dest(paths.test));
+        .pipe(gulp.dest(paths.testPath));
 
 
     gulp.src(paths.dirOutput + "/navimi.js")

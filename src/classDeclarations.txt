@@ -1,0 +1,68 @@
+/**
+ * @typedef {Object} Route - An route definition
+ * @property {string} routes.title - The title that will be displayed on the browser
+ * @property {string} routes.jsUrl - The path to the route script
+ * @property {string=} routes.cssUrl - The path to the route css
+ * @property {string=} routes.templatesUrl - The path to the templates file of this route 
+ * @property {string[]=} routes.dependsOn - An array of services names for this route
+ * @property {Object.<string, *>=} routes.metadata - Any literal you need to pass down to this route and middlewares 
+ */
+
+/**
+ * @typedef {Object} Options - Navimi options 
+ * @property {string=} options.globalCssUrl - The path to the global css
+ * @property {string=} options.globalTemplatesUrl - The path to the global templates file
+ * @property {Object.<string, string>=} options.services - A collection of all services {[service name]: script path}
+ * @property {((context: Object.<string, *>, next:(url: string, params?: Object.<string, *>) => void) => void)[]=} options.middlewares - An array of functions to capture the request
+ * @property {(number | boolean)=} options.hot - The port to the websocket at localhost
+ * @property {string=} options.bustCache - Some string to add to the url to bust the cache. eg: /somepath/somefile.js?v=[string will be added to the url] 
+ * @property {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onAfterRoute - A function invoked after the routing is done
+ * @property {((context: Object.<string, *>, navigateTo: (url: string, params?: Object.<string, *>) => void)=} options.onBeforeRoute - A function invoked before middlewares and routing
+ * @property {function(Error): void=} options.onError - A function to capture erros from routes
+ */
+
+declare class Navimi {
+    /**
+    * @param {Object.<string, Route>} routes - Function provided by Navimi \
+    * @param {Options} options - Navimi options  \
+    * @returns {Navimi}
+    */
+    constructor(routes: KeyList<Route>, options?: Options);
+}
+
+declare class NavimiRoute {
+
+    /**
+     * Invoked after options.onBeforeRoute and options.middlewares \
+     * Invoked before options.onAfterRoute \
+     * @param functions - Function provided by Navimi \
+     * @param services - Your own injected services \
+     * @returns {NavimiRoute}
+     */
+    constructor(functions: RouterFunctions, services: KeyList<any>);
+
+    /**
+     * Invoked after options.onBeforeRoute and options.middlewares \
+     * Invoked before options.onAfterRoute \
+     * @param {Context} context - The route context ({ url, Route, params }) \
+     */
+    init: (context: Context) => Promise<void> | void;
+
+    /**
+     * 
+     * (Optional) \
+     * Return false if you wish to maintain the user on the current page \
+     * Invoked after options.onBeforeRoute and options.middlewares \
+     * Invoked before options.onAfterRoute \
+     * @param context - The route context ({ url, Route, params })
+     */
+    beforeLeave?: (context: Context) => void;
+
+    /**
+     * (Optional) \ 
+     * Destroy timers and event handlers if you need \
+     * Invoked after options.onBeforeRoute and options.middlewares \
+     * Invoked before options.onAfterRoute \
+     */
+    destroy?: () => void;
+}

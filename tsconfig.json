@@ -3,15 +3,13 @@
     "target": "es2017",
     "module": "none",
     "moduleResolution": "classic",
-    "outDir": "./dist",
-    "outFile": "navimi.js",
-    "rootDir": "src",
+    "outFile": "./dist/navimi.js",
     "noImplicitAny": true,
     "sourceMap": false,
     "removeComments": false,
     "allowJs": false,
     "noEmitOnError": true,
-    "composite": true,
+    "declaration": false
   },  
   "lib": ["dom", "es2015", "es2016"],
   "exclude": [

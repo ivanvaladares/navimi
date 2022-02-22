@@ -1,4 +1,11 @@
 namespace __Navimi_Hot {
+
+    interface hotPayload {
+        filePath?: string;
+        data?: string;
+        message?: string;
+    }
+    
     let wsHotClient: WebSocket;
 
     export const openHotWs = (hotOption: number | boolean, callback: any): void => {
