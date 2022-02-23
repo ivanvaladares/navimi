@@ -137,7 +137,7 @@ about.html
 
 | Name                | Type                                                                                                                         |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------|
-| Next                | () => Promise<void> \| void;                                                                                                 |
+| Next                | (url?: string, params?: { [key: string]: any }) => Promise<void> \| void;                                                    |
 | Context             | { url: string, routeItem: Route, params: { [key: string]: any } };                                                           |
 | Middleware          | (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void, next: Next) => Promise<void> \| void; |
 
