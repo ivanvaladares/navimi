@@ -1,39 +1,42 @@
-namespace __Navimi_Middleware {
-   
-    const middlewareStack: Middleware[] = [];
+namespace __Navimi {
 
-    export const addMiddlewares = (middlewares: Middleware[]): void => {
-        if (Array.isArray(middlewares)) {
-           middlewareStack.push(...middlewares.filter(mdw => mdw !== undefined));
-        }
-    };
+    export class Navimi_Middleware {
 
-    export const executeMiddlewares = async (abortController: AbortController, context: Context, callback: (url: string, params: KeyList<any>) => void): Promise<void> => {
-        let prevIndex = -1;
-        const runner = async (resolve: any, reject: any, index: number = 0): Promise<void> => {
-            if (index === prevIndex) {
-                console.warn('next() called multiple times');
+        private middlewareStack: Middleware[] = [];
+
+        public addMiddlewares = (middlewares: Middleware[]): void => {
+            if (Array.isArray(middlewares)) {
+                this.middlewareStack.push(...middlewares.filter(mdw => mdw !== undefined));
             }
-            prevIndex = index;
-            const middleware = middlewareStack[index];
-            if (middleware) {
-                await middleware(context, async (url: string, params?: KeyList<any>) => {
-                    if (abortController.signal.aborted) {
-                        reject();
-                    } else {
-                        if (!url) {
-                            await runner(resolve, reject, index + 1);
-                        } else {
+        };
+
+        public executeMiddlewares = async (abortController: AbortController, context: Context, callback: (url: string, params: KeyList<any>) => void): Promise<void> => {
+            let prevIndex = -1;
+            const runner = async (resolve: any, reject: any, index: number = 0): Promise<void> => {
+                if (index === prevIndex) {
+                    console.warn('next() called multiple times');
+                }
+                prevIndex = index;
+                const middleware = this.middlewareStack[index];
+                if (middleware) {
+                    await middleware(context, async (url: string, params?: KeyList<any>) => {
+                        if (abortController.signal.aborted) {
                             reject();
-                            callback(url, params);
+                        } else {
+                            if (!url) {
+                                await runner(resolve, reject, index + 1);
+                            } else {
+                                reject();
+                                callback(url, params);
+                            }
                         }
-                    }
-                });
-            } else {
-                resolve();
+                    });
+                } else {
+                    resolve();
+                }
             }
-        }
-        await new Promise(await runner).catch(_ => { });
-    };
+            await new Promise(await runner).catch(_ => { });
+        };
 
+    }
 }

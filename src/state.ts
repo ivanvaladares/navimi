@@ -1,116 +1,120 @@
-namespace __Navimi_State {
+namespace __Navimi {
 
-    const state: KeyList<any> = {};
-    const stateWatchers: KeyList<any> = {};
-    let prevState: KeyList<any> = {};
-    let stateDiff: { [key: string]: boolean } = {};
+    export class Navimi_State {
 
-    const getStateDiff = (keys: string[]): void => {
-        keys.sort((a, b) => b.length - a.length).map(key => {
-            if (!stateDiff[key]) {
-                const sOld = __Navimi_Helpers.stringify(getState(key, prevState) || "");
-                const sNew = __Navimi_Helpers.stringify(getState(key, state) || "");
-                if (sOld !== sNew) {
-                    stateDiff[key] = true;
-                    //set upper keys as changed so we don't test them again
-                    keys.map(upperKey => {
-                        if (key !== upperKey && key.indexOf(upperKey) === 0) {
-                            stateDiff[upperKey] = true;
-                        }
-                    });
+        private state: KeyList<any> = {};
+        private stateWatchers: KeyList<any> = {};
+        private prevState: KeyList<any> = {};
+        private stateDiff: { [key: string]: boolean } = {};
+
+        private getStateDiff = (keys: string[]): void => {
+            keys.sort((a, b) => b.length - a.length).map(key => {
+                if (!this.stateDiff[key]) {
+                    const sOld = __Navimi_Helpers.stringify(this.getState(key, this.prevState) || "");
+                    const sNew = __Navimi_Helpers.stringify(this.getState(key, this.state) || "");
+                    if (sOld !== sNew) {
+                        this.stateDiff[key] = true;
+                        //set upper keys as changed so we don't test them again
+                        keys.map(upperKey => {
+                            if (key !== upperKey && key.indexOf(upperKey) === 0) {
+                                this.stateDiff[upperKey] = true;
+                            }
+                        });
+                    }
                 }
-            }
-        });
-    };
-
-    const invokeStateWatchers = __Navimi_Helpers.debounce((): void => {
-        const keys = Object.keys(stateWatchers);
-        const diff = Object.keys(stateDiff);
-        stateDiff = {};
-        keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
-            Object.keys(stateWatchers[key]).map((cs: string) => {
-                const sNew = getState(key);
-                stateWatchers[key][cs] &&
-                    stateWatchers[key][cs].map((cb: (state: any) => void) => cb && cb(sNew));
             });
-        });
-    }, 10);
-
-    const mergeState = (state: any, newState: any): void => {
-        if (newState instanceof Error) {
-            newState = { 
-                ...newState,
-                message: newState.message,
-                stack: newState.stack,
-            };
-        }
-        const isObject = (item: any): boolean =>
-            item && typeof item === 'object' && !Array.isArray(item) && item !== null;
-        if (isObject(state) && isObject(newState)) {
-            for (const key in newState) {
-                if (isObject(newState[key])) {
-                    !state[key] && Object.assign(state, { [key]: {} });
-                    mergeState(state[key], newState[key]);
-                } else {
-                    Object.assign(state, { [key]: newState[key] });
-                }
-            }
-        }
-    };
-
-    export const setState = (newState: KeyList<any>): void => {
-        const observedKeys = Object.keys(stateWatchers);
-        if (observedKeys.length > 0) {
-            prevState = __Navimi_Helpers.cloneObject(state);
-        }
-        mergeState(state, newState);
-        if (observedKeys.length > 0) {
-            getStateDiff(observedKeys);
-            invokeStateWatchers();
-        }
-    };
-
-    export const getState = (key?: string, _state?: any): KeyList<any> => {
-        const st = key ?
-            key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || state) :
-            _state || state;
-        return st ? Object.freeze(__Navimi_Helpers.cloneObject(st)) : undefined;
-    };
-
-    export const watchState = (jsUrl: string, key: string, callback: (state: any) => void): void => {
-        if (!key || !callback) {
-            return;
-        }
-        if (!stateWatchers[key]) {
-            stateWatchers[key] = {};
-        }
-        stateWatchers[key] = {
-            ...stateWatchers[key],
-            [jsUrl]: [
-                ...(stateWatchers[key][jsUrl] || []),
-                callback
-            ]
         };
-    };
 
-    export const unwatchState = (jsUrl: string, key?: string | string[]): void => {
-        const remove = (key: string): void => {
-            stateWatchers[key][jsUrl] = undefined;
-            delete stateWatchers[key][jsUrl];
-            Object.keys(stateWatchers[key]).length === 0 &&
-                delete stateWatchers[key];
-        }
-
-        if (key) {
-            const keys = Array.isArray(key) ? key : [key];
-            keys.map(id => {
-                !stateWatchers[id] && (stateWatchers[id] = {});
-                remove(id);
+        private invokeStateWatchers = __Navimi_Helpers.debounce((): void => {
+            const keys = Object.keys(this.stateWatchers);
+            const diff = Object.keys(this.stateDiff);
+            this.stateDiff = {};
+            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+                Object.keys(this.stateWatchers[key]).map((cs: string) => {
+                    const sNew = this.getState(key);
+                    this.stateWatchers[key][cs] &&
+                    this.stateWatchers[key][cs].map((cb: (state: any) => void) => cb && cb(sNew));
+                });
             });
-            return;
-        }
+        }, 10);
 
-        Object.keys(stateWatchers).map(remove);
-    };
+        private mergeState = (state: any, newState: any): void => {
+            if (newState instanceof Error) {
+                newState = {
+                    ...newState,
+                    message: newState.message,
+                    stack: newState.stack,
+                };
+            }
+            const isObject = (item: any): boolean =>
+                item && typeof item === 'object' && !Array.isArray(item) && item !== null;
+            if (isObject(state) && isObject(newState)) {
+                for (const key in newState) {
+                    if (isObject(newState[key])) {
+                        !state[key] && Object.assign(state, { [key]: {} });
+                        this.mergeState(state[key], newState[key]);
+                    } else {
+                        Object.assign(state, { [key]: newState[key] });
+                    }
+                }
+            }
+        };
+
+        public setState = (newState: KeyList<any>): void => {
+            const observedKeys = Object.keys(this.stateWatchers);
+            if (observedKeys.length > 0) {
+                this.prevState = __Navimi_Helpers.cloneObject(this.state);
+            }
+            this.mergeState(this.state, newState);
+            if (observedKeys.length > 0) {
+                this.getStateDiff(observedKeys);
+                this.invokeStateWatchers();
+            }
+        };
+
+        public getState = (key?: string, _state?: any): KeyList<any> => {
+            const st = key ?
+                key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
+                _state || this.state;
+            return st ? Object.freeze(__Navimi_Helpers.cloneObject(st)) : undefined;
+        };
+
+        public watchState = (jsUrl: string, key: string, callback: (state: any) => void): void => {
+            if (!key || !callback) {
+                return;
+            }
+            if (!this.stateWatchers[key]) {
+                this.stateWatchers[key] = {};
+            }
+            this.stateWatchers[key] = {
+                ...this.stateWatchers[key],
+                [jsUrl]: [
+                    ...(this.stateWatchers[key][jsUrl] || []),
+                    callback
+                ]
+            };
+        };
+
+        public unwatchState = (jsUrl: string, key?: string | string[]): void => {
+            const remove = (key: string): void => {
+                this.stateWatchers[key][jsUrl] = undefined;
+                delete this.stateWatchers[key][jsUrl];
+                Object.keys(this.stateWatchers[key]).length === 0 &&
+                    delete this.stateWatchers[key];
+            }
+
+            if (key) {
+                const keys = Array.isArray(key) ? key : [key];
+                keys.map(id => {
+                    !this.stateWatchers[id] && (this.stateWatchers[id] = {});
+                    remove(id);
+                });
+                return;
+            }
+
+            Object.keys(this.stateWatchers).map(remove);
+        };
+
+    }
 
 }
