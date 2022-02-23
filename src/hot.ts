@@ -37,7 +37,7 @@ namespace __Navimi {
         }
 
         public openHotWs = (hotOption: number | boolean, callback: any): void => {
-            if (INCLUDEHOT) {
+            if (__NAVIMI_DEV) {
                 try {
                     if (!('WebSocket' in window)) {
                         console.error("Websocket is not supported by your browser!");
@@ -91,7 +91,7 @@ namespace __Navimi {
             routesList: KeyList<Route>,
             initRoute: any): void => {
 
-            if (INCLUDEHOT) {
+            if (__NAVIMI_DEV) {
                 try {
                     const filePath = payload.filePath.replace(/\\/g, "/");
                     const fileType = filePath.split(".").pop();

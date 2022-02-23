@@ -13,8 +13,10 @@ namespace __Navimi {
         public executeMiddlewares = async (abortController: AbortController, context: Context, callback: (url: string, params: KeyList<any>) => void): Promise<void> => {
             let prevIndex = -1;
             const runner = async (resolve: any, reject: any, index: number = 0): Promise<void> => {
-                if (index === prevIndex) {
-                    console.warn('next() called multiple times');
+                if (__NAVIMI_DEV) {
+                    if (index === prevIndex) {
+                        console.warn('next() called multiple times');
+                    }
                 }
                 prevIndex = index;
                 const middleware = this.middlewareStack[index];

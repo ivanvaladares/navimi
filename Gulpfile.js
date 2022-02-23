@@ -45,8 +45,8 @@ function minify() {
         .pipe(uglify({
             compress: {
                 global_defs: {
-                    INCLUDEHOT: false,
-                    EXCLUDEHOT: true
+                    __NAVIMI_DEV: false,
+                    __NAVIMI_PROD: true
                 },
                 unused: true, 
                 dead_code: true

@@ -68,12 +68,11 @@ namespace __Navimi {
             }
         }
 
-        private initHot() {
-            
-            if (EXCLUDEHOT) {
+        private initHot() {           
+            if (__NAVIMI_PROD) {
                 console.warn('HOT is disabled! Use the unminified version to enable it.');
             }
-            if (INCLUDEHOT) {
+            if (__NAVIMI_DEV) {
                 const hot = new __Navimi.Navimi_hot({
                     reloadCss: this.navimiCss.reloadCss,
                     reloadTemplate: this.navimiTemplates.reloadTemplate,
@@ -169,7 +168,9 @@ namespace __Navimi {
             });
 
             if (callId < this.callId) {
-                console.warn("Navimi: A middleware has called navigateTo()");
+                if (__NAVIMI_DEV) {
+                    console.warn("Navimi: A middleware has called navigateTo()");
+                }
                 return;
             }
 
