@@ -126,6 +126,7 @@ about.html
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
+| bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
 | onAfterRoute        | Function                 | A function invoked after the routing is done                    |
 | onBeforeRoute       | Function                 | A function invoked before middlewares and routing               |
 | onError             | Function                 | A function to capture erros from routes                         |
