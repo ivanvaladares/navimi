@@ -197,7 +197,7 @@ namespace __Navimi {
                     }
                 }
 
-                this.navimiCss.fetchCss(this.abortController, cssUrl); //.catch(_ => { });
+                this.navimiCss.fetchCss(this.abortController, cssUrl).catch(_ => { });
                 this.navimiTemplates.fetchTemplate(this.abortController, [templatesUrl]).catch(_ => { });
                 try {
                     this.navimiJs.loadServices(this.abortController, jsUrl, dependsOn);
