@@ -16,6 +16,7 @@ class __Navimi_Core {
     private _navimiTemplates: INavimi_Templates;
     private _navimiMiddleware: INavimi_Middlewares;
     private _navimiHot: INavimi_Hot;
+    private _navimiHelpers: INavimi_Helpers;
 
     constructor(routes: INavimi_KeyList<INavimi_Route>, options?: INavimi_Options, denpendencies?: any) {
 
@@ -35,6 +36,7 @@ class __Navimi_Core {
         this._navimiTemplates = denpendencies.navimiTemplates;
         this._navimiMiddleware = denpendencies.navimiMiddleware;
         this._navimiHot = denpendencies.navimiHot;
+        this._navimiHelpers = denpendencies.navimiHelpers;
 
         this._win.addEventListener('popstate', () => {
             this._initRoute();
@@ -103,7 +105,7 @@ class __Navimi_Core {
     }
 
     private _initRoute = async (urlToGo?: string, navParams?: INavimi_KeyList<any>, force?: boolean): Promise<void> => {
-        const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());
+        const url = this._navimiHelpers.removeHash(urlToGo || this._navimiHelpers.getUrl());
 
         if (!force) {
             if (this._currentUrl === url) {
@@ -116,7 +118,7 @@ class __Navimi_Core {
         const callId = ++this._callId;
         const pushState = urlToGo !== undefined;
 
-        let { routeItem, params } = __Navimi_Helpers.getRouteAndParams(url, this._routesList);
+        let { routeItem, params } = this._navimiHelpers.getRouteAndParams(url, this._routesList);
 
         if (navParams !== undefined) {
             params = {
@@ -211,7 +213,7 @@ class __Navimi_Core {
                 (this._options.globalTemplatesUrl &&
                     !this._navimiTemplates.isTemplateLoaded(this._options.globalTemplatesUrl))) {
 
-                await __Navimi_Helpers.timeout(10);
+                await this._navimiHelpers.timeout(10);
 
                 if (callId < this._callId) {
                     return;

@@ -4,12 +4,33 @@ class __Navimi_State implements INavimi_State {
     private stateWatchers: INavimi_KeyList<any> = {};
     private prevState: INavimi_KeyList<any> = {};
     private stateDiff: INavimi_KeyList<boolean> = {};
+    
+    private _navimiHelpers: INavimi_Helpers = {} as any;
+
+    private invokeStateWatchers: () => void;
+
+    public init(navimiHelpers: INavimi_Helpers): void {
+        this._navimiHelpers = navimiHelpers;
+
+        this.invokeStateWatchers = navimiHelpers.debounce((): void => {
+            const keys = Object.keys(this.stateWatchers);
+            const diff = Object.keys(this.stateDiff);
+            this.stateDiff = {};
+            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+                Object.keys(this.stateWatchers[key]).map((cs: string) => {
+                    const sNew = this.getState(key);
+                    this.stateWatchers[key][cs] &&
+                        this.stateWatchers[key][cs].map((cb: (state: any) => void) => cb && cb(sNew));
+                });
+            });
+        }, 10);
+    }
 
     private getStateDiff = (keys: string[]): void => {
         keys.sort((a, b) => b.length - a.length).map(key => {
             if (!this.stateDiff[key]) {
-                const sOld = __Navimi_Helpers.stringify(this.getState(key, this.prevState) || "");
-                const sNew = __Navimi_Helpers.stringify(this.getState(key, this.state) || "");
+                const sOld = this._navimiHelpers.stringify(this.getState(key, this.prevState) || "");
+                const sNew = this._navimiHelpers.stringify(this.getState(key, this.state) || "");
                 if (sOld !== sNew) {
                     this.stateDiff[key] = true;
                     //set upper keys as changed so we don't test them again
@@ -22,19 +43,6 @@ class __Navimi_State implements INavimi_State {
             }
         });
     };
-
-    private invokeStateWatchers = __Navimi_Helpers.debounce((): void => {
-        const keys = Object.keys(this.stateWatchers);
-        const diff = Object.keys(this.stateDiff);
-        this.stateDiff = {};
-        keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
-            Object.keys(this.stateWatchers[key]).map((cs: string) => {
-                const sNew = this.getState(key);
-                this.stateWatchers[key][cs] &&
-                    this.stateWatchers[key][cs].map((cb: (state: any) => void) => cb && cb(sNew));
-            });
-        });
-    }, 10);
 
     private mergeState = (state: any, newState: any): void => {
         if (newState instanceof Error) {
@@ -61,7 +69,7 @@ class __Navimi_State implements INavimi_State {
     public setState = (newState: INavimi_KeyList<any>): void => {
         const observedKeys = Object.keys(this.stateWatchers);
         if (observedKeys.length > 0) {
-            this.prevState = __Navimi_Helpers.cloneObject(this.state);
+            this.prevState = this._navimiHelpers.cloneObject(this.state);
         }
         this.mergeState(this.state, newState);
         if (observedKeys.length > 0) {
@@ -74,7 +82,7 @@ class __Navimi_State implements INavimi_State {
         const st = key ?
             key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
             _state || this.state;
-        return st ? Object.freeze(__Navimi_Helpers.cloneObject(st)) : undefined;
+        return st ? Object.freeze(this._navimiHelpers.cloneObject(st)) : undefined;
     };
 
     public watchState = (jsUrl: string, key: string, callback: (state: any) => void): void => {

@@ -2,11 +2,13 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
     private _navimiDom: INavimi_Dom;
     private _navimiFetch: INavimi_Fetch;
+    private _navimiHelpers: INavimi_Helpers;
     private _loadedCsss: INavimi_KeyList<string> = {};
 
-    public init(navimiDom: INavimi_Dom, navimiFetch: INavimi_Fetch): void {
+    public init(navimiDom: INavimi_Dom, navimiFetch: INavimi_Fetch, navimiHelpers: INavimi_Helpers): void {
         this._navimiDom = navimiDom;
         this._navimiFetch = navimiFetch;
+        this._navimiHelpers = navimiHelpers;
     }
 
     public isCssLoaded = (url: string): boolean => {
@@ -46,31 +48,34 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
     public reloadCss = (filePath: string, cssCode: string, routeList: INavimi_KeyList<INavimi_Route>, currentJS: string, globalCssUrl: string): void => {
 
-        const isSameFile = __Navimi_Helpers.isSameFile;
+        if (__NAVIMI_DEV) {
+            
+            const isSameFile = this._navimiHelpers.isSameFile;
 
-        if (isSameFile(globalCssUrl, filePath)) {
-            console.log(`${filePath} updated.`);
-
-            this._loadedCsss[globalCssUrl] = cssCode;
-
-            this._navimiDom.insertCss(cssCode, "globalCss");
-
-            return;
-        }
-
-        for (const routeUrl in routeList) {
-            const { jsUrl, cssUrl } = routeList[routeUrl];
-
-            if (isSameFile(cssUrl, filePath)) {
+            if (isSameFile(globalCssUrl, filePath)) {
                 console.log(`${filePath} updated.`);
 
-                this._loadedCsss[cssUrl] = cssCode;
+                this._loadedCsss[globalCssUrl] = cssCode;
 
-                if (currentJS === jsUrl) {
-                    this._navimiDom.insertCss(cssCode, "routeCss");
-                }
+                this._navimiDom.insertCss(cssCode, "globalCss");
 
                 return;
+            }
+
+            for (const routeUrl in routeList) {
+                const { jsUrl, cssUrl } = routeList[routeUrl];
+
+                if (isSameFile(cssUrl, filePath)) {
+                    console.log(`${filePath} updated.`);
+
+                    this._loadedCsss[cssUrl] = cssCode;
+
+                    if (currentJS === jsUrl) {
+                        this._navimiDom.insertCss(cssCode, "routeCss");
+                    }
+
+                    return;
+                }
             }
         }
 

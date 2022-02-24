@@ -17,7 +17,7 @@ class __Navimi_Core {
             console.error(error);
         };
         this._initRoute = async (urlToGo, navParams, force) => {
-            const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());
+            const url = this._navimiHelpers.removeHash(urlToGo || this._navimiHelpers.getUrl());
             if (!force) {
                 if (this._currentUrl === url) {
                     return;
@@ -27,7 +27,7 @@ class __Navimi_Core {
             }
             const callId = ++this._callId;
             const pushState = urlToGo !== undefined;
-            let { routeItem, params } = __Navimi_Helpers.getRouteAndParams(url, this._routesList);
+            let { routeItem, params } = this._navimiHelpers.getRouteAndParams(url, this._routesList);
             if (navParams !== undefined) {
                 params = Object.assign(Object.assign({}, params), navParams);
             }
@@ -102,7 +102,7 @@ class __Navimi_Core {
                         !this._navimiCss.isCssLoaded(this._options.globalCssUrl)) ||
                     (this._options.globalTemplatesUrl &&
                         !this._navimiTemplates.isTemplateLoaded(this._options.globalTemplatesUrl))) {
-                    await __Navimi_Helpers.timeout(10);
+                    await this._navimiHelpers.timeout(10);
                     if (callId < this._callId) {
                         return;
                     }
@@ -166,6 +166,7 @@ class __Navimi_Core {
         this._navimiTemplates = denpendencies.navimiTemplates;
         this._navimiMiddleware = denpendencies.navimiMiddleware;
         this._navimiHot = denpendencies.navimiHot;
+        this._navimiHelpers = denpendencies.navimiHelpers;
         this._win.addEventListener('popstate', () => {
             this._initRoute();
         });
@@ -238,29 +239,32 @@ class __Navimi_CSSs {
             });
         };
         this.reloadCss = (filePath, cssCode, routeList, currentJS, globalCssUrl) => {
-            const isSameFile = __Navimi_Helpers.isSameFile;
-            if (isSameFile(globalCssUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-                this._loadedCsss[globalCssUrl] = cssCode;
-                this._navimiDom.insertCss(cssCode, "globalCss");
-                return;
-            }
-            for (const routeUrl in routeList) {
-                const { jsUrl, cssUrl } = routeList[routeUrl];
-                if (isSameFile(cssUrl, filePath)) {
+            if (__NAVIMI_DEV) {
+                const isSameFile = this._navimiHelpers.isSameFile;
+                if (isSameFile(globalCssUrl, filePath)) {
                     console.log(`${filePath} updated.`);
-                    this._loadedCsss[cssUrl] = cssCode;
-                    if (currentJS === jsUrl) {
-                        this._navimiDom.insertCss(cssCode, "routeCss");
-                    }
+                    this._loadedCsss[globalCssUrl] = cssCode;
+                    this._navimiDom.insertCss(cssCode, "globalCss");
                     return;
+                }
+                for (const routeUrl in routeList) {
+                    const { jsUrl, cssUrl } = routeList[routeUrl];
+                    if (isSameFile(cssUrl, filePath)) {
+                        console.log(`${filePath} updated.`);
+                        this._loadedCsss[cssUrl] = cssCode;
+                        if (currentJS === jsUrl) {
+                            this._navimiDom.insertCss(cssCode, "routeCss");
+                        }
+                        return;
+                    }
                 }
             }
         };
     }
-    init(navimiDom, navimiFetch) {
+    init(navimiDom, navimiFetch, navimiHelpers) {
         this._navimiDom = navimiDom;
         this._navimiFetch = navimiFetch;
+        this._navimiHelpers = navimiHelpers;
     }
 }
 // flag(s) to indicate uglify to add/remove code from the output
@@ -357,144 +361,145 @@ class __Navimi_Fetch {
         };
     }
 }
-var __Navimi_Helpers;
-(function (__Navimi_Helpers) {
-    const parseQuery = (queryString) => {
-        const query = {};
-        queryString.split('&').map(pair => {
-            const kv = pair.split('=');
-            query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
-        });
-        return query;
-    };
-    const splitPath = (path) => {
-        if (!path) {
-            return [];
-        }
-        const queryPos = path.indexOf("?");
-        path = queryPos >= 0 ? path.substr(0, queryPos) : path;
-        return path.split("/").filter(p => p.length > 0);
-    };
-    const parsePath = (urlPath, urlPattern) => {
-        const queryPos = urlPath.indexOf("?");
-        const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
-        const path = splitPath(urlPath);
-        const pattern = splitPath(urlPattern);
-        let params = {};
-        if (queryPos > 0) {
-            params = {
-                queryString: parseQuery(query)
-            };
-        }
-        for (let i = 0; i < pattern.length; i++) {
-            if (pattern[i].charAt(0) === ':') {
-                const name = pattern[i].slice(1);
-                if (path.length <= i) {
-                    return null;
-                }
-                params[name] = decodeURIComponent(path[i]);
-            }
-            else {
-                if (!path[i] || pattern[i].toLowerCase() !== path[i].toLowerCase())
-                    return null;
-            }
-        }
-        return params;
-    };
-    __Navimi_Helpers.isSameFile = (path1, path2) => {
-        return path1 && path2 && path1.split("?").shift().toLowerCase() ==
-            path2.split("?").shift().toLowerCase();
-    };
-    __Navimi_Helpers.timeout = (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    };
-    __Navimi_Helpers.debounce = (task, ms) => {
-        let timeout;
-        return function () {
-            const func = () => {
-                timeout = null;
-                task.apply(this, arguments);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(func, ms);
+class __Navimi_Helpers {
+    constructor() {
+        this.parseQuery = (queryString) => {
+            const query = {};
+            queryString.split('&').map(pair => {
+                const kv = pair.split('=');
+                query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+            });
+            return query;
         };
-    };
-    __Navimi_Helpers.getUrl = () => {
-        const location = document.location;
-        const matches = location.toString().match(/^[^#]*(#.+)$/);
-        const hash = matches ? matches[1] : "";
-        return [location.pathname, location.search, hash].join("");
-    };
-    __Navimi_Helpers.removeHash = (url) => {
-        const hashPos = url.indexOf("#");
-        return hashPos > 0 ? url.substr(0, hashPos) : url;
-    };
-    __Navimi_Helpers.stringify = (obj) => {
-        const visited = [];
-        const iterateObject = (obj) => {
-            if (typeof obj === 'function') {
-                return String(obj);
+        this.splitPath = (path) => {
+            if (!path) {
+                return [];
             }
-            if (obj instanceof Error) {
-                return obj.message;
+            const queryPos = path.indexOf("?");
+            path = queryPos >= 0 ? path.substr(0, queryPos) : path;
+            return path.split("/").filter(p => p.length > 0);
+        };
+        this.parsePath = (urlPath, urlPattern) => {
+            const queryPos = urlPath.indexOf("?");
+            const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
+            const path = this.splitPath(urlPath);
+            const pattern = this.splitPath(urlPattern);
+            let params = {};
+            if (queryPos > 0) {
+                params = {
+                    queryString: this.parseQuery(query)
+                };
             }
-            if (obj === null || typeof obj !== 'object') {
-                return obj;
-            }
-            if (visited.indexOf(obj) !== -1) {
-                return `[Circular: ${visited.indexOf(obj)}]`;
-            }
-            visited.push(obj);
-            if (Array.isArray(obj)) {
-                const aResult = obj.map(iterateObject);
-                visited.pop();
-                return aResult;
-            }
-            const result = Object.keys(obj).reduce((result, prop) => {
-                result[prop] = iterateObject(((obj, prop) => {
-                    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-                        try {
-                            return obj[prop];
-                        }
-                        catch (_a) {
-                            return;
-                        }
+            for (let i = 0; i < pattern.length; i++) {
+                if (pattern[i].charAt(0) === ':') {
+                    const name = pattern[i].slice(1);
+                    if (path.length <= i) {
+                        return null;
                     }
-                    return obj[prop];
-                })(obj, prop));
-                return result;
-            }, {});
-            visited.pop();
-            return result;
-        };
-        return JSON.stringify(iterateObject(obj));
-    };
-    __Navimi_Helpers.cloneObject = (obj) => {
-        return obj === null || typeof obj !== "object" ? obj :
-            Object.keys(obj).reduce((prev, current) => obj[current] !== null && typeof obj[current] === "object" ?
-                (prev[current] = __Navimi_Helpers.cloneObject(obj[current]), prev) :
-                (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
-    };
-    __Navimi_Helpers.getRouteAndParams = (url, routingList) => {
-        const urlParams = splitPath(url);
-        const catchAll = routingList["*"];
-        let routeItem, params;
-        for (const routeUrl in routingList) {
-            const routeParams = splitPath(routeUrl);
-            if (routeParams.length === urlParams.length) {
-                params = parsePath(url, routeUrl);
-                if (params) {
-                    routeItem = routingList[routeUrl];
-                    break;
+                    params[name] = decodeURIComponent(path[i]);
+                }
+                else {
+                    if (!path[i] || pattern[i].toLowerCase() !== path[i].toLowerCase())
+                        return null;
                 }
             }
-        }
-        if (!routeItem && catchAll) {
-            routeItem = catchAll;
-        }
-        return { routeItem, params };
-    };
-})(__Navimi_Helpers || (__Navimi_Helpers = {}));
+            return params;
+        };
+        this.isSameFile = (path1, path2) => {
+            return path1 && path2 && path1.split("?").shift().toLowerCase() ==
+                path2.split("?").shift().toLowerCase();
+        };
+        this.timeout = (ms) => {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        };
+        this.debounce = (task, ms) => {
+            let timeout;
+            return function () {
+                const func = () => {
+                    timeout = null;
+                    task.apply(this, arguments);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(func, ms);
+            };
+        };
+        this.getUrl = () => {
+            const location = document.location;
+            const matches = location.toString().match(/^[^#]*(#.+)$/);
+            const hash = matches ? matches[1] : "";
+            return [location.pathname, location.search, hash].join("");
+        };
+        this.removeHash = (url) => {
+            const hashPos = url.indexOf("#");
+            return hashPos > 0 ? url.substr(0, hashPos) : url;
+        };
+        this.stringify = (obj) => {
+            const visited = [];
+            const iterateObject = (obj) => {
+                if (typeof obj === 'function') {
+                    return String(obj);
+                }
+                if (obj instanceof Error) {
+                    return obj.message;
+                }
+                if (obj === null || typeof obj !== 'object') {
+                    return obj;
+                }
+                if (visited.indexOf(obj) !== -1) {
+                    return `[Circular: ${visited.indexOf(obj)}]`;
+                }
+                visited.push(obj);
+                if (Array.isArray(obj)) {
+                    const aResult = obj.map(iterateObject);
+                    visited.pop();
+                    return aResult;
+                }
+                const result = Object.keys(obj).reduce((result, prop) => {
+                    result[prop] = iterateObject(((obj, prop) => {
+                        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+                            try {
+                                return obj[prop];
+                            }
+                            catch (_a) {
+                                return;
+                            }
+                        }
+                        return obj[prop];
+                    })(obj, prop));
+                    return result;
+                }, {});
+                visited.pop();
+                return result;
+            };
+            return JSON.stringify(iterateObject(obj));
+        };
+        this.cloneObject = (obj) => {
+            return obj === null || typeof obj !== "object" ? obj :
+                Object.keys(obj).reduce((prev, current) => obj[current] !== null && typeof obj[current] === "object" ?
+                    (prev[current] = this.cloneObject(obj[current]), prev) :
+                    (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
+        };
+        this.getRouteAndParams = (url, routingList) => {
+            const urlParams = this.splitPath(url);
+            const catchAll = routingList["*"];
+            let routeItem, params;
+            for (const routeUrl in routingList) {
+                const routeParams = this.splitPath(routeUrl);
+                if (routeParams.length === urlParams.length) {
+                    params = this.parsePath(url, routeUrl);
+                    if (params) {
+                        routeItem = routingList[routeUrl];
+                        break;
+                    }
+                }
+            }
+            if (!routeItem && catchAll) {
+                routeItem = catchAll;
+            }
+            return { routeItem, params };
+        };
+    }
+}
 class __Navimi_Hot {
     constructor() {
         this.openHotWs = (hotOption, callback) => {
@@ -682,7 +687,7 @@ class __Navimi_JSs {
                         if (this._routesJSsServices[jsUrl].map(sn => this._options.services[sn]).find(su => this._navimiFetch.getErrors(su))) {
                             return;
                         }
-                        await __Navimi_Helpers.timeout(10);
+                        await this._navimiHelpers.timeout(10);
                     }
                     this._routesJSsServices[jsUrl].map((sn) => {
                         services = Object.assign(Object.assign({}, services), { [sn]: this._externalJSs[this._options.services[sn]] });
@@ -763,46 +768,49 @@ class __Navimi_JSs {
                 await jsInstance.init(params);
         };
         this.reloadJs = (filePath, jsCode, routeList, currentJS, callback) => {
-            const isSameFile = __Navimi_Helpers.isSameFile;
-            for (const routeUrl in routeList) {
-                const { jsUrl } = routeList[routeUrl];
-                if (isSameFile(jsUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    delete this._routesJSs[jsUrl];
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        if (jsUrl === currentJS) {
-                            //reload route if current JS is updated
-                            callback();
-                        }
-                    };
-                    this._insertJS(jsUrl, jsCode, false);
-                    return;
-                }
-            }
-            for (const jsUrl in this._dependencyJSsMap) {
-                if (isSameFile(jsUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    delete this._externalJSs[jsUrl];
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
-                            //clear all dependent JSs that depends of this JS
-                            delete this._routesJSs[s];
-                            if (s === currentJS) {
+            if (__NAVIMI_DEV) {
+                const isSameFile = this._navimiHelpers.isSameFile;
+                for (const routeUrl in routeList) {
+                    const { jsUrl } = routeList[routeUrl];
+                    if (isSameFile(jsUrl, filePath)) {
+                        console.log(`${filePath} updated.`);
+                        delete this._routesJSs[jsUrl];
+                        this._navimiLoader[this._promiseNS + jsUrl] = () => {
+                            if (jsUrl === currentJS) {
                                 //reload route if current JS is updated
                                 callback();
                             }
-                        });
-                    };
-                    this._insertJS(filePath, jsCode, true);
+                        };
+                        this._insertJS(jsUrl, jsCode, false);
+                        return;
+                    }
+                }
+                for (const jsUrl in this._dependencyJSsMap) {
+                    if (isSameFile(jsUrl, filePath)) {
+                        console.log(`${filePath} updated.`);
+                        delete this._externalJSs[jsUrl];
+                        this._navimiLoader[this._promiseNS + jsUrl] = () => {
+                            Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
+                                //clear all dependent JSs that depends of this JS
+                                delete this._routesJSs[s];
+                                if (s === currentJS) {
+                                    //reload route if current JS is updated
+                                    callback();
+                                }
+                            });
+                        };
+                        this._insertJS(filePath, jsCode, true);
+                    }
                 }
             }
         };
     }
-    init(navimiDom, navimiFetch, navimiTemplates, navimiState, options) {
+    init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiHelpers, options) {
         this._navimiDom = navimiDom;
         this._navimiFetch = navimiFetch;
         this._navimiTemplates = navimiTemplates;
         this._navimiState = navimiState;
+        this._navimiHelpers = navimiHelpers;
         this._options = options;
         // @ts-ignore
         this._navimiLoader = window[this._navimiLoaderNS] = {
@@ -862,11 +870,13 @@ class Navimi {
         const navimiMiddleware = new __Navimi_Middleware();
         const navimiState = new __Navimi_State();
         const navimiHot = new __Navimi_Hot();
+        const navimiHelpers = new __Navimi_Helpers();
         navimiFetch.init(options);
-        navimiCss.init(navimiDom, navimiFetch);
+        navimiCss.init(navimiDom, navimiFetch, navimiHelpers);
         navimiDom.init(navimiCss, navimiJs);
-        navimiJs.init(navimiDom, navimiFetch, navimiTemplates, navimiState, options);
-        navimiTemplates.init(navimiFetch);
+        navimiJs.init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiHelpers, options);
+        navimiTemplates.init(navimiFetch, navimiHelpers);
+        navimiState.init(navimiHelpers);
         if (__NAVIMI_DEV) {
             navimiHot.init(navimiCss, navimiJs, navimiTemplates);
         }
@@ -878,7 +888,8 @@ class Navimi {
             navimiTemplates,
             navimiMiddleware,
             navimiState,
-            navimiHot
+            navimiHot,
+            navimiHelpers
         });
         return navimi;
     }
@@ -889,11 +900,12 @@ class __Navimi_State {
         this.stateWatchers = {};
         this.prevState = {};
         this.stateDiff = {};
+        this._navimiHelpers = {};
         this.getStateDiff = (keys) => {
             keys.sort((a, b) => b.length - a.length).map(key => {
                 if (!this.stateDiff[key]) {
-                    const sOld = __Navimi_Helpers.stringify(this.getState(key, this.prevState) || "");
-                    const sNew = __Navimi_Helpers.stringify(this.getState(key, this.state) || "");
+                    const sOld = this._navimiHelpers.stringify(this.getState(key, this.prevState) || "");
+                    const sNew = this._navimiHelpers.stringify(this.getState(key, this.state) || "");
                     if (sOld !== sNew) {
                         this.stateDiff[key] = true;
                         //set upper keys as changed so we don't test them again
@@ -906,18 +918,6 @@ class __Navimi_State {
                 }
             });
         };
-        this.invokeStateWatchers = __Navimi_Helpers.debounce(() => {
-            const keys = Object.keys(this.stateWatchers);
-            const diff = Object.keys(this.stateDiff);
-            this.stateDiff = {};
-            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
-                Object.keys(this.stateWatchers[key]).map((cs) => {
-                    const sNew = this.getState(key);
-                    this.stateWatchers[key][cs] &&
-                        this.stateWatchers[key][cs].map((cb) => cb && cb(sNew));
-                });
-            });
-        }, 10);
         this.mergeState = (state, newState) => {
             if (newState instanceof Error) {
                 newState = Object.assign(Object.assign({}, newState), { message: newState.message, stack: newState.stack });
@@ -938,7 +938,7 @@ class __Navimi_State {
         this.setState = (newState) => {
             const observedKeys = Object.keys(this.stateWatchers);
             if (observedKeys.length > 0) {
-                this.prevState = __Navimi_Helpers.cloneObject(this.state);
+                this.prevState = this._navimiHelpers.cloneObject(this.state);
             }
             this.mergeState(this.state, newState);
             if (observedKeys.length > 0) {
@@ -950,7 +950,7 @@ class __Navimi_State {
             const st = key ?
                 key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
                 _state || this.state;
-            return st ? Object.freeze(__Navimi_Helpers.cloneObject(st)) : undefined;
+            return st ? Object.freeze(this._navimiHelpers.cloneObject(st)) : undefined;
         };
         this.watchState = (jsUrl, key, callback) => {
             if (!key || !callback) {
@@ -981,6 +981,21 @@ class __Navimi_State {
             }
             Object.keys(this.stateWatchers).map(remove);
         };
+    }
+    init(navimiHelpers) {
+        this._navimiHelpers = navimiHelpers;
+        this.invokeStateWatchers = navimiHelpers.debounce(() => {
+            const keys = Object.keys(this.stateWatchers);
+            const diff = Object.keys(this.stateDiff);
+            this.stateDiff = {};
+            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+                Object.keys(this.stateWatchers[key]).map((cs) => {
+                    const sNew = this.getState(key);
+                    this.stateWatchers[key][cs] &&
+                        this.stateWatchers[key][cs].map((cb) => cb && cb(sNew));
+                });
+            });
+        }, 10);
     }
 }
 class __Navimi_Templates {
@@ -1050,39 +1065,40 @@ class __Navimi_Templates {
             return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
         };
         this.reloadTemplate = (filePath, templateCode, routeList, currentJS, globalTemplatesUrl, callback) => {
-            const isSameFile = __Navimi_Helpers.isSameFile;
-            if (isSameFile(globalTemplatesUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-                this.loadTemplate(templateCode, globalTemplatesUrl);
-                callback();
-                return;
-            }
-            for (const routeUrl in routeList) {
-                const { jsUrl, templatesUrl } = routeList[routeUrl];
-                if (isSameFile(templatesUrl, filePath)) {
+            if (__NAVIMI_DEV) {
+                const isSameFile = this._navimiHelpers.isSameFile;
+                if (isSameFile(globalTemplatesUrl, filePath)) {
                     console.log(`${filePath} updated.`);
-                    this.loadTemplate(templateCode, templatesUrl);
-                    currentJS === jsUrl && callback();
+                    this.loadTemplate(templateCode, globalTemplatesUrl);
+                    callback();
                     return;
                 }
-            }
-            for (const templatesUrl in this._dependencyTemplatesMap) {
-                if (isSameFile(templatesUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    this.loadTemplate(templateCode, templatesUrl);
-                    Object.keys(this._dependencyTemplatesMap[templatesUrl]).map(s => {
-                        if (s === currentJS) {
-                            //reload route if current JS is updated
-                            callback();
-                        }
-                    });
+                for (const routeUrl in routeList) {
+                    const { jsUrl, templatesUrl } = routeList[routeUrl];
+                    if (isSameFile(templatesUrl, filePath)) {
+                        console.log(`${filePath} updated.`);
+                        this.loadTemplate(templateCode, templatesUrl);
+                        currentJS === jsUrl && callback();
+                        return;
+                    }
+                }
+                for (const templatesUrl in this._dependencyTemplatesMap) {
+                    if (isSameFile(templatesUrl, filePath)) {
+                        console.log(`${filePath} updated.`);
+                        this.loadTemplate(templateCode, templatesUrl);
+                        Object.keys(this._dependencyTemplatesMap[templatesUrl]).map(s => {
+                            if (s === currentJS) {
+                                //reload route if current JS is updated
+                                callback();
+                            }
+                        });
+                    }
                 }
             }
         };
     }
-    init(navimiFetch) {
+    init(navimiFetch, navimiHelpers) {
         this._navimiFetch = navimiFetch;
+        this._navimiHelpers = navimiHelpers;
     }
-}
-class INavimi_Helpers {
 }

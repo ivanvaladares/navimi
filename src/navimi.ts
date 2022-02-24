@@ -10,12 +10,14 @@ class Navimi {
         const navimiMiddleware = new __Navimi_Middleware();
         const navimiState = new __Navimi_State();
         const navimiHot = new __Navimi_Hot();
+        const navimiHelpers = new __Navimi_Helpers();
 
         navimiFetch.init(options);
 
         navimiCss.init(
             navimiDom,
-            navimiFetch
+            navimiFetch,
+            navimiHelpers
         );
 
         navimiDom.init(
@@ -28,16 +30,22 @@ class Navimi {
             navimiFetch,
             navimiTemplates,
             navimiState,
+            navimiHelpers,
             options
         );
 
-        navimiTemplates.init(navimiFetch);
+        navimiTemplates.init(
+            navimiFetch,
+            navimiHelpers
+        );
+
+        navimiState.init(navimiHelpers);
 
         if (__NAVIMI_DEV) {
             navimiHot.init(
                 navimiCss,
                 navimiJs,
-                navimiTemplates,
+                navimiTemplates
             );
         }
         
@@ -51,7 +59,8 @@ class Navimi {
                 navimiTemplates,
                 navimiMiddleware,
                 navimiState,
-                navimiHot
+                navimiHot,
+                navimiHelpers
             }
         ) as any;
 

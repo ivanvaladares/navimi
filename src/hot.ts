@@ -35,7 +35,7 @@ class __Navimi_Hot implements INavimi_Hot {
                                 globalTemplatesUrl: string,
                                 currentJs: string,
                                 routesList: INavimi_KeyList<INavimi_Route>,
-                                initRoute: any) => {
+                                initRoute: () => void) => {
 
                                 this._digestHot(json,
                                     globalCssUrl,
@@ -64,7 +64,7 @@ class __Navimi_Hot implements INavimi_Hot {
         globalTemplatesUrl: string,
         currentJs: string,
         routesList: INavimi_KeyList<INavimi_Route>,
-        initRoute: any): void => {
+        initRoute: () => void): void => {
 
         if (__NAVIMI_DEV) {
             try {

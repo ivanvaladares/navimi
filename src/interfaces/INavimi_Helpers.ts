@@ -1,4 +1,4 @@
-abstract class INavimi_Helpers {
+interface INavimi_Helpers {
     isSameFile: (path1: string, path2: string) => boolean;
     timeout: (ms: number) => Promise<void>;
     debounce: (task: (args: any[]) => any, ms: number) => () => void;

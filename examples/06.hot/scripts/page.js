@@ -24,7 +24,7 @@
         showCounter = (clicks) => {
             const counterEl = document.querySelector(".counter");
             if (counterEl) {
-                counterEl.innerText = clicks || this.nfx.getState("test.clicks") || 1;
+                counterEl.innerText = clicks || this.nfx.getState("test.clicks") || 0;
             }
         }
 
