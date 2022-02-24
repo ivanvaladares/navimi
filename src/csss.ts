@@ -1,87 +1,79 @@
-namespace __Navimi {
-    
-    export class Navimi_CSSs {
+class __Navimi_CSSs implements INavimi_CSSs {
 
-        private domFunctions: any;
-        private navimiFetch: any;
-        public loadedCsss: KeyList<string> = {};
+    private _navimiDom: INavimi_Dom;
+    private _navimiFetch: INavimi_Fetch;
+    private _loadedCsss: INavimi_KeyList<string> = {};
 
-        public init(_domFunctions: any, _navimiFetch: any): void {
-            this.domFunctions = _domFunctions;
-            this.navimiFetch = _navimiFetch;
+    public init(navimiDom: INavimi_Dom, navimiFetch: INavimi_Fetch): void {
+        this._navimiDom = navimiDom;
+        this._navimiFetch = navimiFetch;
+    }
+
+    public isCssLoaded = (url: string): boolean => {
+        return this._loadedCsss[url] !== undefined;
+    };
+
+    public getCss = (url: string): string => {
+        return this._loadedCsss[url];
+    };
+
+    public fetchCss = (abortController: AbortController, url: string, autoInsert?: boolean): Promise<void | void[]> => {
+        return new Promise<void>(async (resolve, reject) => {
+            if (!url || this._loadedCsss[url]) {
+                return resolve();
+            }
+            try {
+                const cssCode = await this._navimiFetch.fetchFile(url, {
+                    headers: {
+                        Accept: "text/css"
+                    },
+                    signal: abortController ? abortController.signal : undefined
+                });
+
+                if (autoInsert) {
+                    this._navimiDom.insertCss(cssCode, url, true);
+                    this._loadedCsss[url] = "loaded";
+                } else {
+                    this._loadedCsss[url] = cssCode;
+                }
+                resolve();
+
+            } catch (ex) {
+                reject(ex);
+            }
+        });
+    };
+
+    public reloadCss = (filePath: string, cssCode: string, routeList: INavimi_KeyList<INavimi_Route>, currentJS: string, globalCssUrl: string): void => {
+
+        const isSameFile = __Navimi_Helpers.isSameFile;
+
+        if (isSameFile(globalCssUrl, filePath)) {
+            console.log(`${filePath} updated.`);
+
+            this._loadedCsss[globalCssUrl] = cssCode;
+
+            this._navimiDom.insertCss(cssCode, "globalCss");
+
+            return;
         }
 
-        public isCssLoaded = (url: string): boolean => {
-            return this.loadedCsss[url] !== undefined;
-        };
+        for (const routeUrl in routeList) {
+            const { jsUrl, cssUrl } = routeList[routeUrl];
 
-        public getCss = (url: string): string => {
-            return this.loadedCsss[url];
-        };
-
-        public fetchCss = (abortController: AbortController, url: string, autoInsert?: boolean): Promise<void | void[]> => {
-            return new Promise<void>(async (resolve, reject) => {
-                if (!url || this.loadedCsss[url]) {
-                    return resolve();
-                }
-                try {
-                    const cssCode = await this.navimiFetch.fetchFile(url, {
-                        headers: {
-                            Accept: "text/css"
-                        },
-                        signal: abortController ? abortController.signal : undefined
-                    });
-
-                    if (autoInsert) {
-                        this.domFunctions.insertCss(cssCode, url, true);
-                        this.loadedCsss[url] = "loaded";
-                    } else {
-                        this.loadedCsss[url] = cssCode;
-                    }
-                    resolve();
-
-                } catch (ex) {
-                    reject(ex);
-                }
-            });
-        };
-        
-        public reloadCss = (filePath: string, 
-                                    cssCode: string, 
-                                    routeList: KeyList<Route>, 
-                                    currentJS: string, 
-                                    globalCssUrl: string): void => 
-        {
-            
-            const isSameFile = __Navimi_Helpers.isSameFile;
-
-            if (isSameFile(globalCssUrl, filePath)) {
+            if (isSameFile(cssUrl, filePath)) {
                 console.log(`${filePath} updated.`);
 
-                this.loadedCsss[globalCssUrl] = cssCode;
+                this._loadedCsss[cssUrl] = cssCode;
 
-                this.domFunctions.insertCss(cssCode, "globalCss");
+                if (currentJS === jsUrl) {
+                    this._navimiDom.insertCss(cssCode, "routeCss");
+                }
 
                 return;
             }
+        }
 
-            for (const routeUrl in routeList) {
-                const { jsUrl, cssUrl } = routeList[routeUrl];
+    };
 
-                if (isSameFile(cssUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-
-                    this.loadedCsss[cssUrl] = cssCode;
-
-                    if (currentJS === jsUrl) {
-                        this.domFunctions.insertCss(cssCode, "routeCss");
-                    }
-
-                    return;
-                }
-            }
-
-        };
-
-    }
 }

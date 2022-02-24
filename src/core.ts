@@ -1,285 +1,277 @@
-namespace __Navimi {
+class __Navimi_Core {
 
-    export class Navimi_Core {
+    private _callId: number;
+    private _abortController: AbortController;
+    private _currentJS: string;
+    private _currentUrl: string;
+    private _routesParams: INavimi_KeyList<any>;
+    private _routesList: INavimi_KeyList<INavimi_Route>;
+    private _options: INavimi_Options;
+    private _win: any;
 
-        private callId: number;
-        private abortController: AbortController;
-        private currentJS: string;
-        private currentUrl: string;
-        private routesParams: KeyList<any>;
-        private routesList: KeyList<Route>;
-        private options: Options;
-        private win: any;
+    private _navimiFetch: INavimi_Fetch;
+    private _navimiJs: INavimi_JSs;
+    private _navimiCss: INavimi_CSSs;
+    private _navimiDom: INavimi_Dom;
+    private _navimiTemplates: INavimi_Templates;
+    private _navimiMiddleware: INavimi_Middlewares;
+    private _navimiHot: INavimi_Hot;
 
-        private navimiFetch: __Navimi.Navimi_Fetch;
-        private navimiJs: __Navimi.Navimi_JSs;
-        private navimiCss: __Navimi.Navimi_CSSs;
-        private navimiDom: __Navimi.Navimi_Dom;
-        private navimiTemplates: __Navimi.Navimi_Templates;
-        private navimiMiddleware: __Navimi.Navimi_Middleware;
+    constructor(routes: INavimi_KeyList<INavimi_Route>, options?: INavimi_Options, denpendencies?: any) {
 
-        constructor(routes: KeyList<Route>, options?: Options, denpendencies?: any) {
+        this._callId = 0;
+        this._abortController = new AbortController();
+        this._currentJS = undefined;
+        this._currentUrl = undefined;
+        this._routesParams = {};
+        this._routesList = routes || {};
+        this._options = options || {};
+        this._win = window ? window : {};
 
-            this.callId = 0;
-            this.abortController = new AbortController();
-            this.currentJS = undefined;
-            this.currentUrl = undefined;
-            this.routesParams = {};
-            this.routesList = routes || {};
-            this.options = options || {};
-            this.win = window ? window : {};
+        this._navimiFetch = denpendencies.navimiFetch
+        this._navimiDom = denpendencies.navimiDom;
+        this._navimiCss = denpendencies.navimiCss;
+        this._navimiJs = denpendencies.navimiJs;
+        this._navimiTemplates = denpendencies.navimiTemplates;
+        this._navimiMiddleware = denpendencies.navimiMiddleware;
+        this._navimiHot = denpendencies.navimiHot;
 
-            this.navimiFetch = denpendencies.navimiFetch
-            this.navimiDom = denpendencies.navimiDom;
-            this.navimiCss = denpendencies.navimiCss;
-            this.navimiJs = denpendencies.navimiJs;
-            this.navimiTemplates = denpendencies.navimiTemplates;
-            this.navimiMiddleware = denpendencies.navimiMiddleware;
+        this._win.addEventListener('popstate', () => {
+            this._initRoute();
+        });
 
-            this.win.addEventListener('popstate', () => {
-                this.initRoute();
-            });
+        this._win.navigateTo = this._navigateTo;
 
-            this.win.navigateTo = this.navigateTo;
+        //add middlewares
+        this._navimiMiddleware.addMiddlewares(this._options.middlewares);
 
-            //add middlewares
-            this.navimiMiddleware.addMiddlewares(this.options.middlewares);
+        (async () => {
+            await this._init();
+        })();
 
-            (async () => {
-                await this.init();
-            })();
+        this._initRoute();
 
-            this.initRoute();
-
-            if (this.options.hot) {
-                this.initHot();
-            }
+        if (this._options.hot) {
+            this._initHot();
         }
+    }
 
-        private async init(): Promise<void> {
-            if (this.options.globalCssUrl || this.options.globalTemplatesUrl) {
+    private async _init(): Promise<void> {
+        if (this._options.globalCssUrl || this._options.globalTemplatesUrl) {
 
-                await Promise.all([
-                    this.navimiCss.fetchCss(undefined, this.options.globalCssUrl),
-                    this.navimiTemplates.fetchTemplate(undefined, [this.options.globalTemplatesUrl]),
-                ]).catch(this.reportError);
+            await Promise.all([
+                this._navimiCss.fetchCss(undefined, this._options.globalCssUrl),
+                this._navimiTemplates.fetchTemplate(undefined, [this._options.globalTemplatesUrl]),
+            ]).catch(this._reportError);
 
-                this.navimiDom.insertCss(this.navimiCss.getCss(this.options.globalCssUrl), "globalCss");
-            }
+            this._navimiDom.insertCss(this._navimiCss.getCss(this._options.globalCssUrl), "globalCss");
         }
+    }
 
-        private initHot() {           
-            if (__NAVIMI_PROD) {
-                console.warn('HOT is disabled! Use the unminified version to enable it.');
-            }
-            if (__NAVIMI_DEV) {
-                const hot = new __Navimi.Navimi_hot({
-                    reloadCss: this.navimiCss.reloadCss,
-                    reloadTemplate: this.navimiTemplates.reloadTemplate,
-                    reloadJs: this.navimiJs.reloadJs,
+    private _initHot() {
+        if (__NAVIMI_PROD) {
+            console.warn('HOT is disabled! Use the unminified version to enable it.');
+        }
+        if (__NAVIMI_DEV) {
+            setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot,
+                (callback: (globalCssUrl: string,
+                    globalTemplatesUrl: string,
+                    currentJs: string,
+                    routesList: INavimi_KeyList<INavimi_Route>,
+                    initRoute: any) => void) => {
+
+                    callback(this._options.globalCssUrl,
+                        this._options.globalTemplatesUrl,
+                        this._currentJS,
+                        this._routesList, () => {
+                            this._initRoute(undefined, this._routesParams[this._currentJS], true);
+                        });
                 });
-
-                setTimeout(hot.openHotWs, 1000, this.options.hot,
-                    (callback: (globalCssUrl: string,
-                        globalTemplatesUrl: string,
-                        currentJs: string,
-                        routesList: KeyList<Route>,
-                        initRoute: any) => void) => {
-
-                        callback(this.options.globalCssUrl,
-                            this.options.globalTemplatesUrl,
-                            this.currentJS,
-                            this.routesList, () => {
-                                this.initRoute(undefined, this.routesParams[this.currentJS], true);
-                            });
-                    });
-            }
         }
+    }
 
-        private navigateTo = (url: string, params?: KeyList<any>): void => {
-            this.initRoute(url, params);
-        };
+    private _navigateTo = (url: string, params?: INavimi_KeyList<any>): void => {
+        this._initRoute(url, params);
+    };
 
-        private reportError = (error: Error): void => {
-            if (this.options.onError) {
-                this.options.onError(error);
+    private _reportError = (error: Error): void => {
+        if (this._options.onError) {
+            this._options.onError(error);
+            return;
+        }
+        console.error(error);
+    }
+
+    private _initRoute = async (urlToGo?: string, navParams?: INavimi_KeyList<any>, force?: boolean): Promise<void> => {
+        const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());
+
+        if (!force) {
+            if (this._currentUrl === url) {
                 return;
             }
-            console.error(error);
+            this._abortController.abort();
+            this._abortController = new AbortController();
         }
 
-        private initRoute = async (urlToGo?: string, navParams?: KeyList<any>, force?: boolean): Promise<void> => {
-            const url = __Navimi_Helpers.removeHash(urlToGo || __Navimi_Helpers.getUrl());
+        const callId = ++this._callId;
+        const pushState = urlToGo !== undefined;
 
-            if (!force) {
-                if (this.currentUrl === url) {
-                    return;
-                }
-                this.abortController.abort();
-                this.abortController = new AbortController();
+        let { routeItem, params } = __Navimi_Helpers.getRouteAndParams(url, this._routesList);
+
+        if (navParams !== undefined) {
+            params = {
+                ...params,
+                ...navParams
+            };
+        }
+
+        if (this._options.onBeforeRoute) {
+            const shouldContinue = await this._options.onBeforeRoute({ url, routeItem, params }, this._navigateTo);
+            if (shouldContinue === false) {
+                return;
             }
+        }
 
-            const callId = ++this.callId;
-            const pushState = urlToGo !== undefined;
+        if (this._currentJS && !force) {
+            const currentJsInstance = this._navimiJs.getInstance(this._currentJS);
 
-            let { routeItem, params } = __Navimi_Helpers.getRouteAndParams(url, this.routesList);
+            if (currentJsInstance) {
+                const beforeLeave = currentJsInstance.beforeLeave;
 
-            if (navParams !== undefined) {
-                params = {
-                    ...params,
-                    ...navParams
-                };
-            }
-
-            if (this.options.onBeforeRoute) {
-                const shouldContinue = await this.options.onBeforeRoute({ url, routeItem, params }, this.navigateTo);
-                if (shouldContinue === false) {
-                    return;
-                }
-            }
-
-            if (this.currentJS && !force) {
-                const currentJsInstance = this.navimiJs.getInstance(this.currentJS);
-
-                if (currentJsInstance) {
-                    const beforeLeave = currentJsInstance.beforeLeave;
-
-                    if (beforeLeave) {
-                        const shouldContinue = beforeLeave({ url, routeItem, params });
-                        if (shouldContinue === false) {
-                            if (!pushState) {
-                                history.forward();
-                            }
-                            return;
+                if (beforeLeave) {
+                    const shouldContinue = beforeLeave({ url, routeItem, params });
+                    if (shouldContinue === false) {
+                        if (!pushState) {
+                            history.forward();
                         }
+                        return;
                     }
+                }
 
-                    currentJsInstance.destroy && currentJsInstance.destroy();
+                currentJsInstance.destroy && currentJsInstance.destroy();
+            }
+        }
+
+        if (!routeItem) {
+            callId === this._callId && this._reportError(new Error("No route match for url: " + url));
+            return;
+        }
+
+        await this._navimiMiddleware.executeMiddlewares(this._abortController, { url, routeItem, params }, (url: string, params: any) => {
+            this._initRoute(url, params, true);
+        });
+
+        if (callId < this._callId) {
+            if (__NAVIMI_DEV) {
+                console.warn("Navimi: A middleware has exited with an Url");
+            }
+            return;
+        }
+
+        this._currentUrl = url;
+
+        try {
+
+            const { title, jsUrl, cssUrl, templatesUrl, dependsOn } = routeItem || {};
+
+            if (!jsUrl && !templatesUrl) {
+                throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
+            }
+
+            if (jsUrl) {
+                this._currentJS = jsUrl;
+                this._routesParams[jsUrl] = { url, routeItem, params };
+            }
+
+            if (pushState) {
+                if (navParams?.replaceUrl) {
+                    history.replaceState(null, null, urlToGo);
+                } else {
+                    history.pushState(null, null, urlToGo);
                 }
             }
 
-            if (!routeItem) {
-                callId === this.callId && this.reportError(new Error("No route match for url: " + url));
-                return;
+            this._navimiCss.fetchCss(this._abortController, cssUrl).catch(_ => { });
+            this._navimiTemplates.fetchTemplate(this._abortController, [templatesUrl]).catch(_ => { });
+            try {
+                this._navimiJs.loadServices(this._abortController, jsUrl, dependsOn);
+            } catch (ex) {
+                this._reportError(ex);
             }
 
-            await this.navimiMiddleware.executeMiddlewares(this.abortController, { url, routeItem, params }, (url: string, params: any) => {
-                this.initRoute(url, params, true);
-            });
+            if (jsUrl) {
+                await this._navimiJs.fetchJS(this._abortController, [jsUrl], false);
+            }
 
-            if (callId < this.callId) {
-                if (__NAVIMI_DEV) {
-                    console.warn("Navimi: A middleware has called navigateTo()");
+            //wait css and template to load if any
+            while ((cssUrl && !this._navimiCss.isCssLoaded(cssUrl)) ||
+                (templatesUrl && !this._navimiTemplates.isTemplateLoaded(templatesUrl)) ||
+                (this._options.globalCssUrl &&
+                    !this._navimiCss.isCssLoaded(this._options.globalCssUrl)) ||
+                (this._options.globalTemplatesUrl &&
+                    !this._navimiTemplates.isTemplateLoaded(this._options.globalTemplatesUrl))) {
+
+                await __Navimi_Helpers.timeout(10);
+
+                if (callId < this._callId) {
+                    return;
                 }
-                return;
+
+                //check if any load error occured
+                if ((cssUrl && this._navimiFetch.getErrors(cssUrl)) ||
+                    (templatesUrl && this._navimiFetch.getErrors(templatesUrl)) ||
+                    (this._options.globalCssUrl &&
+                        this._navimiFetch.getErrors(this._options.globalCssUrl)) ||
+                    (this._options.globalTemplatesUrl &&
+                        this._navimiFetch.getErrors(this._options.globalTemplatesUrl))) {
+                    this._reportError(
+                        new Error(
+                            this._navimiFetch.getErrors(cssUrl) ||
+                            this._navimiFetch.getErrors(templatesUrl) ||
+                            this._navimiFetch.getErrors(this._options.globalCssUrl) ||
+                            this._navimiFetch.getErrors(this._options.globalTemplatesUrl)
+                        )
+                    );
+                    return;
+                }
             }
 
-            this.currentUrl = url;
+            this._navimiDom.setTitle(title);
 
             try {
 
-                const { title, jsUrl, cssUrl, templatesUrl, dependsOn } = routeItem || {};
-
-                if (!jsUrl && !templatesUrl) {
-                    throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
-                }
-
                 if (jsUrl) {
-                    this.currentJS = jsUrl;
-                    this.routesParams[jsUrl] = { url, routeItem, params };
-                }
-
-                if (pushState) {
-                    if (navParams?.replaceUrl) {
-                        history.replaceState(null, null, urlToGo);
-                    } else {
-                        history.pushState(null, null, urlToGo);
+                    await this._navimiJs.initJS(jsUrl, this._routesParams[jsUrl]);
+                } else {
+                    const template = this._navimiTemplates.getTemplate(templatesUrl) as string;
+                    const body = document.querySelector("body");
+                    if (template && body) {
+                        body.innerHTML = template;
                     }
-                }
-
-                this.navimiCss.fetchCss(this.abortController, cssUrl).catch(_ => { });
-                this.navimiTemplates.fetchTemplate(this.abortController, [templatesUrl]).catch(_ => { });
-                try {
-                    this.navimiJs.loadServices(this.abortController, jsUrl, dependsOn);
-                } catch (ex) {
-                    this.reportError(ex);
-                }
-
-                if (jsUrl) {
-                    await this.navimiJs.fetchJS(this.abortController, [jsUrl], false);
-                }
-
-                //wait css and template to load if any
-                while ((cssUrl && !this.navimiCss.isCssLoaded(cssUrl)) ||
-                    (templatesUrl && !this.navimiTemplates.isTemplateLoaded(templatesUrl)) ||
-                    (this.options.globalCssUrl &&
-                        !this.navimiCss.isCssLoaded(this.options.globalCssUrl)) ||
-                    (this.options.globalTemplatesUrl &&
-                        !this.navimiTemplates.isTemplateLoaded(this.options.globalTemplatesUrl))) {
-
-                    await __Navimi_Helpers.timeout(10);
-
-                    if (callId < this.callId) {
-                        return;
-                    }
-
-                    //check if any load error occured
-                    if ((cssUrl && this.navimiFetch.loadErrors[cssUrl]) ||
-                        (templatesUrl && this.navimiFetch.loadErrors[templatesUrl]) ||
-                        (this.options.globalCssUrl &&
-                            this.navimiFetch.loadErrors[this.options.globalCssUrl]) ||
-                        (this.options.globalTemplatesUrl &&
-                            this.navimiFetch.loadErrors[this.options.globalTemplatesUrl])) {
-                        this.reportError(
-                            new Error(
-                                this.navimiFetch.loadErrors[cssUrl] ||
-                                this.navimiFetch.loadErrors[templatesUrl] ||
-                                this.navimiFetch.loadErrors[this.options.globalCssUrl] ||
-                                this.navimiFetch.loadErrors[this.options.globalTemplatesUrl]
-                            )
-                        );
-                        return;
-                    }
-                }
-
-                this.navimiDom.setTitle(title);
-
-                try {
-
-                    if (jsUrl) {
-                        await this.navimiJs.initJS(jsUrl, this.routesParams[jsUrl]);
-                    } else {
-                        const template = this.navimiTemplates.getTemplate(templatesUrl) as string;
-                        const body = document.querySelector("body");
-                        if (template && body) {
-                            body.innerHTML = template;
-                        }
-                        return;
-                    }
-
-                } catch (ex) {
-                    this.reportError(ex);
-
-                } finally {
-
-                    if (callId < this.callId) {
-                        return;
-                    }
-
-                    this.navimiDom.setNavimiLinks();
-
-                    this.navimiDom.insertCss(this.navimiCss.getCss(cssUrl), "routeCss");
-
-                    this.options.onAfterRoute &&
-                        this.options.onAfterRoute({ url, routeItem, params }, this.navigateTo);
+                    return;
                 }
 
             } catch (ex) {
-                this.reportError(ex);
+                this._reportError(ex);
+
+            } finally {
+
+                if (callId < this._callId) {
+                    return;
+                }
+
+                this._navimiDom.setNavimiLinks();
+
+                this._navimiDom.insertCss(this._navimiCss.getCss(cssUrl), "routeCss");
+
+                this._options.onAfterRoute &&
+                    this._options.onAfterRoute({ url, routeItem, params }, this._navigateTo);
             }
 
-        };
+        } catch (ex) {
+            this._reportError(ex);
+        }
 
-    }
+    };
 
 }

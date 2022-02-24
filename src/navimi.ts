@@ -1,14 +1,15 @@
 class Navimi {
 
-    constructor(routes: KeyList<Route>, options?: Options) {
+    constructor(routes: INavimi_KeyList<INavimi_Route>, options?: INavimi_Options) {
 
-        const navimiFetch = new __Navimi.Navimi_Fetch()
-        const navimiDom = new __Navimi.Navimi_Dom();
-        const navimiCss = new __Navimi.Navimi_CSSs();
-        const navimiJs = new __Navimi.Navimi_JSs();
-        const navimiTemplates = new __Navimi.Navimi_Templates();
-        const navimiMiddleware = new __Navimi.Navimi_Middleware();
-        const navimiState = new __Navimi.Navimi_State();
+        const navimiFetch = new __Navimi_Fetch()
+        const navimiDom = new __Navimi_Dom();
+        const navimiCss = new __Navimi_CSSs();
+        const navimiJs = new __Navimi_JSs();
+        const navimiTemplates = new __Navimi_Templates();
+        const navimiMiddleware = new __Navimi_Middleware();
+        const navimiState = new __Navimi_State();
+        const navimiHot = new __Navimi_Hot();
 
         navimiFetch.init(options);
 
@@ -32,7 +33,15 @@ class Navimi {
 
         navimiTemplates.init(navimiFetch);
 
-        const navimi = new __Navimi.Navimi_Core(
+        if (__NAVIMI_DEV) {
+            navimiHot.init(
+                navimiCss,
+                navimiJs,
+                navimiTemplates,
+            );
+        }
+        
+        const navimi = new __Navimi_Core(
             routes, 
             options, {
                 navimiFetch,
@@ -41,7 +50,8 @@ class Navimi {
                 navimiDom,
                 navimiTemplates,
                 navimiMiddleware,
-                navimiState
+                navimiState,
+                navimiHot
             }
         ) as any;
 

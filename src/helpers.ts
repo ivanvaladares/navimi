@@ -1,7 +1,7 @@
 namespace __Navimi_Helpers {
 
-    const parseQuery = (queryString: string): { [key: string]: string } => {
-        const query: { [key: string]: string } = {};
+    const parseQuery = (queryString: string): INavimi_KeyList<string> => {
+        const query: INavimi_KeyList<string> = {};
         queryString.split('&').map(pair => {
             const kv = pair.split('=');
             query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
@@ -20,13 +20,13 @@ namespace __Navimi_Helpers {
         return path.split("/").filter(p => p.length > 0);
     };
 
-    const parsePath = (urlPath: string, urlPattern: string): KeyList<any> => {
+    const parsePath = (urlPath: string, urlPattern: string): INavimi_KeyList<any> => {
         const queryPos = urlPath.indexOf("?");
         const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
         const path = splitPath(urlPath);
         const pattern = splitPath(urlPattern);
 
-        let params: KeyList<any> = {};
+        let params: INavimi_KeyList<any> = {};
 
         if (queryPos > 0) {
             params = {
@@ -136,7 +136,7 @@ namespace __Navimi_Helpers {
         return JSON.stringify(iterateObject(obj));
     };
 
-    export const cloneObject = (obj: any) : KeyList<any> => {
+    export const cloneObject = (obj: any) : INavimi_KeyList<any> => {
         return obj === null || typeof obj !== "object" ? obj :  
                 Object.keys(obj).reduce((prev: any, current: string) => 
                     obj[current] !== null && typeof obj[current] === "object" ? 
@@ -144,7 +144,7 @@ namespace __Navimi_Helpers {
                         (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
-    export const getRouteAndParams = (url: string, routingList: KeyList<Route>): {routeItem: Route, params: any} => {
+    export const getRouteAndParams = (url: string, routingList: INavimi_KeyList<INavimi_Route>): {routeItem: INavimi_Route, params: any} => {
         const urlParams = splitPath(url);
         const catchAll = routingList["*"];
         let routeItem, params;
