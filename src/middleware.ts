@@ -1,4 +1,4 @@
-class __Navimi_Middleware implements INavimi_Middlewares {
+class __Navimi_Middlewares implements INavimi_Middlewares {
 
     private _middlewareStack: INavimi_Middleware[] = [];
 

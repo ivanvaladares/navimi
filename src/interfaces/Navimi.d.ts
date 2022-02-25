@@ -42,6 +42,18 @@ interface INavimi_Options {
     onError?: (error: Error) => void;
 }
 
+interface INavimi_Services {
+    navimiFetch?: INavimi_Fetch,
+    navimiJSs?: INavimi_JSs,
+    navimiCSSs?: INavimi_CSSs,
+    navimiDom?: INavimi_Dom,
+    navimiTemplates?: INavimi_Templates,
+    navimiMiddlewares?: INavimi_Middlewares,
+    navimiState?: INavimi_State,
+    navimiHot?: INavimi_Hot,
+    navimiHelpers?: INavimi_Helpers
+}
+
 interface hotPayload {
     filePath?: string;
     data?: string;

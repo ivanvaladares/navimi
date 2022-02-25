@@ -10,33 +10,33 @@ class __Navimi_Core {
     private _win: any;
 
     private _navimiFetch: INavimi_Fetch;
-    private _navimiJs: INavimi_JSs;
-    private _navimiCss: INavimi_CSSs;
+    private _navimiJSs: INavimi_JSs;
+    private _navimiCSSs: INavimi_CSSs;
     private _navimiDom: INavimi_Dom;
     private _navimiTemplates: INavimi_Templates;
-    private _navimiMiddleware: INavimi_Middlewares;
+    private _navimiMiddlewares: INavimi_Middlewares;
     private _navimiHot: INavimi_Hot;
     private _navimiHelpers: INavimi_Helpers;
 
-    constructor(routes: INavimi_KeyList<INavimi_Route>, options?: INavimi_Options, denpendencies?: any) {
+    constructor(routes: INavimi_KeyList<INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
 
         this._callId = 0;
         this._abortController = new AbortController();
-        this._currentJS = undefined;
-        this._currentUrl = undefined;
+        this._currentJS;
+        this._currentUrl;
         this._routesParams = {};
         this._routesList = routes || {};
         this._options = options || {};
         this._win = window ? window : {};
 
-        this._navimiFetch = denpendencies.navimiFetch
-        this._navimiDom = denpendencies.navimiDom;
-        this._navimiCss = denpendencies.navimiCss;
-        this._navimiJs = denpendencies.navimiJs;
-        this._navimiTemplates = denpendencies.navimiTemplates;
-        this._navimiMiddleware = denpendencies.navimiMiddleware;
-        this._navimiHot = denpendencies.navimiHot;
-        this._navimiHelpers = denpendencies.navimiHelpers;
+        this._navimiFetch = services.navimiFetch;
+        this._navimiDom = services.navimiDom;
+        this._navimiCSSs = services.navimiCSSs;
+        this._navimiJSs = services.navimiJSs;
+        this._navimiTemplates = services.navimiTemplates;
+        this._navimiMiddlewares = services.navimiMiddlewares;
+        this._navimiHot = services.navimiHot;
+        this._navimiHelpers = services.navimiHelpers;
 
         this._win.addEventListener('popstate', () => {
             this._initRoute();
@@ -45,7 +45,7 @@ class __Navimi_Core {
         this._win.navigateTo = this._navigateTo;
 
         //add middlewares
-        this._navimiMiddleware.addMiddlewares(this._options.middlewares);
+        this._navimiMiddlewares.addMiddlewares(this._options.middlewares);
 
         (async () => {
             await this._init();
@@ -62,11 +62,11 @@ class __Navimi_Core {
         if (this._options.globalCssUrl || this._options.globalTemplatesUrl) {
 
             await Promise.all([
-                this._navimiCss.fetchCss(undefined, this._options.globalCssUrl),
+                this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
                 this._navimiTemplates.fetchTemplate(undefined, [this._options.globalTemplatesUrl]),
             ]).catch(this._reportError);
 
-            this._navimiDom.insertCss(this._navimiCss.getCss(this._options.globalCssUrl), "globalCss");
+            this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), "globalCss");
         }
     }
 
@@ -135,7 +135,7 @@ class __Navimi_Core {
         }
 
         if (this._currentJS && !force) {
-            const currentJsInstance = this._navimiJs.getInstance(this._currentJS);
+            const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
 
             if (currentJsInstance) {
                 const beforeLeave = currentJsInstance.beforeLeave;
@@ -159,7 +159,7 @@ class __Navimi_Core {
             return;
         }
 
-        await this._navimiMiddleware.executeMiddlewares(this._abortController, { url, routeItem, params }, (url: string, params: any) => {
+        await this._navimiMiddlewares.executeMiddlewares(this._abortController, { url, routeItem, params }, (url: string, params: any) => {
             this._initRoute(url, params, true);
         });
 
@@ -193,23 +193,23 @@ class __Navimi_Core {
                 }
             }
 
-            this._navimiCss.fetchCss(this._abortController, cssUrl).catch(_ => { });
+            this._navimiCSSs.fetchCss(this._abortController, cssUrl).catch(_ => { });
             this._navimiTemplates.fetchTemplate(this._abortController, [templatesUrl]).catch(_ => { });
             try {
-                this._navimiJs.loadServices(this._abortController, jsUrl, dependsOn);
+                this._navimiJSs.loadServices(this._abortController, jsUrl, dependsOn);
             } catch (ex) {
                 this._reportError(ex);
             }
 
             if (jsUrl) {
-                await this._navimiJs.fetchJS(this._abortController, [jsUrl], false);
+                await this._navimiJSs.fetchJS(this._abortController, [jsUrl], false);
             }
 
             //wait css and template to load if any
-            while ((cssUrl && !this._navimiCss.isCssLoaded(cssUrl)) ||
+            while ((cssUrl && !this._navimiCSSs.isCssLoaded(cssUrl)) ||
                 (templatesUrl && !this._navimiTemplates.isTemplateLoaded(templatesUrl)) ||
                 (this._options.globalCssUrl &&
-                    !this._navimiCss.isCssLoaded(this._options.globalCssUrl)) ||
+                    !this._navimiCSSs.isCssLoaded(this._options.globalCssUrl)) ||
                 (this._options.globalTemplatesUrl &&
                     !this._navimiTemplates.isTemplateLoaded(this._options.globalTemplatesUrl))) {
 
@@ -243,7 +243,7 @@ class __Navimi_Core {
             try {
 
                 if (jsUrl) {
-                    await this._navimiJs.initJS(jsUrl, this._routesParams[jsUrl]);
+                    await this._navimiJSs.initJS(jsUrl, this._routesParams[jsUrl]);
                 } else {
                     const template = this._navimiTemplates.getTemplate(templatesUrl) as string;
                     const body = document.querySelector("body");
@@ -264,7 +264,7 @@ class __Navimi_Core {
 
                 this._navimiDom.setNavimiLinks();
 
-                this._navimiDom.insertCss(this._navimiCss.getCss(cssUrl), "routeCss");
+                this._navimiDom.insertCss(this._navimiCSSs.getCss(cssUrl), "routeCss");
 
                 this._options.onAfterRoute &&
                     this._options.onAfterRoute({ url, routeItem, params }, this._navigateTo);
