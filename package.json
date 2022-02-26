@@ -1,6 +1,6 @@
 {
   "name": "navimi",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "Ivan Valadares",
     "email": "ivanvaladares@hotmail.com"
@@ -9,7 +9,8 @@
   "homepage": "https://github.com/ivanvaladares/navimi",
   "main": "index.js",
   "scripts": {
-    "test": "node cypress.js",
+    "test": "mocha tests/unit-tests/*.js -R list --timeout 60000",
+    "cypress": "node cypress.js",
     "build": "gulp build"
   },
   "keywords": [],
@@ -19,6 +20,7 @@
     "url": "git://github.com/ivanvaladares/navimi.git"
   },
   "devDependencies": {
+    "chai": "^4.3.6",
     "cypress": "^8.5.0",
     "express": "^4.17.1",
     "glob": "^7.2.0",
@@ -29,6 +31,8 @@
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "gulp-uglify": "^3.0.2",
+    "jsdom": "^19.0.0",
+    "mocha": "^9.2.1",
     "typescript": "^4.3.5"
   }
 }

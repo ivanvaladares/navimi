@@ -6,14 +6,14 @@ const http = require('http');
 const app = express();
 const server = http.createServer(app);
 
-app.use(express.static(path.resolve(__dirname, "cypress/site")));
+app.use(express.static(path.resolve(__dirname, "tests/cypress/site")));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, "cypress/site/index.html"));
+  res.sendFile(path.resolve(__dirname, "tests/cypress/site/index.html"));
 });
 
 server.listen(3000, () => {
-  console.log(`Server started on port ${server.address().port} :)`);
+  console.log(`Cypress test starting on port ${server.address().port}...`);
   cypress.run().finally(() => {
     server.close(() => {
       console.log('Closed out remaining connections');

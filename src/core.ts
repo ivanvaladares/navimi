@@ -63,7 +63,7 @@ class __Navimi_Core {
 
             await Promise.all([
                 this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
-                this._navimiTemplates.fetchTemplate(undefined, [this._options.globalTemplatesUrl]),
+                this._navimiTemplates.fetchTemplate(undefined, this._options.globalTemplatesUrl),
             ]).catch(this._reportError);
 
             this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), "globalCss");
@@ -194,7 +194,7 @@ class __Navimi_Core {
             }
 
             this._navimiCSSs.fetchCss(this._abortController, cssUrl).catch(_ => { });
-            this._navimiTemplates.fetchTemplate(this._abortController, [templatesUrl]).catch(_ => { });
+            this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl).catch(_ => { });
             try {
                 this._navimiJSs.loadServices(this._abortController, jsUrl, dependsOn);
             } catch (ex) {

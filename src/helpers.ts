@@ -93,6 +93,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
                 return String(obj);
             }
 
+            //todo: error serialization is not working
             if (obj instanceof Error) {
                 return obj.message;
             }
@@ -137,6 +138,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
     };
 
     public cloneObject = (obj: any) : INavimi_KeyList<any> => {
+        //todo: error cloning is not working
         return obj === null || typeof obj !== "object" ? obj :  
                 Object.keys(obj).reduce((prev: any, current: string) => 
                     obj[current] !== null && typeof obj[current] === "object" ? 
@@ -162,6 +164,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
         }
         
         if (!routeItem && catchAll) {
+            params = this.parsePath(url, url);
             routeItem = catchAll;
         }
 

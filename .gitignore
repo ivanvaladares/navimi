@@ -3,7 +3,7 @@ package-lock.json
 test-results.xml
 examples/06.hot/node_modules
 examples/06.hot/package-lock.json
-cypress/plugins
-cypress/screenshots
-cypress/support
-cypress/videos
+tests/cypress/plugins
+tests/cypress/screenshots
+tests/cypress/support
+tests/cypress/videos

@@ -12,8 +12,8 @@ const paths = {
     jsSource: './dist/**/*.js',
     dirOutput: './dist',
     examples: './examples/*/scripts',
-    testPath: './cypress/site/scripts',
     hotPath: './examples/06.hot/scripts',
+    testPath: './tests/cypress/site/scripts',
 };
 
 const banner = ['/**',

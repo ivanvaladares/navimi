@@ -1,5 +1,5 @@
 /**
- * Navimi v0.2.1 
+ * Navimi v0.2.2 
  * Developed by Ivan Valadares 
  * ivanvaladares@hotmail.com 
  * https://github.com/ivanvaladares/navimi 
@@ -85,7 +85,7 @@ class __Navimi_Core {
                     }
                 }
                 this._navimiCSSs.fetchCss(this._abortController, cssUrl).catch(_ => { });
-                this._navimiTemplates.fetchTemplate(this._abortController, [templatesUrl]).catch(_ => { });
+                this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl).catch(_ => { });
                 try {
                     this._navimiJSs.loadServices(this._abortController, jsUrl, dependsOn);
                 }
@@ -185,7 +185,7 @@ class __Navimi_Core {
         if (this._options.globalCssUrl || this._options.globalTemplatesUrl) {
             await Promise.all([
                 this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
-                this._navimiTemplates.fetchTemplate(undefined, [this._options.globalTemplatesUrl]),
+                this._navimiTemplates.fetchTemplate(undefined, this._options.globalTemplatesUrl),
             ]).catch(this._reportError);
             this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), "globalCss");
         }
@@ -439,6 +439,7 @@ class __Navimi_Helpers {
                 if (typeof obj === 'function') {
                     return String(obj);
                 }
+                //todo: error serialization is not working
                 if (obj instanceof Error) {
                     return obj.message;
                 }
@@ -474,6 +475,7 @@ class __Navimi_Helpers {
             return JSON.stringify(iterateObject(obj));
         };
         this.cloneObject = (obj) => {
+            //todo: error cloning is not working
             return obj === null || typeof obj !== "object" ? obj :
                 Object.keys(obj).reduce((prev, current) => obj[current] !== null && typeof obj[current] === "object" ?
                     (prev[current] = this.cloneObject(obj[current]), prev) :
@@ -494,6 +496,7 @@ class __Navimi_Helpers {
                 }
             }
             if (!routeItem && catchAll) {
+                params = this.parsePath(url, url);
                 routeItem = catchAll;
             }
             return { routeItem, params };
@@ -669,8 +672,7 @@ class __Navimi_JSs {
                         return this.fetchJS(undefined, urls, true);
                     },
                     fetchTemplate: (url) => {
-                        const urls = Array.isArray(url) ? url : [url];
-                        return this._navimiTemplates.fetchTemplate(undefined, urls, jsUrl);
+                        return this._navimiTemplates.fetchTemplate(undefined, url, jsUrl);
                     },
                     setState: this._navimiState.setState,
                     getState: this._navimiState.getState,
@@ -1009,7 +1011,7 @@ class __Navimi_Templates {
         this.loadTemplate = (templateCode, url) => {
             const regIni = new RegExp("<t ([^>]+)>");
             const regEnd = new RegExp("</t>");
-            const regId = new RegExp("id=\"([^\"]+)\"");
+            const regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
             let tempCode = templateCode;
             if (!regIni.exec(tempCode)) {
                 this._templatesCache[url] = tempCode;
@@ -1021,7 +1023,7 @@ class __Navimi_Templates {
                     break;
                 }
                 const regIdRes = regId.exec(iniTemplate[1]);
-                const idTemplate = regIdRes.length > 0 && regIdRes[1];
+                const idTemplate = regIdRes.length > 0 && regIdRes[1].slice(1, -1);
                 tempCode = tempCode.substr(iniTemplate.index + iniTemplate[0].length);
                 const endTemplate = regEnd.exec(tempCode);
                 if (!idTemplate || !endTemplate || endTemplate.length === 0) {
@@ -1038,7 +1040,7 @@ class __Navimi_Templates {
             const arrTemplates = ids.map(id => this._templatesCache[id]);
             return arrTemplates.length > 1 ? arrTemplates : arrTemplates[0];
         };
-        this.fetchTemplate = (abortController, urls, jsUrl) => {
+        this.fetchTemplate = (abortController, url, jsUrl) => {
             const init = (url) => {
                 return new Promise(async (resolve, reject) => {
                     if (!url || this._loadedTemplates[url]) {
@@ -1060,6 +1062,7 @@ class __Navimi_Templates {
                     }
                 });
             };
+            const urls = Array.isArray(url) ? url : [url];
             if (jsUrl) {
                 urls.map((u) => {
                     this._dependencyTemplatesMap[u] = Object.assign(Object.assign({}, this._dependencyTemplatesMap[u] || {}), { [jsUrl]: true });

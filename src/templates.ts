@@ -16,7 +16,7 @@ class __Navimi_Templates implements INavimi_Templates {
     private loadTemplate = (templateCode: string, url?: string): void => {
         const regIni = new RegExp("<t ([^>]+)>");
         const regEnd = new RegExp("</t>");
-        const regId = new RegExp("id=\"([^\"]+)\"");
+        const regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
         let tempCode = templateCode;
 
         if (!regIni.exec(tempCode)) {
@@ -32,7 +32,7 @@ class __Navimi_Templates implements INavimi_Templates {
             }
 
             const regIdRes = regId.exec(iniTemplate[1]);
-            const idTemplate = regIdRes.length > 0 && regIdRes[1];
+            const idTemplate = regIdRes.length > 0 && regIdRes[1].slice(1, -1);
             tempCode = tempCode.substr(iniTemplate.index + iniTemplate[0].length);
             const endTemplate = regEnd.exec(tempCode);
 
@@ -54,7 +54,7 @@ class __Navimi_Templates implements INavimi_Templates {
         return arrTemplates.length > 1 ? arrTemplates : arrTemplates[0];
     };
 
-    public fetchTemplate = (abortController: AbortController, urls: string[], jsUrl?: string): Promise<void | void[]> => {
+    public fetchTemplate = (abortController: AbortController, url: string | string[], jsUrl?: string): Promise<void | void[]> => {
         const init = (url: string): Promise<void> => {
             return new Promise(async (resolve, reject) => {
                 if (!url || this._loadedTemplates[url]) {
@@ -77,6 +77,8 @@ class __Navimi_Templates implements INavimi_Templates {
                 }
             });
         };
+
+        const urls: string[] = Array.isArray(url) ? url : [url];
 
         if (jsUrl) {
             urls.map((u: string) => {
