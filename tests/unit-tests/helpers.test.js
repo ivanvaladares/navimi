@@ -1,13 +1,12 @@
 const mocha = require('mocha');
 const chai = require('chai');
-const jsdom = require("jsdom");
 
 const describe = mocha.describe;
 const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let getNavimi = new require('./_getNavimi');
+let _navimi = new require('./_navimi');
 
 let dom;
 let helpers;
@@ -15,18 +14,15 @@ let helpers;
 describe('Test helpers -', () => {
 
     before(done => {
-        const { JSDOM } = jsdom;
 
-        dom = new JSDOM(`<!DOCTYPE html><html><head><script>
-                ${getNavimi()}
-                window.__Navimi_Helpers = __Navimi_Helpers;
-                </script></head></html>`,
-            { runScripts: 'dangerously' });
-
-        dom.window.window.onload = () => {
-            helpers = new dom.window.__Navimi_Helpers();
+        _navimi.getClasses(['__Navimi_Helpers'], (classes, _dom) => {
+        
+            helpers = new classes['__Navimi_Helpers']();
+            dom = _dom;
+            
             done();
-        };
+        
+        });
 
     });
 

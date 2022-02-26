@@ -1,32 +1,24 @@
 const mocha = require('mocha');
 const chai = require('chai');
-const jsdom = require("jsdom");
 
 const describe = mocha.describe;
 const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let getNavimi = new require('./_getNavimi');
+let _navimi = new require('./_navimi');
 
 let fetchData = {};
-let dom;
 let fetch;
 
 describe('Test fetch -', () => {
 
     before(done => {
 
-        const { JSDOM } = jsdom;
-
-        dom = new JSDOM(`<!DOCTYPE html><html><head><script>
-                ${getNavimi()}
-                window.__Navimi_Fetch = __Navimi_Fetch;
-                </script></head></html>`,
-            { runScripts: 'dangerously' });
-
-        dom.window.window.onload = () => {
-            fetch = new dom.window.__Navimi_Fetch();
+        _navimi.getClasses(['__Navimi_Fetch'], (classes) => {
+        
+            fetch = new classes['__Navimi_Fetch']();
+            
             fetch.init({}, (url) => {
 
                 return new Promise((resolve, reject) => {
@@ -41,8 +33,10 @@ describe('Test fetch -', () => {
                 });
 
             });
+            
             done();
-        };
+        
+        });
 
     });
 

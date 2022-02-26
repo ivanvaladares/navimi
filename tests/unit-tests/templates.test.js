@@ -1,6 +1,5 @@
 const mocha = require('mocha');
 const chai = require('chai');
-const jsdom = require("jsdom");
 
 const describe = mocha.describe;
 const before = mocha.before;
@@ -8,30 +7,23 @@ const it = mocha.it;
 const expect = chai.expect;
 
 let fakeFetch = new (require('./_fakeFetch'))();
-let getNavimi = new require('./_getNavimi');
+let _navimi = new require('./_navimi');
 
-let dom;
 let templates;
 
 describe('Test templates -', () => {
 
     before(done => {
 
-        const { JSDOM } = jsdom;
-
-        dom = new JSDOM(`<!DOCTYPE html><html><head><script>
-                ${getNavimi()}
-                window.__Navimi_Templates = __Navimi_Templates;
-                window.__Navimi_Helpers = __Navimi_Helpers;
-                </script></head></html>`,
-            { runScripts: 'dangerously' });
-
-        dom.window.window.onload = () => {
-            const helpers = new dom.window.__Navimi_Helpers();
-            templates = new dom.window.__Navimi_Templates();
+        _navimi.getClasses(['__Navimi_Templates', '__Navimi_Helpers'], (classes) => {
+        
+            const helpers = new classes['__Navimi_Helpers']();
+            templates = new classes['__Navimi_Templates']();
             templates.init(fakeFetch, helpers);
+
             done();
-        };
+        
+        });
 
     });
 

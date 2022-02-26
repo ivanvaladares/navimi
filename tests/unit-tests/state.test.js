@@ -1,33 +1,28 @@
 const mocha = require('mocha');
 const chai = require('chai');
-const jsdom = require("jsdom");
 
 const describe = mocha.describe;
 const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let getNavimi = new require('./_getNavimi');
+let _navimi = new require('./_navimi');
 
 let state;
 
 describe('Test state -', () => {
 
     before(done => {
-        const { JSDOM } = jsdom;
-        
-        const dom = new JSDOM(`<!DOCTYPE html><html><head><script>
-                ${getNavimi()}
-                window.__Navimi_State = __Navimi_State;
-                window.__Navimi_Helpers = __Navimi_Helpers;
-                </script></head></html>`,
-            { runScripts: 'dangerously' });
 
-        dom.window.window.onload = () => {
-            state = new dom.window.__Navimi_State();
-            state.init(new dom.window.__Navimi_Helpers());
+        _navimi.getClasses(['__Navimi_State', '__Navimi_Helpers'], (classes) => {
+        
+            const helpers = new classes['__Navimi_Helpers']();
+            state = new classes['__Navimi_State']();
+            state.init(helpers);
+            
             done();
-        };
+        
+        });
 
     });
 
