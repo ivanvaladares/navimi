@@ -6,7 +6,7 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let _navimi = new require('./_navimi');
+const _navimi = new require('./_navimi');
 
 let fetchData = {};
 let fetch;
@@ -59,7 +59,7 @@ describe('Test fetch -', () => {
         const url = "/template2.html";
 
         fetch.fetchFile(url).then((data) => {
-            done("Should not be here!");
+            done("Should not get here!");
         }).catch((err) => {
             done();
         });

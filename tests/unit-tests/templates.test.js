@@ -6,8 +6,8 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let fakeFetch = new (require('./_fakeFetch'))();
-let _navimi = new require('./_navimi');
+const fakeFetch = new (require('./_fakeFetch'))();
+const _navimi = new require('./_navimi');
 
 let templates;
 

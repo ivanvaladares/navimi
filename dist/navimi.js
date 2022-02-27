@@ -59,10 +59,10 @@ class __Navimi_Core {
             }
             await this._navimiMiddlewares.executeMiddlewares(this._abortController, { url, routeItem, params }, (url, params) => {
                 this._initRoute(url, params, true);
-            });
+            }).catch(this._reportError);
             if (callId < this._callId) {
                 if (__NAVIMI_DEV) {
-                    console.warn("Navimi: A middleware has exited with an Url");
+                    console.warn("Navimi: A middleware has exited or errored.");
                 }
                 return;
             }
@@ -839,26 +839,31 @@ class __Navimi_Middlewares {
                 prevIndex = index;
                 const middleware = this._middlewareStack[index];
                 if (middleware) {
-                    await middleware(context, async (url, params) => {
-                        if (abortController.signal.aborted) {
-                            reject();
-                        }
-                        else {
-                            if (!url) {
-                                await runner(resolve, reject, index + 1);
+                    try {
+                        await middleware(context, async (url, params) => {
+                            if (abortController && abortController.signal.aborted) {
+                                resolve();
                             }
                             else {
-                                reject();
-                                callback(url, params);
+                                if (!url) {
+                                    await runner(resolve, reject, index + 1);
+                                }
+                                else {
+                                    callback(url, params);
+                                    resolve();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                    catch (error) {
+                        reject(error);
+                    }
                 }
                 else {
                     resolve();
                 }
             };
-            await new Promise(await runner).catch(_ => { });
+            return await new Promise(runner);
         };
     }
 }

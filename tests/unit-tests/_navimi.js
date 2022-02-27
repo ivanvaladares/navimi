@@ -1,12 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const jsdom = require("jsdom");
+const { JSDOM } = require("jsdom");
 
 function getClasses(classes, callback) {
 
     const navimiJs = fs.readFileSync(path.resolve(__dirname, '../../dist/navimi.js'), 'utf8');
-
-    const { JSDOM } = jsdom;
 
     const dom = new JSDOM(
         `<html><head><script>
@@ -26,6 +24,5 @@ function getClasses(classes, callback) {
     };
 
 }
-
 
 module.exports = { getClasses };

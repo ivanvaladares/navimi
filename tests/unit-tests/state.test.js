@@ -6,7 +6,7 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-let _navimi = new require('./_navimi');
+const _navimi = new require('./_navimi');
 
 let state;
 
