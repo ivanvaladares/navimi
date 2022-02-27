@@ -161,11 +161,11 @@ class __Navimi_Core {
 
         await this._navimiMiddlewares.executeMiddlewares(this._abortController, { url, routeItem, params }, (url: string, params: any) => {
             this._initRoute(url, params, true);
-        });
+        }).catch(this._reportError);
 
         if (callId < this._callId) {
             if (__NAVIMI_DEV) {
-                console.warn("Navimi: A middleware has exited with an Url");
+                console.warn("Navimi: A middleware has exited or errored.");
             }
             return;
         }

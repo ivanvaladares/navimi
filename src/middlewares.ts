@@ -8,7 +8,7 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
         }
     };
 
-    public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: INavimi_KeyList<any>) => void): Promise<void> => {
+    public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: INavimi_KeyList<any>) => void): Promise<any> => {
         let prevIndex = -1;
         const runner = async (resolve: (value?: unknown) => void, reject: (reason?: any) => void, index: number = 0): Promise<void> => {
             if (__NAVIMI_DEV) {
@@ -19,23 +19,27 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
             prevIndex = index;
             const middleware = this._middlewareStack[index];
             if (middleware) {
-                await middleware(context, async (url: string, params?: INavimi_KeyList<any>) => {
-                    if (abortController.signal.aborted) {
-                        reject();
-                    } else {
-                        if (!url) {
-                            await runner(resolve, reject, index + 1);
+                try {
+                    await middleware(context, async (url: string, params?: INavimi_KeyList<any>) => {
+                        if (abortController && abortController.signal.aborted) {
+                            resolve();
                         } else {
-                            reject();
-                            callback(url, params);
+                            if (!url) {
+                                await runner(resolve, reject, index + 1);
+                            } else {
+                                callback(url, params);
+                                resolve();
+                            }
                         }
-                    }
-                });
+                    });
+                } catch (error) {
+                    reject(error);
+                }
             } else {
                 resolve();
             }
         }
-        await new Promise(await runner).catch(_ => { });
+        return await new Promise(runner);
     };
 
 }
