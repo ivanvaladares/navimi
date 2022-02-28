@@ -12,7 +12,7 @@ describe('Test middlewares -', () => {
 
     before(done => {
 
-        _navimi.getClasses(['__Navimi_Middlewares'], (classes) => {
+        _navimi.getClasses((classes) => {
         
             middlewares = new classes['__Navimi_Middlewares']();
             

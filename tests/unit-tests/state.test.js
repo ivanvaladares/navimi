@@ -14,7 +14,7 @@ describe('Test state -', () => {
 
     before(done => {
 
-        _navimi.getClasses(['__Navimi_State', '__Navimi_Helpers'], (classes) => {
+        _navimi.getClasses((classes) => {
         
             const helpers = new classes['__Navimi_Helpers']();
             state = new classes['__Navimi_State']();

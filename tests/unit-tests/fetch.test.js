@@ -7,32 +7,19 @@ const it = mocha.it;
 const expect = chai.expect;
 
 const _navimi = new require('./_navimi');
+const _mock_fetch = new (require('./_mock_fetch'))();
 
-let fetchData = {};
 let fetch;
 
 describe('Test fetch -', () => {
 
     before(done => {
 
-        _navimi.getClasses(['__Navimi_Fetch'], (classes) => {
+        _navimi.getClasses((classes) => {
         
             fetch = new classes['__Navimi_Fetch']();
             
-            fetch.init({}, (url) => {
-
-                return new Promise((resolve, reject) => {
-                    if (fetchData[url]) {
-                        resolve({
-                            text: async () => { return Promise.resolve(fetchData[url]); },
-                            ok: true
-                        });
-                        return;
-                    }
-                    reject(new Error(`File ${url} not found`));
-                });
-
-            });
+            fetch.init({}, _mock_fetch.fetch.bind(_mock_fetch));
             
             done();
         
@@ -43,7 +30,7 @@ describe('Test fetch -', () => {
     it('Test success', (done) => {
 
         const url = "/template1.html";
-        fetchData[url] = `testing... ok!`;
+        _mock_fetch.data[url] = `testing... ok!`;
 
         fetch.fetchFile(url).then((data) => {
 

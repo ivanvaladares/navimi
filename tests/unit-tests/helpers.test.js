@@ -15,7 +15,7 @@ describe('Test helpers -', () => {
 
     before(done => {
 
-        _navimi.getClasses(['__Navimi_Helpers'], (classes, _dom) => {
+        _navimi.getClasses((classes, _dom) => {
         
             helpers = new classes['__Navimi_Helpers']();
             dom = _dom;

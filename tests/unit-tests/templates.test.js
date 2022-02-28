@@ -6,7 +6,7 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-const fakeFetch = new (require('./_fakeFetch'))();
+const _mock_NavimiFetch = new (require('./_mock_NavimiFetch'))();
 const _navimi = new require('./_navimi');
 
 let templates;
@@ -15,11 +15,11 @@ describe('Test templates -', () => {
 
     before(done => {
 
-        _navimi.getClasses(['__Navimi_Templates', '__Navimi_Helpers'], (classes) => {
+        _navimi.getClasses((classes) => {
         
             const helpers = new classes['__Navimi_Helpers']();
             templates = new classes['__Navimi_Templates']();
-            templates.init(fakeFetch, helpers);
+            templates.init(_mock_NavimiFetch, helpers);
 
             done();
         
@@ -33,7 +33,7 @@ describe('Test templates -', () => {
         const templateId = "template1";
         const templateBody = `<div><h1>Template 1</h1><p>{{text}}</p></div>`;
 
-        fakeFetch.data[url] = `<t id="${templateId}">${templateBody}</t>`;
+        _mock_NavimiFetch.data[url] = `<t id="${templateId}">${templateBody}</t>`;
 
         templates.fetchTemplate(undefined, url).then(() => {
             const result = templates.getTemplate(templateId);
@@ -51,8 +51,7 @@ describe('Test templates -', () => {
         const templateId = "template2";
         const templateBody = `<div><h1>Template 2</h1><p>{{text}}</p>...</div>`;
 
-        //todo: accept templateId as single quoted string
-        fakeFetch.data[url] = `<t id='${templateId}'>${templateBody}</t>`;
+        _mock_NavimiFetch.data[url] = `<t id='${templateId}'>${templateBody}</t>`;
 
         templates.fetchTemplate(undefined, url).then(() => {
             const result = templates.getTemplate(templateId);
@@ -70,7 +69,7 @@ describe('Test templates -', () => {
         const url = "/template3.html";
 
         const template3 = `
-            <t id='template3'>
+            <t id="template3">
                 <div>
                     <h1>Template 3</h1>
                     <p>{{text}}</p>
@@ -86,8 +85,7 @@ describe('Test templates -', () => {
                 </div>
             </t>`;
 
-        //todo: accept templateId as single quoted string
-        fakeFetch.data[url] = template3 + template4;
+        _mock_NavimiFetch.data[url] = template3 + template4;
 
         templates.fetchTemplate(undefined, url).then(() => {
             const resTemplate3 = templates.getTemplate("template3");
