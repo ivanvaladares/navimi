@@ -6,7 +6,7 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-const _navimi = new require('./_navimi');
+const _getClasses = new require('./_getClasses');
 
 let state;
 
@@ -14,7 +14,7 @@ describe('Test state -', () => {
 
     before(done => {
 
-        _navimi.getClasses((classes) => {
+        _getClasses.getClasses((classes) => {
         
             const helpers = new classes['__Navimi_Helpers']();
             state = new classes['__Navimi_State']();

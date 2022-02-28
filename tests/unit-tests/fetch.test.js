@@ -6,7 +6,7 @@ const before = mocha.before;
 const it = mocha.it;
 const expect = chai.expect;
 
-const _navimi = new require('./_navimi');
+const _getClasses = new require('./_getClasses');
 const _mock_fetch = new (require('./_mock_fetch'))();
 
 let fetch;
@@ -15,7 +15,7 @@ describe('Test fetch -', () => {
 
     before(done => {
 
-        _navimi.getClasses((classes) => {
+        _getClasses.getClasses((classes) => {
         
             fetch = new classes['__Navimi_Fetch']();
             

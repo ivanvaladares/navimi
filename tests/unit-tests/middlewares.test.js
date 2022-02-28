@@ -4,7 +4,7 @@ const describe = mocha.describe;
 const before = mocha.before;
 const it = mocha.it;
 
-const _navimi = new require('./_navimi');
+const _getClasses = new require('./_getClasses');
 
 let middlewares;
 
@@ -12,7 +12,7 @@ describe('Test middlewares -', () => {
 
     before(done => {
 
-        _navimi.getClasses((classes) => {
+        _getClasses.getClasses((classes) => {
         
             middlewares = new classes['__Navimi_Middlewares']();
             

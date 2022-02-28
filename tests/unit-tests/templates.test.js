@@ -7,7 +7,7 @@ const it = mocha.it;
 const expect = chai.expect;
 
 const _mock_NavimiFetch = new (require('./_mock_NavimiFetch'))();
-const _navimi = new require('./_navimi');
+const _getClasses = new require('./_getClasses');
 
 let templates;
 
@@ -15,7 +15,7 @@ describe('Test templates -', () => {
 
     before(done => {
 
-        _navimi.getClasses((classes) => {
+        _getClasses.getClasses((classes) => {
         
             const helpers = new classes['__Navimi_Helpers']();
             templates = new classes['__Navimi_Templates']();
