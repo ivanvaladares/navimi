@@ -53,7 +53,7 @@ class __Navimi_JSs implements INavimi_JSs {
         });
     };
 
-    private _fetch = (abortController: AbortController, url: string, external?: boolean): Promise<void | void[]> => {
+    private _fetch = (abortController: AbortController, url: string, external?: boolean, module?: boolean): Promise<void | void[]> => {
         return new Promise<void>(async (resolve, reject) => {
             try {
                 let jsCode: string;
@@ -69,7 +69,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
                 }
 
-                this._insertJS(url, jsCode, external);
+                this._insertJS(url, jsCode, external, module);
 
                 if (external === undefined) {
                     this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
@@ -83,13 +83,13 @@ class __Navimi_JSs implements INavimi_JSs {
         });
     };
 
-    private _insertJS = (url: string, jsCode: string, external?: boolean): void => {
+    private _insertJS = (url: string, jsCode: string, external?: boolean, module?: boolean): void => {
         let jsHtmlBody = external !== undefined ?
             `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
                 })())}())` : jsCode;
 
         this._loadedJSs[url] = external ? true : jsCode;
-        this._navimiDom.insertJS(jsHtmlBody, url);
+        this._navimiDom.insertJS(jsHtmlBody, url, module);
     };
 
     private _instantiateJS = async (
@@ -186,7 +186,7 @@ class __Navimi_JSs implements INavimi_JSs {
         return this._routesJSs[url];
     };
 
-    public fetchJS = (abortController: AbortController, urls: string[], external?: boolean): Promise<InstanceType<any> | InstanceType<any>[]> => {
+    public fetchJS = (abortController: AbortController, urls: string[], external?: boolean, module?: boolean): Promise<InstanceType<any> | InstanceType<any>[]> => {
 
         const init = (url: string): Promise<InstanceType<any>> => {
             return new Promise<InstanceType<any>>(async (resolve, reject) => {
@@ -212,7 +212,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 this._navimiLoader[this._promiseNS + url] = resolve;
                 this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
 
-                this._fetch(abortController, url, external).catch(ex => {
+                this._fetch(abortController, url, external, module).catch(ex => {
                     this._navimiLoader[this._promiseNS + url + "_reject"](ex);
                 });
             });

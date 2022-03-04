@@ -298,26 +298,33 @@ class __Navimi_Dom {
             const target = (head || document.body);
             prepend ? target.prepend(style) : target.appendChild(style);
         };
-        this.insertJS = (jsCode, jsUrl) => {
+        this.insertJS = (jsCode, jsUrl, module) => {
             const oldTag = document.querySelector(`[jsUrl='${jsUrl}']`);
             oldTag && oldTag.remove();
             const script = document.createElement("script");
-            script.type = "text/javascript";
+            script.type = module ? "module" : "text/javascript";
             script.innerHTML = jsCode;
             script.setAttribute("jsUrl", jsUrl);
             const head = document.getElementsByTagName("head")[0];
             (head || document.body).appendChild(script);
         };
-        this.addLibrary = async (jsOrCssUrl) => {
-            let urls = Array.isArray(jsOrCssUrl) ? jsOrCssUrl : [jsOrCssUrl];
-            urls = urls.filter(url => !this._navimiJSs.isJsLoaded(url));
-            urls.length > 0 && await Promise.all(urls.map(url => {
-                const type = url.split(".").pop();
-                if (type.toLowerCase() === "css") {
-                    this._navimiCSSs.fetchCss(undefined, url, true);
+        this.addLibrary = async (url) => {
+            const arr = Array.isArray(url) ? url : [url];
+            let urls = arr.map((url) => {
+                if (typeof url === "string") {
+                    const type = url.split(".").pop();
+                    return { url, type: (type.toLowerCase() === "css") ? "css" : "js" };
                 }
                 else {
-                    return this._navimiJSs.fetchJS(undefined, [url]);
+                    return url;
+                }
+            }).filter((obj) => !this._navimiJSs.isJsLoaded(obj.url));
+            urls.length > 0 && await Promise.all(urls.map(obj => {
+                if (obj.type.toLowerCase() === "css") {
+                    this._navimiCSSs.fetchCss(undefined, obj.url, true);
+                }
+                else {
+                    return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "jsModule");
                 }
             })).catch(ex => {
                 throw new Error(ex);
@@ -609,7 +616,7 @@ class __Navimi_JSs {
                 }, 50);
             });
         };
-        this._fetch = (abortController, url, external) => {
+        this._fetch = (abortController, url, external, module) => {
             return new Promise(async (resolve, reject) => {
                 try {
                     let jsCode;
@@ -624,7 +631,7 @@ class __Navimi_JSs {
                             signal: abortController ? abortController.signal : undefined
                         });
                     }
-                    this._insertJS(url, jsCode, external);
+                    this._insertJS(url, jsCode, external, module);
                     if (external === undefined) {
                         this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
                     }
@@ -635,12 +642,12 @@ class __Navimi_JSs {
                 }
             });
         };
-        this._insertJS = (url, jsCode, external) => {
+        this._insertJS = (url, jsCode, external, module) => {
             let jsHtmlBody = external !== undefined ?
                 `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
                 })())}())` : jsCode;
             this._loadedJSs[url] = external ? true : jsCode;
-            this._navimiDom.insertJS(jsHtmlBody, url);
+            this._navimiDom.insertJS(jsHtmlBody, url, module);
         };
         this._instantiateJS = async (jsUrl, external, //todo: change to isRouteScript
         JsClass) => {
@@ -710,7 +717,7 @@ class __Navimi_JSs {
         this.getInstance = (url) => {
             return this._routesJSs[url];
         };
-        this.fetchJS = (abortController, urls, external) => {
+        this.fetchJS = (abortController, urls, external, module) => {
             const init = (url) => {
                 return new Promise(async (resolve, reject) => {
                     // return the instance if this js is already loaded
@@ -732,7 +739,7 @@ class __Navimi_JSs {
                     // let the js resolve the promise itself (*1)
                     this._navimiLoader[this._promiseNS + url] = resolve;
                     this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
-                    this._fetch(abortController, url, external).catch(ex => {
+                    this._fetch(abortController, url, external, module).catch(ex => {
                         this._navimiLoader[this._promiseNS + url + "_reject"](ex);
                     });
                 });

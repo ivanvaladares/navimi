@@ -3,6 +3,6 @@ interface INavimi_Dom {
     setTitle: (title: string) => void;
     setNavimiLinks: () => void;
     insertCss: (cssCode: string, type?: string, prepend?: boolean) => void;
-    insertJS: (jsCode: string, jsUrl: string) => void;
-    addLibrary: (jsOrCssUrl: string | string[]) => Promise<void>;
+    insertJS: (jsCode: string, jsUrl: string, module?: boolean) => void;
+    addLibrary: (url: string | string[] | INavimi_Library[]) => Promise<void>;
 }

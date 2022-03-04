@@ -12,8 +12,13 @@ interface INavimi_Route {
     metadata?: INavimi_KeyList<any>;
 }
 
+interface INavimi_Library {
+    url: string;
+    type: "css" | "js" | "jsModule";
+}
+
 interface INavimi_RouterFunctions {
-    addLibrary: (jsOrCssUrl: string | string[]) => Promise<void>;
+    addLibrary: (url: string | string[] | INavimi_Library[]) => Promise<void>;
     fetchJS: (jsUrl: string | string[]) => Promise<InstanceType<any> | InstanceType<any>[]>;
     fetchTemplate: (templateUrl: string | string[]) => Promise<void | void[]>;
     getState: (key?: string) => any;

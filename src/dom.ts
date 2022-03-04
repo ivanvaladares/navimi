@@ -37,28 +37,36 @@ class __Navimi_Dom implements INavimi_Dom {
         prepend ? target.prepend(style) : target.appendChild(style);
     };
 
-    public insertJS = (jsCode: string, jsUrl: string): void => {
+    public insertJS = (jsCode: string, jsUrl: string, module?: boolean): void => {
         const oldTag = document.querySelector(`[jsUrl='${jsUrl}']`);
         oldTag && oldTag.remove();
 
         const script: HTMLScriptElement = document.createElement("script");
-        script.type = "text/javascript";
+        script.type = module ? "module" : "text/javascript";
         script.innerHTML = jsCode;
         script.setAttribute("jsUrl", jsUrl);
         const head = document.getElementsByTagName("head")[0];
         (head || document.body).appendChild(script);
     };
 
-    public addLibrary = async (jsOrCssUrl: string | string[]): Promise<void> => {
-        let urls = Array.isArray(jsOrCssUrl) ? jsOrCssUrl : [jsOrCssUrl];
-        urls = urls.filter(url => !this._navimiJSs.isJsLoaded(url));
+    public addLibrary = async (url: string | string[] | INavimi_Library[]): Promise<void> => {
 
-        urls.length > 0 && await Promise.all(urls.map(url => {
-            const type = url.split(".").pop();
-            if (type.toLowerCase() === "css") {
-                this._navimiCSSs.fetchCss(undefined, url, true);
+        const arr: any[] = Array.isArray(url) ? url : [url];
+
+        let urls: INavimi_Library[] = arr.map((url: any) => {
+            if (typeof url === "string") {
+                const type = url.split(".").pop();
+                return {url, type: (type.toLowerCase() === "css") ? "css" : "js"};
             } else {
-                return this._navimiJSs.fetchJS(undefined, [url]);
+                return url;
+            }
+        }).filter((obj: INavimi_Library) => !this._navimiJSs.isJsLoaded(obj.url));
+
+        urls.length > 0 && await Promise.all(urls.map(obj => {
+            if (obj.type.toLowerCase() === "css") {
+                this._navimiCSSs.fetchCss(undefined, obj.url, true);
+            } else {
+                return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "jsModule");
             }
         })).catch(ex => {
             throw new Error(ex)
