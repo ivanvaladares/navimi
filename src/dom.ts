@@ -37,12 +37,12 @@ class __Navimi_Dom implements INavimi_Dom {
         prepend ? target.prepend(style) : target.appendChild(style);
     };
 
-    public insertJS = (jsCode: string, jsUrl: string, module?: boolean): void => {
+    public insertJS = (jsCode: string, jsUrl: string, isModule: boolean): void => {
         const oldTag = document.querySelector(`[jsUrl='${jsUrl}']`);
         oldTag && oldTag.remove();
 
         const script: HTMLScriptElement = document.createElement("script");
-        script.type = module ? "module" : "text/javascript";
+        script.type = isModule ? "module" : "text/javascript";
         script.innerHTML = jsCode;
         script.setAttribute("jsUrl", jsUrl);
         const head = document.getElementsByTagName("head")[0];
@@ -56,7 +56,7 @@ class __Navimi_Dom implements INavimi_Dom {
         let urls: INavimi_Library[] = arr.map((url: any) => {
             if (typeof url === "string") {
                 const type = url.split(".").pop();
-                return {url, type: (type.toLowerCase() === "css") ? "css" : "javascript"};
+                return {url, type: (type.toLowerCase() === "css") ? "css" : "jsLibrary"};
             } else {
                 return url;
             }
@@ -66,7 +66,8 @@ class __Navimi_Dom implements INavimi_Dom {
             if (obj.type.toLowerCase() === "css") {
                 this._navimiCSSs.fetchCss(undefined, obj.url, true);
             } else {
-                return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "module");
+                const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
+                return this._navimiJSs.fetchJS(undefined, [obj.url], type);
             }
         })).catch(ex => {
             throw new Error(ex)

@@ -4,9 +4,9 @@ class __Navimi_JSs implements INavimi_JSs {
     private _callBackNS: string = "_jsLoaderCallback";
     private _promiseNS: string = "_promise_";
 
-    private _loadedJSs: INavimi_KeyList<boolean | string> = {};
-    private _externalJSs: INavimi_KeyList<InstanceType<any>> = {};
+    private _loadedJSs: INavimi_KeyList<string> = {};
     private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
+    private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
     private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
     private _routesJSsServices: INavimi_KeyList<string[]> = {};
 
@@ -53,12 +53,12 @@ class __Navimi_JSs implements INavimi_JSs {
         });
     };
 
-    private _fetch = (abortController: AbortController, url: string, external?: boolean, module?: boolean): Promise<void | void[]> => {
+    private _fetch = (abortController: AbortController, url: string, type: string): Promise<void | void[]> => {
         return new Promise<void>(async (resolve, reject) => {
             try {
                 let jsCode: string;
-                if (typeof this._loadedJSs[url] === "string") {
-                    jsCode = this._loadedJSs[url] as string;
+                if (this._loadedJSs[url]) {
+                    jsCode = this._loadedJSs[url];
                 } else {
                     jsCode = await this._navimiFetch.fetchFile(url, {
                         headers: {
@@ -69,9 +69,9 @@ class __Navimi_JSs implements INavimi_JSs {
 
                 }
 
-                this._insertJS(url, jsCode, external, module);
+                this._insertJS(url, jsCode, type);
 
-                if (external === undefined) {
+                if (type !== "route" && type !== "service") {
                     this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
                 }
 
@@ -83,18 +83,18 @@ class __Navimi_JSs implements INavimi_JSs {
         });
     };
 
-    private _insertJS = (url: string, jsCode: string, external?: boolean, module?: boolean): void => {
-        let jsHtmlBody = external !== undefined ?
-            `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
-                })())}())` : jsCode;
+    private _insertJS = (url: string, jsCode: string, type: string): void => {
+        let jsHtmlBody = (type === "module" || type === "library") ? jsCode : 
+            `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", "${type}", (function(){return ${jsCode}   
+                })())}())`;
 
-        this._loadedJSs[url] = external ? true : jsCode;
-        this._navimiDom.insertJS(jsHtmlBody, url, module);
+        this._loadedJSs[url] = jsCode;
+        this._navimiDom.insertJS(jsHtmlBody, url, type === "module");
     };
 
     private _instantiateJS = async (
         jsUrl: string,
-        external: boolean, //todo: change to isRouteScript
+        type: string,
         JsClass: InstanceType<any>): Promise<void> => {
 
         const promiseToResolve: (value?: unknown) => void = this._navimiLoader[this._promiseNS + jsUrl];
@@ -106,9 +106,9 @@ class __Navimi_JSs implements INavimi_JSs {
             delete this._navimiLoader[this._promiseNS + jsUrl + "_reject"];
         }, 10);
 
-        if (external) {
+        if (type !== "route") {
             // keep this instance to reuse later
-            this._externalJSs[jsUrl] = JsClass;
+            this._othersJSs[jsUrl] = JsClass;
             promiseToResolve && promiseToResolve(Object.freeze(JsClass));
             return;
         }
@@ -129,7 +129,7 @@ class __Navimi_JSs implements INavimi_JSs {
                             [jsUrl]: true
                         };
                     });
-                    return this.fetchJS(undefined, urls, true);
+                    return this.fetchJS(undefined, urls, "javascript");
                 },
                 fetchTemplate: (url: string | string[]) => {
                     return this._navimiTemplates.fetchTemplate(undefined, url, jsUrl);
@@ -144,10 +144,11 @@ class __Navimi_JSs implements INavimi_JSs {
 
             let services: INavimi_KeyList<InstanceType<any>> = {};
 
+            // wait for all services to load
             if (this._routesJSsServices[jsUrl] && this._routesJSsServices[jsUrl].length > 0) {
                 while (true) {
                     if (this._routesJSsServices[jsUrl].map((sn: string) =>
-                        this._externalJSs[this._options.services[sn]] === undefined).indexOf(true) === -1) {
+                        this._othersJSs[this._options.services[sn]] === undefined).indexOf(true) === -1) {
                         break;
                     }
                     if (this._routesJSsServices[jsUrl].map(sn =>
@@ -160,7 +161,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 this._routesJSsServices[jsUrl].map((sn: string) => {
                     services = {
                         ...services,
-                        [sn]: this._externalJSs[this._options.services[sn]]
+                        [sn]: this._othersJSs[this._options.services[sn]]
                     };
                 });
             }
@@ -186,14 +187,14 @@ class __Navimi_JSs implements INavimi_JSs {
         return this._routesJSs[url];
     };
 
-    public fetchJS = (abortController: AbortController, urls: string[], external?: boolean, module?: boolean): Promise<InstanceType<any> | InstanceType<any>[]> => {
+    public fetchJS = (abortController: AbortController, urls: string[], type: string): Promise<InstanceType<any> | InstanceType<any>[]> => {
 
         const init = (url: string): Promise<InstanceType<any>> => {
             return new Promise<InstanceType<any>>(async (resolve, reject) => {
 
                 // return the instance if this js is already loaded
-                if (external && this._externalJSs[url]) {
-                    return resolve(this._externalJSs[url]);
+                if (type !== "route" && this._othersJSs[url]) {
+                    return resolve(this._othersJSs[url]);
                 } else {
                     if (this._routesJSs[url]) {
                         return resolve(this._routesJSs[url]);
@@ -212,7 +213,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 this._navimiLoader[this._promiseNS + url] = resolve;
                 this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
 
-                this._fetch(abortController, url, external, module).catch(ex => {
+                this._fetch(abortController, url, type).catch(ex => {
                     this._navimiLoader[this._promiseNS + url + "_reject"](ex);
                 });
             });
@@ -250,7 +251,7 @@ class __Navimi_JSs implements INavimi_JSs {
             }
 
             Promise.all(servicesUrls.filter(su => su !== undefined)
-                .map(su => this.fetchJS(abortController, [su], true)));
+                .map(su => this.fetchJS(abortController, [su], "service")));
         }
 
     };
@@ -290,7 +291,7 @@ class __Navimi_JSs implements INavimi_JSs {
                         }
                     };
 
-                    this._insertJS(jsUrl, jsCode, false);
+                    this._insertJS(jsUrl, jsCode, "route");
 
                     return;
                 }
@@ -300,7 +301,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 if (isSameFile(jsUrl, filePath)) {
                     console.log(`${filePath} updated.`);
 
-                    delete this._externalJSs[jsUrl];
+                    delete this._othersJSs[jsUrl];
 
                     this._navimiLoader[this._promiseNS + jsUrl] = () => {
                         Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
@@ -313,8 +314,9 @@ class __Navimi_JSs implements INavimi_JSs {
                             }
                         });
                     };
-
-                    this._insertJS(filePath, jsCode, true);
+                    
+                    //todo: check for modules, services and components
+                    this._insertJS(filePath, jsCode, "javascript"); 
                 }
             }
         }

@@ -87,7 +87,7 @@ class __Navimi_Components implements INavimi_Components {
                     element.onBeforeRemove && element.onBeforeRemove();
                 });
 
-                // todo: vitual dom or shadow dom
+                // todo: use virtual or shadow dom.
                 this.innerHTML = super.render && super.render();
 
                 navimiComponents.iterateChildren(this, navimiComponents.registerTag);

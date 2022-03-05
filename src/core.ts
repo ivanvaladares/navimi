@@ -202,7 +202,7 @@ class __Navimi_Core {
             }
 
             if (jsUrl) {
-                await this._navimiJSs.fetchJS(this._abortController, [jsUrl], false);
+                await this._navimiJSs.fetchJS(this._abortController, [jsUrl], "route");
             }
 
             //wait css and template to load if any
