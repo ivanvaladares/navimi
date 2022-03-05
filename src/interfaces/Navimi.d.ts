@@ -14,7 +14,7 @@ interface INavimi_Route {
 
 interface INavimi_Library {
     url: string;
-    type: "css" | "js" | "jsModule";
+    type: "css" | "javascript" | "module";
 }
 
 interface INavimi_RouterFunctions {

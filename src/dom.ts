@@ -56,7 +56,7 @@ class __Navimi_Dom implements INavimi_Dom {
         let urls: INavimi_Library[] = arr.map((url: any) => {
             if (typeof url === "string") {
                 const type = url.split(".").pop();
-                return {url, type: (type.toLowerCase() === "css") ? "css" : "js"};
+                return {url, type: (type.toLowerCase() === "css") ? "css" : "javascript"};
             } else {
                 return url;
             }
@@ -66,7 +66,7 @@ class __Navimi_Dom implements INavimi_Dom {
             if (obj.type.toLowerCase() === "css") {
                 this._navimiCSSs.fetchCss(undefined, obj.url, true);
             } else {
-                return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "jsModule");
+                return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "module");
             }
         })).catch(ex => {
             throw new Error(ex)
