@@ -36,9 +36,16 @@ class __Navimi_Components implements INavimi_Components {
         element.init();
     };
 
+    iterateChildren = (item: any, callback: any): void => {
+        Object.keys(this._components).map(name => {
+            [].slice.call(item.querySelectorAll(name)).map(callback);
+        });
+    }
+
     createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
 
         return class extends (Element) {
+
 
             eventHandler(handler: () => boolean) {
                 return (event: Event) => (handler.call(this, event) !== false && event.defaultPrevented) || this.render();
@@ -62,52 +69,30 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
 
-            props(key: string, value: string) {
-                if (value !== undefined) {
-                    return this.setAttribute(key, value);
-                }
-                return this.getAttribute(key);
-            }
-
-            select(selector: string) {
-                return this.querySelector(selector);
-            }
-
-            selectAll(selector: string) {
-                return [].slice.call(this.querySelectorAll(selector));
-            }
-
             init() {
-                this.props(`initialized`, "true");
+                this.setAttribute("initialized", "true");
                 super.init && super.init();
                 Object.getOwnPropertyNames(Element.prototype).map(this.registerClassHandlers, this);
                 this.render();
             }
 
             render() {
-                //@ts-ignore
                 this.props = this.props || {};
 
-                //@ts-ignore
                 if (this.props.children === undefined) {
-                    //@ts-ignore
                     this.props.children = this.innerHTML;
                 }
 
-                Object.keys(navimiComponents.components).map(name => {
-                    [].slice.call(this.querySelectorAll(name)).map((element: any) => {
-                        element.onBeforeRemove && element.onBeforeRemove()
-                    });
+                navimiComponents.iterateChildren(this, (element: any) => {
+                    element.onBeforeRemove && element.onBeforeRemove();
                 });
 
                 // todo: vitual dom or shadow dom
                 this.innerHTML = super.render && super.render();
 
-                Object.keys(navimiComponents.components).map(name => {
-                    [].slice.call(this.querySelectorAll(name)).map(navimiComponents.registerTag)
-                });
+                navimiComponents.iterateChildren(this, navimiComponents.registerTag);
 
-                this.selectAll("*").map(this.registerTagsEvents, this);
+                [].slice.call(this.querySelectorAll("*")).map(this.registerTagsEvents, this);
             }
         }
     };
