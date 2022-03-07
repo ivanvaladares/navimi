@@ -1,4 +1,3 @@
-
 class __Navimi_Components implements INavimi_Components {
 
     private _components: INavimi_KeyList<any> = {};
@@ -9,6 +8,7 @@ class __Navimi_Components implements INavimi_Components {
         this._navimiHelpers = navimiHelpers;
         this._components = {};
 
+        // todo: remove this and fire the register after the route render
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let node: any;
@@ -23,6 +23,7 @@ class __Navimi_Components implements INavimi_Components {
 
     registerComponent = (name: string, componentClass: InstanceType<any>): void => {
         if (!this._components[name] && /\-/.test(name)) {
+            Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
             this._components[name] = this.createElement(componentClass, this);
             [].slice.call(document.querySelectorAll(name)).map(this.registerTag)
         }
@@ -36,43 +37,32 @@ class __Navimi_Components implements INavimi_Components {
         element.init();
     };
 
-    iterateChildren = (item: any, callback: any): void => {
+    iterateChildComponents = (item: any, callback: any): void => {
         Object.keys(this._components).map(name => {
             [].slice.call(item.querySelectorAll(name)).map(callback);
         });
-    }
+    };
+
+    registerTagsEvents = (node: any, element: any): void => {
+        for (let list of [].slice.call(node.attributes)) {
+            if (/^on/.test(list.name)) {
+                const eventName: string = list.name;
+                node[eventName] = node[eventName].bind(element);
+            }
+        }
+    };
 
     createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
 
         return class extends (Element) {
 
-
-            eventHandler(handler: () => boolean) {
-                return (event: Event) => (handler.call(this, event) !== false && event.defaultPrevented) || this.render();
-            }
-
-            registerClassHandlers(handler: string) {
-                if (/^on/.test(handler) && handler in HTMLElement.prototype) {
-                    this.addEventListener(handler.substr(2), this.eventHandler(this[handler]))
-                }
-            }
-
-            registerTagsEvents(node: any) {
-                for (let list of [].slice.call(node.attributes)) {
-                    if (/^on/.test(list.name)) {
-                        const eventName: string = list.name;
-                        const handler: string[] = /{\s*(\w+)/.exec(node[eventName]) || [];
-                        if (handler && handler[1]) {
-                            node[eventName] = this.eventHandler(this[handler[1]])
-                        }
-                    }
-                }
-            }
-
             init() {
                 this.setAttribute("initialized", "true");
                 super.init && super.init();
-                Object.getOwnPropertyNames(Element.prototype).map(this.registerClassHandlers, this);
+                this.render();
+            }
+
+            forceUpdate() {
                 this.render();
             }
 
@@ -83,16 +73,18 @@ class __Navimi_Components implements INavimi_Components {
                     this.props.children = this.innerHTML;
                 }
 
-                navimiComponents.iterateChildren(this, (element: any) => {
+                navimiComponents.iterateChildComponents(this, (element: any) => {
                     element.onBeforeRemove && element.onBeforeRemove();
                 });
 
                 // todo: use virtual or shadow dom.
                 this.innerHTML = super.render && super.render();
 
-                navimiComponents.iterateChildren(this, navimiComponents.registerTag);
+                [].slice.call(this.querySelectorAll("*")).map((node: any) => 
+                    navimiComponents.registerTagsEvents(node, this));
 
-                [].slice.call(this.querySelectorAll("*")).map(this.registerTagsEvents, this);
+                navimiComponents.iterateChildComponents(this, navimiComponents.registerTag);
+
             }
         }
     };
