@@ -14,22 +14,22 @@ class __Navimi_Components implements INavimi_Components {
                 let node: any;
                 for (node of mutation.addedNodes) {
                     if (this._components[node.localName] && !node.attributes["initialized"]) {
-                        this.registerTag(node);
+                        this._registerTag(node);
                     }
                 }
             }
         }).observe(document.documentElement, { childList: true, subtree: true });
     }
 
-    registerComponent = (name: string, componentClass: InstanceType<any>): void => {
+    public registerComponent = (name: string, componentClass: InstanceType<any>): void => {
         if (!this._components[name] && /\-/.test(name)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-            this._components[name] = this.createElement(componentClass, this);
-            [].slice.call(document.querySelectorAll(name)).map(this.registerTag)
+            this._components[name] = this._createElement(componentClass, this);
+            [].slice.call(document.querySelectorAll(name)).map(this._registerTag)
         }
     };
 
-    registerTag = (element: Element): void => {
+    private _registerTag = (element: Element): void => {
         // connects the component class to the tag 
         const componentClass = this._components[element.localName];
         Object.setPrototypeOf(element, componentClass.prototype);
@@ -37,7 +37,7 @@ class __Navimi_Components implements INavimi_Components {
         element.init();
     };
 
-    findParentComponent = (node: any): void => {
+    private _findParentComponent = (node: any): void => {
         let parent = node.parentNode;
         while (parent) {
             if (/\-/.test(parent.localName) && this._components[parent.localName]) {
@@ -48,7 +48,7 @@ class __Navimi_Components implements INavimi_Components {
         }
     }
 
-    findChildComponents = (parent: any, node: any): void => {
+    private _findChildComponents = (parent: any, node: any): void => {
         for (let child of node.childNodes) {
 
             // bind tags events to the parent
@@ -62,25 +62,25 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             if (!this._components[child.localName]) {
-                this.findChildComponents(parent, child);
+                this._findChildComponents(parent, child);
             } else {
                 parent.props.childComponents = [
                     ...parent.props.childComponents || [],
                     child,
                 ];
-                this.registerTag(child);
+                this._registerTag(child);
             }
         }
     }
 
-    createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
+    private _createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
 
         return class extends (Element) {
 
             init() {
                 this.setAttribute("initialized", "true");
                 this.props = this.props || {};
-                navimiComponents.findParentComponent(this);
+                navimiComponents._findParentComponent(this);
                 super.init && super.init();
                 this.render();
             }
@@ -102,7 +102,7 @@ class __Navimi_Components implements INavimi_Components {
                 // todo: use virtual or shadow dom.
                 this.innerHTML = super.render && super.render();
 
-                navimiComponents.findChildComponents(this, this);
+                navimiComponents._findChildComponents(this, this);
 
             }
         }
