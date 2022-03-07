@@ -37,20 +37,41 @@ class __Navimi_Components implements INavimi_Components {
         element.init();
     };
 
-    iterateChildComponents = (item: any, callback: any): void => {
-        Object.keys(this._components).map(name => {
-            [].slice.call(item.querySelectorAll(name)).map(callback);
-        });
-    };
+    findParentComponent = (node: any): void => {
+        let parent = node.parentNode;
+        while (parent) {
+            if (/\-/.test(parent.localName) && this._components[parent.localName]) {
+                node.props.parentComponent = parent;
+                return;
+            }
+            parent = parent.parentNode;
+        }
+    }
 
-    registerTagsEvents = (node: any, element: any): void => {
-        for (let list of [].slice.call(node.attributes)) {
-            if (/^on/.test(list.name)) {
-                const eventName: string = list.name;
-                node[eventName] = node[eventName].bind(element);
+    findChildComponents = (parent: any, node: any): void => {
+        for (let child of node.childNodes) {
+
+            // bind tags events to the parent
+            if (child.attributes) {
+                for (let list of [].slice.call(child.attributes)) {
+                    if (/^on/.test(list.name)) {
+                        const eventName = list.name;
+                        child[eventName] = child[eventName].bind(parent);
+                    }
+                }
+            }
+
+            if (!this._components[child.localName]) {
+                this.findChildComponents(parent, child);
+            } else {
+                parent.props.childComponents = [
+                    ...parent.props.childComponents || [],
+                    child,
+                ];
+                this.registerTag(child);
             }
         }
-    };
+    }
 
     createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
 
@@ -58,6 +79,8 @@ class __Navimi_Components implements INavimi_Components {
 
             init() {
                 this.setAttribute("initialized", "true");
+                this.props = this.props || {};
+                navimiComponents.findParentComponent(this);
                 super.init && super.init();
                 this.render();
             }
@@ -67,23 +90,19 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             render() {
-                this.props = this.props || {};
 
                 if (this.props.children === undefined) {
                     this.props.children = this.innerHTML;
                 }
 
-                navimiComponents.iterateChildComponents(this, (element: any) => {
-                    element.onBeforeRemove && element.onBeforeRemove();
+                this.props.childComponents && this.props.childComponents.map((child: any) => {
+                    child.onBeforeRemove && child.onBeforeRemove();
                 });
 
                 // todo: use virtual or shadow dom.
                 this.innerHTML = super.render && super.render();
 
-                [].slice.call(this.querySelectorAll("*")).map((node: any) => 
-                    navimiComponents.registerTagsEvents(node, this));
-
-                navimiComponents.iterateChildComponents(this, navimiComponents.registerTag);
+                navimiComponents.findChildComponents(this, this);
 
             }
         }
