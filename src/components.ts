@@ -25,7 +25,6 @@ class __Navimi_Components implements INavimi_Components {
         if (!this._components[name] && /\-/.test(name)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
             this._components[name] = this._createElement(componentClass, this);
-            [].slice.call(document.querySelectorAll(name)).map(this._registerTag)
         }
     };
 
@@ -42,35 +41,40 @@ class __Navimi_Components implements INavimi_Components {
         while (parent) {
             if (/\-/.test(parent.localName) && this._components[parent.localName]) {
                 node.props.parentComponent = parent;
+                parent.props.childComponents = [
+                    ...parent.props.childComponents || [],
+                    node,
+                ];
                 return;
             }
             parent = parent.parentNode;
         }
     }
 
-    private _findChildComponents = (parent: any, node: any): void => {
-        for (let child of node.childNodes) {
-
-            // bind tags events to the parent
-            if (child.attributes) {
-                for (let list of [].slice.call(child.attributes)) {
-                    if (/^on/.test(list.name)) {
-                        const eventName = list.name;
-                        child[eventName] = child[eventName].bind(parent);
-                    }
+    private _registerChildEvents = (parent: any, child: any): void => {
+        if (child.attributes) {
+            for (let list of [].slice.call(child.attributes)) {
+                if (/^on/.test(list.name)) {
+                    const eventName = list.name;
+                    child[eventName] = child[eventName].bind(parent);
                 }
             }
-
-            if (!this._components[child.localName]) {
-                this._findChildComponents(parent, child);
-            } else {
-                parent.props.childComponents = [
-                    ...parent.props.childComponents || [],
-                    child,
-                ];
-                this._registerTag(child);
-            }
         }
+    };
+
+    private _registerChildComponents = (parent: any): void => {
+        const traverse = (node: any): void => {
+            for (let child of node.childNodes) {
+                if (this._components[child.localName]) {
+                    this._registerTag(child);
+                } else {
+                    // bind child tags events to the parent
+                    this._registerChildEvents(parent, child);
+                    traverse(child);
+                }
+            }
+        };
+        traverse(parent);
     }
 
     private _createElement = (Element: InstanceType<any>, navimiComponents: any): InstanceType<any> => {
@@ -102,7 +106,9 @@ class __Navimi_Components implements INavimi_Components {
                 // todo: use virtual or shadow dom.
                 this.innerHTML = super.render && super.render();
 
-                navimiComponents._findChildComponents(this, this);
+                navimiComponents._registerChildComponents(this);
+            
+                super.onAfterRender && super.onAfterRender();
 
             }
         }
