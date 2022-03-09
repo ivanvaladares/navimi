@@ -16,7 +16,7 @@ class __Navimi_State implements INavimi_State {
             const keys = Object.keys(this.stateWatchers);
             const diff = Object.keys(this.stateDiff);
             this.stateDiff = {};
-            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+            keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
                 Object.keys(this.stateWatchers[key]).map((cs: string) => {
                     const sNew = this.getState(key);
                     this.stateWatchers[key][cs] &&

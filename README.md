@@ -40,12 +40,11 @@ https://navimi.web.app
 ## Browser compatibility
 | Browser Version  | Date     |
 |------------------|-------   |
-| Chrome 52        | Jul 2016 |
-| Firefox 54       | Jun 2017 |
-| Edge 14          | Aug 2016 |
-| Safari 10.1      | Mar 2017 |
-| Opera 39         | Aug 2016 |
-
+| Chrome 55        | Oct 2016 |
+| Firefox 52       | Mar 2017 |
+| Edge 15          | Oct 2017 |
+| Safari 11.1      | Sep 2017 |
+| Opera 42         | Dec 2016 |
 
 <br>
 

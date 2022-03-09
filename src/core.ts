@@ -21,7 +21,7 @@ class __Navimi_Core {
     constructor(routes: INavimi_KeyList<INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
 
         this._callId = 0;
-        this._abortController = new AbortController();
+        this._abortController = window["AbortController"] ? new AbortController() : undefined;
         this._currentJS;
         this._currentUrl;
         this._routesParams = {};
@@ -111,8 +111,8 @@ class __Navimi_Core {
             if (this._currentUrl === url) {
                 return;
             }
-            this._abortController.abort();
-            this._abortController = new AbortController();
+            this._abortController && this._abortController.abort();
+            this._abortController = window["AbortController"] ? new AbortController() : undefined;
         }
 
         const callId = ++this._callId;
