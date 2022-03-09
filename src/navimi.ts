@@ -100,7 +100,7 @@ class Navimi {
         this.pagesMainCallBack = "_mainCallback";
         this.callbackNS = "_callback_";
         this.win = window ? window : {};
-        this.controller = new AbortController();
+        this.controller = window["AbortController"] ? new AbortController() : undefined;
         this.currentRouteItem = undefined;
         this.currentJS = undefined;
         this.currentUrl = undefined;
@@ -339,7 +339,7 @@ class Navimi {
         const keys = Object.keys(this.stateWatchers);
         const diff = Object.keys(this.stateDiff);
         this.stateDiff = {};
-        keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+        keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
             Object.keys(this.stateWatchers[key]).map((cs: string) => {
                 const sNew = this.getState(key);
                 this.stateWatchers[key][cs] &&
@@ -950,8 +950,8 @@ class Navimi {
             if (this.currentUrl === url) {
                 return;
             }
-            this.controller.abort();
-            this.controller = new AbortController();
+            this.controller && this.controller.abort();
+            this.controller = window["AbortController"] ? new AbortController() : undefined;
         }
 
         const callId = ++this.callId;
