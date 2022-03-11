@@ -3,10 +3,10 @@
     "browser": "chrome",
     "video": false,
     "projectId": "tests/cypress",
-    "fixturesFolder": "tests/cypress/fixtures",
+    "fixturesFolder": false,
     "integrationFolder": "tests/cypress/integration",
     "screenshotsFolder": "tests/cypress/screenshots",
     "videosFolder": "tests/cypress/videos",
-    "pluginsFile": "tests/cypress/plugins/index.js",
-    "supportFile": "tests/cypress/support/index.js"
+    "pluginsFile": false,
+    "supportFile": false
 }

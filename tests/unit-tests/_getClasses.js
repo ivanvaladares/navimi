@@ -8,6 +8,7 @@ function getClasses(callback) {
     const navimiJs = fs.readFileSync(path.resolve(__dirname, '../../dist/navimi.js'), 'utf8');
 
     const classes = ["__Navimi_Fetch",
+        "__Navimi_Components",
         "__Navimi_Dom",
         "__Navimi_CSSs",
         "__Navimi_JSs",
@@ -24,8 +25,15 @@ function getClasses(callback) {
         `<html><head><script>
             ${navimiJs}
             ${classes.map(className => `window.${className} = ${className};`).join('\n')}
-        </script></head></html>`,
-    { runScripts: 'dangerously' });
+        </script></head><body></body></html>`,
+        { 
+            runScripts: 'dangerously' 
+        }, 
+        {
+            features: {
+                QuerySelector: true
+            }
+        });
 
     dom.window.onload = () => {
         const result = {};
