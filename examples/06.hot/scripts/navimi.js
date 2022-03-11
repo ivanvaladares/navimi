@@ -4,6 +4,164 @@
  * ivanvaladares@hotmail.com 
  * https://github.com/ivanvaladares/navimi 
  */ 
+class __Navimi_Components {
+    constructor() {
+        this._components = {};
+        this.registerComponent = (name, componentClass) => {
+            if (!this._components[name] && /\-/.test(name)) {
+                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+                this._components[name] =
+                    this._createComponentClass(componentClass, this._removeChildComponents, this._registerChildComponents);
+            }
+        };
+        this._disconnectComponent = (node) => {
+            if (node.props && node.props.parentComponent) {
+                node.props.parentComponent.props.childComponents =
+                    node.props.parentComponent.props.childComponents
+                        .filter((child) => child != node);
+            }
+            if (node._observer) {
+                node._observer.disconnect();
+                node._observer = null;
+            }
+            if (node._attrObserver) {
+                node._attrObserver.disconnect();
+                node._attrObserver = null;
+            }
+        };
+        this._removeChildComponents = (node) => {
+            node.props && node.props.childComponents &&
+                node.props.childComponents.map((child) => {
+                    this._removeChildComponents(child);
+                    this._disconnectComponent(child);
+                    child.remove();
+                    child.onAfterRemove && child.onAfterRemove();
+                });
+        };
+        this._readAttributes = (node) => {
+            const prevAttributes = node.props.attributes;
+            node.props.attributes = undefined;
+            for (let list of [].slice.call(node.attributes)) {
+                const name = list.name;
+                //@ts-ignore
+                if (typeof node[name] !== "function") {
+                    node.props.attributes = Object.assign(Object.assign({}, node.props.attributes || {}), { [name]: list.value });
+                }
+            }
+            return prevAttributes;
+        };
+        this._registerTag = (tag) => {
+            const componentClass = this._components[tag.localName];
+            // connects the component class to the tag 
+            Object.setPrototypeOf(tag, componentClass.prototype);
+            // initializes the component props
+            tag.props = {};
+            this._readAttributes(tag);
+            const parent = tag.parentElement;
+            // observer to detect removed components
+            tag._observer = new MutationObserver((mutations) => {
+                if (mutations.find(m => m.removedNodes.length > 0)) {
+                    if (!parent.contains(tag)) {
+                        this._removeChildComponents(tag);
+                        this._disconnectComponent(tag);
+                        tag.onAfterRemove && tag.onAfterRemove();
+                    }
+                }
+            });
+            tag._observer.observe(parent, { childList: true });
+            // observer to detect changes in the dom and refresh the attributes
+            tag._attrObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === "attributes") {
+                        const prevAttributes = this._readAttributes(tag);
+                        if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
+                            tag.update();
+                        }
+                    }
+                });
+            });
+            tag._attrObserver.observe(tag, { attributes: true });
+            this._findParentComponent(tag);
+            tag.init();
+        };
+        this._findParentComponent = (node) => {
+            let parent = node.parentNode;
+            while (parent) {
+                if (/\-/.test(parent.localName) && this._components[parent.localName]) {
+                    node.props.parentComponent = parent;
+                    parent.props.childComponents = [
+                        ...parent.props.childComponents || [],
+                        node,
+                    ];
+                    return;
+                }
+                parent = parent.parentNode;
+            }
+        };
+        this._registerChildEvents = (parent, child) => {
+            if (child.attributes) {
+                for (let list of [].slice.call(child.attributes)) {
+                    const name = list.name;
+                    //@ts-ignore
+                    typeof child[name] === "function" && (child[name] = child[name].bind(parent));
+                }
+            }
+        };
+        this._registerChildComponents = (parent) => {
+            const traverse = (node) => {
+                let child;
+                //@ts-ignore
+                for (child of node.childNodes) {
+                    if (this._components[child.localName]) {
+                        this._registerTag(child);
+                    }
+                    else {
+                        // bind child tags events to the parent
+                        this._registerChildEvents(parent, child);
+                        traverse(child);
+                    }
+                }
+            };
+            traverse(parent);
+        };
+        this._createComponentClass = (componentClass, beforeRender, afterRender) => {
+            return class extends (componentClass) {
+                init() {
+                    super.init && super.init();
+                    this.render();
+                }
+                update() {
+                    this.render();
+                }
+                render() {
+                    beforeRender(this);
+                    if (this.props.children === undefined) {
+                        this.props.children = this.innerHTML;
+                    }
+                    // todo: use virtual or shadow dom.
+                    this.innerHTML = super.render && super.render();
+                    afterRender(this);
+                    super.onAfterRender && super.onAfterRender();
+                }
+            };
+        };
+    }
+    init() {
+        this._components = {};
+        // todo: remove this and fire the register after the route render
+        new MutationObserver((mutations) => {
+            for (let mutation of mutations) {
+                let node;
+                //@ts-ignore
+                for (node of mutation.addedNodes) {
+                    if (this._components[node.localName] && !node.props) {
+                        this._registerTag(node);
+                    }
+                }
+            }
+        }).observe(document.documentElement, { childList: true, subtree: true });
+    }
+}
 class __Navimi_Core {
     constructor(routes, services, options) {
         this._navigateTo = (url, params) => {
@@ -22,8 +180,8 @@ class __Navimi_Core {
                 if (this._currentUrl === url) {
                     return;
                 }
-                this._abortController.abort();
-                this._abortController = new AbortController();
+                this._abortController && this._abortController.abort();
+                this._abortController = window["AbortController"] ? new AbortController() : undefined;
             }
             const callId = ++this._callId;
             const pushState = urlToGo !== undefined;
@@ -93,7 +251,7 @@ class __Navimi_Core {
                     this._reportError(ex);
                 }
                 if (jsUrl) {
-                    await this._navimiJSs.fetchJS(this._abortController, [jsUrl], false);
+                    await this._navimiJSs.fetchJS(this._abortController, [jsUrl], "route");
                 }
                 //wait css and template to load if any
                 while ((cssUrl && !this._navimiCSSs.isCssLoaded(cssUrl)) ||
@@ -152,7 +310,7 @@ class __Navimi_Core {
             }
         };
         this._callId = 0;
-        this._abortController = new AbortController();
+        this._abortController = window["AbortController"] ? new AbortController() : undefined;
         this._currentJS;
         this._currentUrl;
         this._routesParams = {};
@@ -298,11 +456,11 @@ class __Navimi_Dom {
             const target = (head || document.body);
             prepend ? target.prepend(style) : target.appendChild(style);
         };
-        this.insertJS = (jsCode, jsUrl, module) => {
+        this.insertJS = (jsCode, jsUrl, isModule) => {
             const oldTag = document.querySelector(`[jsUrl='${jsUrl}']`);
             oldTag && oldTag.remove();
             const script = document.createElement("script");
-            script.type = module ? "module" : "text/javascript";
+            script.type = isModule ? "module" : "text/javascript";
             script.innerHTML = jsCode;
             script.setAttribute("jsUrl", jsUrl);
             const head = document.getElementsByTagName("head")[0];
@@ -313,7 +471,7 @@ class __Navimi_Dom {
             let urls = arr.map((url) => {
                 if (typeof url === "string") {
                     const type = url.split(".").pop();
-                    return { url, type: (type.toLowerCase() === "css") ? "css" : "js" };
+                    return { url, type: (type.toLowerCase() === "css") ? "css" : "jsLibrary" };
                 }
                 else {
                     return url;
@@ -324,7 +482,8 @@ class __Navimi_Dom {
                     this._navimiCSSs.fetchCss(undefined, obj.url, true);
                 }
                 else {
-                    return this._navimiJSs.fetchJS(undefined, [obj.url], undefined, obj.type === "jsModule");
+                    const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
+                    return this._navimiJSs.fetchJS(undefined, [obj.url], type);
                 }
             })).catch(ex => {
                 throw new Error(ex);
@@ -598,8 +757,8 @@ class __Navimi_JSs {
         this._callBackNS = "_jsLoaderCallback";
         this._promiseNS = "_promise_";
         this._loadedJSs = {};
-        this._externalJSs = {};
         this._routesJSs = {};
+        this._othersJSs = {};
         this._dependencyJSsMap = {};
         this._routesJSsServices = {};
         this._awaitJS = (jsUrl) => {
@@ -616,11 +775,11 @@ class __Navimi_JSs {
                 }, 50);
             });
         };
-        this._fetch = (abortController, url, external, module) => {
+        this._fetch = (abortController, url, type) => {
             return new Promise(async (resolve, reject) => {
                 try {
                     let jsCode;
-                    if (typeof this._loadedJSs[url] === "string") {
+                    if (this._loadedJSs[url]) {
                         jsCode = this._loadedJSs[url];
                     }
                     else {
@@ -631,8 +790,8 @@ class __Navimi_JSs {
                             signal: abortController ? abortController.signal : undefined
                         });
                     }
-                    this._insertJS(url, jsCode, external, module);
-                    if (external === undefined) {
+                    this._insertJS(url, jsCode, type);
+                    if (type !== "route" && type !== "service") {
                         this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
                     }
                     resolve();
@@ -642,15 +801,14 @@ class __Navimi_JSs {
                 }
             });
         };
-        this._insertJS = (url, jsCode, external, module) => {
-            let jsHtmlBody = external !== undefined ?
-                `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", ${external}, (function(){return ${jsCode}   
-                })())}())` : jsCode;
-            this._loadedJSs[url] = external ? true : jsCode;
-            this._navimiDom.insertJS(jsHtmlBody, url, module);
+        this._insertJS = (url, jsCode, type) => {
+            let jsHtmlBody = (type === "module" || type === "library") ? jsCode :
+                `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", "${type}", (function(){return ${jsCode}   
+                })())}())`;
+            this._loadedJSs[url] = jsCode;
+            this._navimiDom.insertJS(jsHtmlBody, url, type === "module");
         };
-        this._instantiateJS = async (jsUrl, external, //todo: change to isRouteScript
-        JsClass) => {
+        this._instantiateJS = async (jsUrl, type, JsClass) => {
             const promiseToResolve = this._navimiLoader[this._promiseNS + jsUrl];
             const promiseToReject = this._navimiLoader[this._promiseNS + jsUrl + "_reject"];
             // remove callbacks
@@ -658,9 +816,9 @@ class __Navimi_JSs {
                 delete this._navimiLoader[this._promiseNS + jsUrl];
                 delete this._navimiLoader[this._promiseNS + jsUrl + "_reject"];
             }, 10);
-            if (external) {
+            if (type !== "route") {
                 // keep this instance to reuse later
-                this._externalJSs[jsUrl] = JsClass;
+                this._othersJSs[jsUrl] = JsClass;
                 promiseToResolve && promiseToResolve(Object.freeze(JsClass));
                 return;
             }
@@ -676,7 +834,7 @@ class __Navimi_JSs {
                         urls.map(u => {
                             this._dependencyJSsMap[u] = Object.assign(Object.assign({}, this._dependencyJSsMap[u] || {}), { [jsUrl]: true });
                         });
-                        return this.fetchJS(undefined, urls, true);
+                        return this.fetchJS(undefined, urls, "javascript");
                     },
                     fetchTemplate: (url) => {
                         return this._navimiTemplates.fetchTemplate(undefined, url, jsUrl);
@@ -688,9 +846,10 @@ class __Navimi_JSs {
                     watchState: (key, callback) => this._navimiState.watchState(jsUrl, key, callback),
                 };
                 let services = {};
+                // wait for all services to load
                 if (this._routesJSsServices[jsUrl] && this._routesJSsServices[jsUrl].length > 0) {
                     while (true) {
-                        if (this._routesJSsServices[jsUrl].map((sn) => this._externalJSs[this._options.services[sn]] === undefined).indexOf(true) === -1) {
+                        if (this._routesJSsServices[jsUrl].map((sn) => this._othersJSs[this._options.services[sn]] === undefined).indexOf(true) === -1) {
                             break;
                         }
                         if (this._routesJSsServices[jsUrl].map(sn => this._options.services[sn]).find(su => this._navimiFetch.getErrors(su))) {
@@ -699,7 +858,7 @@ class __Navimi_JSs {
                         await this._navimiHelpers.timeout(10);
                     }
                     this._routesJSsServices[jsUrl].map((sn) => {
-                        services = Object.assign(Object.assign({}, services), { [sn]: this._externalJSs[this._options.services[sn]] });
+                        services = Object.assign(Object.assign({}, services), { [sn]: this._othersJSs[this._options.services[sn]] });
                     });
                 }
                 let jsInstance = new JsClass(Object.freeze(routerFunctions), services);
@@ -717,12 +876,12 @@ class __Navimi_JSs {
         this.getInstance = (url) => {
             return this._routesJSs[url];
         };
-        this.fetchJS = (abortController, urls, external, module) => {
+        this.fetchJS = (abortController, urls, type) => {
             const init = (url) => {
                 return new Promise(async (resolve, reject) => {
                     // return the instance if this js is already loaded
-                    if (external && this._externalJSs[url]) {
-                        return resolve(this._externalJSs[url]);
+                    if (type !== "route" && this._othersJSs[url]) {
+                        return resolve(this._othersJSs[url]);
                     }
                     else {
                         if (this._routesJSs[url]) {
@@ -739,7 +898,7 @@ class __Navimi_JSs {
                     // let the js resolve the promise itself (*1)
                     this._navimiLoader[this._promiseNS + url] = resolve;
                     this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
-                    this._fetch(abortController, url, external, module).catch(ex => {
+                    this._fetch(abortController, url, type).catch(ex => {
                         this._navimiLoader[this._promiseNS + url + "_reject"](ex);
                     });
                 });
@@ -768,7 +927,7 @@ class __Navimi_JSs {
                     throw new Error("Service(s) not defined: " + notFoundServices.join(", "));
                 }
                 Promise.all(servicesUrls.filter(su => su !== undefined)
-                    .map(su => this.fetchJS(abortController, [su], true)));
+                    .map(su => this.fetchJS(abortController, [su], "service")));
             }
         };
         this.initJS = async (jsUrl, params) => {
@@ -790,14 +949,14 @@ class __Navimi_JSs {
                                 callback();
                             }
                         };
-                        this._insertJS(jsUrl, jsCode, false);
+                        this._insertJS(jsUrl, jsCode, "route");
                         return;
                     }
                 }
                 for (const jsUrl in this._dependencyJSsMap) {
                     if (isSameFile(jsUrl, filePath)) {
                         console.log(`${filePath} updated.`);
-                        delete this._externalJSs[jsUrl];
+                        delete this._othersJSs[jsUrl];
                         this._navimiLoader[this._promiseNS + jsUrl] = () => {
                             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
                                 //clear all dependent JSs that depends of this JS
@@ -808,7 +967,8 @@ class __Navimi_JSs {
                                 }
                             });
                         };
-                        this._insertJS(filePath, jsCode, true);
+                        //todo: check for modules, services and components
+                        this._insertJS(filePath, jsCode, "javascript");
                     }
                 }
             }
@@ -1005,7 +1165,7 @@ class __Navimi_State {
             const keys = Object.keys(this.stateWatchers);
             const diff = Object.keys(this.stateDiff);
             this.stateDiff = {};
-            keys.filter(key => diff.includes(key)).sort((a, b) => b.length - a.length).map(key => {
+            keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
                 Object.keys(this.stateWatchers[key]).map((cs) => {
                     const sNew = this.getState(key);
                     this.stateWatchers[key][cs] &&
