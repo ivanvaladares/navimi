@@ -90,7 +90,7 @@ class __Navimi_Components implements INavimi_Components {
 
         // observer to detect removed components
         tag._observer = new MutationObserver((mutations: MutationRecord[]) => {
-            if (mutations.find(m => m.removedNodes.length > 0)) {
+            if (mutations.find(mutation => mutation.removedNodes.length > 0)) {
                 if (!parent.contains(tag)) {
                     this._removeChildComponents(tag);
                     this._disconnectComponent(tag);
@@ -102,14 +102,12 @@ class __Navimi_Components implements INavimi_Components {
        
         // observer to detect changes in the dom and refresh the attributes
         tag._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === "attributes") {
-                    const prevAttributes = this._readAttributes(tag);
-                    if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
-                        tag.update();
-                    }
+            if (mutations.find(mutation => mutation.type === "attributes")) {
+                const prevAttributes = this._readAttributes(tag);
+                if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
+                    tag.update();
                 }
-            });
+            }
         });
         tag._attrObserver.observe(tag, { attributes: true });
 
