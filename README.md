@@ -1,8 +1,13 @@
 # Navimi - Simplicity focused SPA library
 
-> Navimi is a minimalist JavaScript library to create SPAs. The goal here is to provide a way to build a SPA without any tool, transpilation or bundling.
+> Navimi is a minimalist JavaScript library to create SPAs without a build process. <br>
+> This library does not force you to take an imperative or reactive appoach. You can mix and match. <br>
+> There is no need to learn TypeScript, Babel, Webpack... You can use them if you want but you don't need.
 
 ## Features
+
+- **Web Components**
+  - Allows you to create reusable custom elements with encapsulated functionality.
 
 - **Routing with path and queryString parsing**
   - Uses the widely adopted syntax for routes (/users/:id)
@@ -19,11 +24,12 @@
 - **Scoped CSS**
   - Global and route scoped css with auto add and removal to avoid conflicts.
 
-- **Lazy load scripts, templates, css and libraries**
+- **Auto Lazy load scripts, templates, css and libraries**
   - Only load what and when you want.
 
 - **Hot reload**
-  - Makes it easier to create pages without having to refresh after every single modification.
+  - Makes it easier to create pages without having to refresh after every single modification. <br>
+  <small>(This funcionality is only enabled in the unminified version)</small>
 
 <br>
 
@@ -201,6 +207,9 @@ Check the examples folder for more details.
     };
 })();
 ```
+
+todo: write web components section
+
 
 ### Page navigation
 
