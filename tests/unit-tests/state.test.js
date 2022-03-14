@@ -136,7 +136,7 @@ describe('Test state -', () => {
     });
 
 
-    it('Watch neste key test', (done) => {
+    it('Watch nested key test', (done) => {
 
         state.watchState("testUrl", "client.address.number", (state) => {
             expect(state).to.equal(456);
