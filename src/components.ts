@@ -12,10 +12,20 @@ class __Navimi_Components implements INavimi_Components {
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let node: INavimi_Component;
+                let child: INavimi_Component;
                 //@ts-ignore
                 for (node of mutation.addedNodes) {
-                    if (this._components[node.localName] && !node.props) {
-                        this._registerTag(node);
+                    if (node.localName) {
+                        if (this._components[node.localName]) {
+                            this._registerTag(node);
+                        } else {
+                            //@ts-ignore
+                            for (child of node.children) {
+                                if (this._components[child.localName]) {
+                                    this._registerTag(child);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -78,6 +88,10 @@ class __Navimi_Components implements INavimi_Components {
     }
 
     private _registerTag = (tag: INavimi_Component): void => {
+        if (tag.props) {
+            return;
+        }
+
         const componentClass = this._components[tag.localName];
 
         // connects the component class to the tag 
