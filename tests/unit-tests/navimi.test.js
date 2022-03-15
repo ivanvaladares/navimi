@@ -87,6 +87,7 @@ describe('Test fetch -', () => {
             navimiHot: { name: "hot", init: () => { } },
             navimiMiddlewares: { name: "middlewares" },
             navimiHelpers: { name: "helpers" },
+            navimiComponents: { name: "components", init: () => { } },
         };
 
         new Navimi(routes, options, services, (_routes, _services, _options) => {
