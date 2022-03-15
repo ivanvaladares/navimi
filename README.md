@@ -117,18 +117,20 @@ about.html
 | jsUrl        | string                 | The path to the route script                                    |
 | cssUrl       | string                 | The path to the route css                                       |
 | templatesUrl | string                 | The path to the templates file of this route                    |
-| dependsOn    | string[]               | An array of services names for this route                       |
+| services     | string[]               | An array of services names for this route                       |
+| components   | string[]               | An array of components names for this route                     |
 | metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
 
 \* required
 <br />
 
 ### Options
-| Property            | Type                     | Description                                                    |
+| Property            | Type                     | Description                                                     |
 |---------------------|--------------------------|-----------------------------------------------------------------|
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
+| components          | { [key: string]: string }| A collection of all components {[component name]: script path}  |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
 | bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
