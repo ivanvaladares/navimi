@@ -60,7 +60,7 @@ class __Navimi_Components {
             const parent = tag.parentElement;
             // observer to detect removed components
             tag._observer = new MutationObserver((mutations) => {
-                if (mutations.find(m => m.removedNodes.length > 0)) {
+                if (mutations.find(mutation => mutation.removedNodes.length > 0)) {
                     if (!parent.contains(tag)) {
                         this._removeChildComponents(tag);
                         this._disconnectComponent(tag);
@@ -71,14 +71,12 @@ class __Navimi_Components {
             tag._observer.observe(parent, { childList: true });
             // observer to detect changes in the dom and refresh the attributes
             tag._attrObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === "attributes") {
-                        const prevAttributes = this._readAttributes(tag);
-                        if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
-                            tag.update();
-                        }
+                if (mutations.find(mutation => mutation.type === "attributes")) {
+                    const prevAttributes = this._readAttributes(tag);
+                    if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
+                        tag.update();
                     }
-                });
+                }
             });
             tag._attrObserver.observe(tag, { attributes: true });
             this._findParentComponent(tag);
@@ -148,7 +146,7 @@ class __Navimi_Components {
     }
     init() {
         this._components = {};
-        // todo: remove this and fire the register after the route render
+        // todo: check if I shold remove this and fire the register after the route render
         new MutationObserver((mutations) => {
             for (let mutation of mutations) {
                 let node;

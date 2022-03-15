@@ -6,7 +6,7 @@ class __Navimi_Components implements INavimi_Components {
 
         this._components = {};
 
-        // todo: remove this and fire the register after the route render
+        // todo: check if I shold remove this and fire the register after the route render
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let node: INavimi_Component;
@@ -23,7 +23,7 @@ class __Navimi_Components implements INavimi_Components {
     public registerComponent = (name: string, componentClass: InstanceType<any>): void => {
         if (!this._components[name] && /\-/.test(name)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-            this._components[name] = 
+            this._components[name] =
                 this._createComponentClass(componentClass, this._removeChildComponents, this._registerChildComponents);
         }
     };
@@ -32,7 +32,7 @@ class __Navimi_Components implements INavimi_Components {
         if (node.props && node.props.parentComponent) {
             node.props.parentComponent.props.childComponents =
                 node.props.parentComponent.props.childComponents
-                .filter((child: INavimi_Component) => child != node);
+                    .filter((child: INavimi_Component) => child != node);
         }
 
         if (node._observer) {
@@ -99,7 +99,7 @@ class __Navimi_Components implements INavimi_Components {
             }
         });
         tag._observer.observe(parent, { childList: true });
-       
+
         // observer to detect changes in the dom and refresh the attributes
         tag._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
             if (mutations.find(mutation => mutation.type === "attributes")) {
@@ -113,7 +113,7 @@ class __Navimi_Components implements INavimi_Components {
 
         this._findParentComponent(tag);
 
-        tag.init();       
+        tag.init();
 
     };
 
@@ -159,7 +159,11 @@ class __Navimi_Components implements INavimi_Components {
         traverse(parent);
     }
 
-    private _createComponentClass = (componentClass: InstanceType<any>, beforeRender: any, afterRender: any): InstanceType<any> => {
+    private _createComponentClass = (
+        componentClass: InstanceType<any>,
+        beforeRender: (node: any) => void,
+        afterRender: (node: any) => void
+    ): InstanceType<any> => {
 
         return class extends (componentClass) {
 

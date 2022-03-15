@@ -177,6 +177,7 @@ describe('Test components -', () => {
         navimiComponents.registerComponent('counter-component', class {
 
             shouldUpdate(prevAttributes, nextAttributes) {
+                // only update if count is different
                 return prevAttributes.count !== nextAttributes.count;
             }
 
@@ -194,45 +195,65 @@ describe('Test components -', () => {
         setTimeout(() => {
 
             const component = dom.window.document.querySelector("counter-component");
-
             const counter1 = component.querySelector("#div-count").innerHTML;
-            const timer1 = component.querySelector("#div-date").innerHTML;
 
             expect(component.props.attributes.count).to.be.equal('1');
             expect(component.props.attributes.count).to.be.equal(counter1);
 
-            component.setAttribute("count", '2');
-
-            setTimeout(() => {
-
-                const counter2 = component.querySelector("#div-count").innerHTML;
-                const timer2 = component.querySelector("#div-date").innerHTML;
-
-                expect(component.props.attributes.count).to.be.equal('2');
-                expect(component.props.attributes.count).to.be.equal(counter2);
-                expect(timer1).not.to.be.equal(timer2);
-
-                component.setAttribute("another", 'done!');
-
-                setTimeout(() => {
-                    
-                    const counter3 = component.querySelector("#div-count").innerHTML;
-                    const timer3 = component.querySelector("#div-date").innerHTML;
-    
-                    expect(component.props.attributes.count).to.be.equal('2');
-                    expect(component.props.attributes.another).to.be.equal('done!');
-                    expect(counter2).to.be.equal(counter3);
-                    expect(timer2).to.be.equal(timer3);
-    
-                    done();
-    
-                }, 10);
-
-            }, 10);
+            done()
 
         }, 10);
 
     });
 
+    
+    it('Test shouldUpdate 2', (done) => {
+
+        const component = dom.window.document.querySelector("counter-component");
+
+        const timer1 = component.querySelector("#div-date").innerHTML;
+
+        component.setAttribute("count", '2');
+
+        setTimeout(() => {
+
+            const counter2 = component.querySelector("#div-count").innerHTML;
+            const timer2 = component.querySelector("#div-date").innerHTML;
+
+            expect(component.props.attributes.count).to.be.equal('2');
+            expect(component.props.attributes.count).to.be.equal(counter2);
+            expect(timer1).not.to.be.equal(timer2);
+
+            done();
+
+        }, 10);
+
+    });
+
+    it('Test shouldUpdate 3', (done) => {
+
+        const component = dom.window.document.querySelector("counter-component");
+
+        const counter2 = component.querySelector("#div-count").innerHTML;
+        const timer2 = component.querySelector("#div-date").innerHTML;
+
+        // this should not rerender the component
+        component.setAttribute("another", 'done!');
+
+        setTimeout(() => {
+            
+            const counter3 = component.querySelector("#div-count").innerHTML;
+            const timer3 = component.querySelector("#div-date").innerHTML;
+
+            expect(component.props.attributes.count).to.be.equal('2');
+            expect(component.props.attributes.another).to.be.equal('done!');
+            expect(counter2).to.be.equal(counter3);
+            expect(timer2).to.be.equal(timer3);
+
+            done();
+
+        }, 10);
+
+    });
 
 });
