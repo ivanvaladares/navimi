@@ -1077,6 +1077,7 @@ class __Navimi_State {
         this.stateDiff = {};
         this._navimiHelpers = {};
         this.getStateDiff = (keys) => {
+            //start with longer keys to go deep first
             keys.sort((a, b) => b.length - a.length).map(key => {
                 if (!this.stateDiff[key]) {
                     const sOld = this._navimiHelpers.stringify(this.getState(key, this.prevState) || "");
@@ -1122,10 +1123,11 @@ class __Navimi_State {
             }
         };
         this.getState = (key, _state) => {
-            const st = key ?
-                key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
+            const state = key ?
+                key.split('.')
+                    .reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
                 _state || this.state;
-            return st ? Object.freeze(this._navimiHelpers.cloneObject(st)) : undefined;
+            return state ? Object.freeze(this._navimiHelpers.cloneObject(state)) : undefined;
         };
         this.watchState = (jsUrl, key, callback) => {
             if (!key || !callback) {
@@ -1159,10 +1161,12 @@ class __Navimi_State {
     }
     init(navimiHelpers) {
         this._navimiHelpers = navimiHelpers;
+        // debounce this so we fire in batches
         this.invokeStateWatchers = navimiHelpers.debounce(() => {
             const keys = Object.keys(this.stateWatchers);
             const diff = Object.keys(this.stateDiff);
             this.stateDiff = {};
+            // fire deep keys first
             keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
                 Object.keys(this.stateWatchers[key]).map((cs) => {
                     const sNew = this.getState(key);

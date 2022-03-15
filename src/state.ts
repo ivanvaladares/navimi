@@ -12,10 +12,12 @@ class __Navimi_State implements INavimi_State {
     public init(navimiHelpers: INavimi_Helpers): void {
         this._navimiHelpers = navimiHelpers;
 
+        // debounce this so we fire in batches
         this.invokeStateWatchers = navimiHelpers.debounce((): void => {
             const keys = Object.keys(this.stateWatchers);
             const diff = Object.keys(this.stateDiff);
             this.stateDiff = {};
+            // fire deep keys first
             keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
                 Object.keys(this.stateWatchers[key]).map((cs: string) => {
                     const sNew = this.getState(key);
@@ -27,6 +29,7 @@ class __Navimi_State implements INavimi_State {
     }
 
     private getStateDiff = (keys: string[]): void => {
+        //start with longer keys to go deep first
         keys.sort((a, b) => b.length - a.length).map(key => {
             if (!this.stateDiff[key]) {
                 const sOld = this._navimiHelpers.stringify(this.getState(key, this.prevState) || "");
@@ -79,10 +82,11 @@ class __Navimi_State implements INavimi_State {
     };
 
     public getState = (key?: string, _state?: any): INavimi_KeyList<any> => {
-        const st = key ?
-            key.split('.').reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
+        const state = key ?
+            key.split('.')
+                .reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
             _state || this.state;
-        return st ? Object.freeze(this._navimiHelpers.cloneObject(st)) : undefined;
+        return state ? Object.freeze(this._navimiHelpers.cloneObject(state)) : undefined;
     };
 
     public watchState = (jsUrl: string, key: string, callback: (state: any) => void): void => {
