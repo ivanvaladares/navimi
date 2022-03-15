@@ -1,7 +1,7 @@
 # Navimi - Simplicity focused SPA library
 
 > Navimi is a minimalist JavaScript library to create SPAs without a build process. <br>
-> This library also does not force you to take an imperative or reactive approach. You can mix and match they way you like it. <br>
+> You will not be forced to take an imperative or reactive approach. Go the way you like it. <br>
 > There is also no need to learn TypeScript, Babel, Webpack... You can use them if you want but you don't need.
 
 ## Features
