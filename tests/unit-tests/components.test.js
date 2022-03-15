@@ -32,6 +32,14 @@ describe('Test components -', () => {
 
         navimiComponents.registerComponent('anon-class', class {
 
+            init() {
+                this.wasRemoved = false;
+            }
+
+            onAfterRemove() {
+                this.wasRemoved = true;
+            }
+
             render() {
                 return `<div>OK!</div>`
             }
@@ -166,6 +174,41 @@ describe('Test components -', () => {
 
             expect(component.props.childComponents.length).to.be.equal(2);
 
+            done();
+
+        }, 10);
+
+    });
+    
+    it('Test child removal', (done) => {
+
+        const component = dom.window.document.querySelector("click-component");
+        
+        component.querySelector("#click-component-children").innerHTML = '';
+
+        setTimeout(() => {
+
+            expect(component.props.childComponents.length).to.be.equal(0);
+
+            done();
+
+        }, 10);
+
+    });
+
+    it('Test parent removal', (done) => {
+
+        const wrapperComponent = dom.window.document.querySelector("outer-component");
+        const innerComponent = wrapperComponent.querySelector("anon-class");
+
+        dom.window.document.querySelector("outer-component").outerHTML = '';
+
+        setTimeout(() => {
+
+            expect(wrapperComponent.props.childComponents.length).to.be.equal(0);
+
+            expect(innerComponent.wasRemoved).to.be.equal(true);
+   
             done();
 
         }, 10);
