@@ -8,7 +8,8 @@ interface INavimi_Route {
     jsUrl?: string;
     cssUrl?: string;
     templatesUrl?: string;
-    dependsOn?: string[];
+    services?: string[];
+    components?: string[];
     metadata?: INavimi_KeyList<any>;
 }
 
@@ -39,6 +40,7 @@ interface INavimi_Options {
     globalCssUrl?: string;
     globalTemplatesUrl?: string;
     services?: INavimi_KeyList<string>;
+    components?: INavimi_KeyList<string>;
     middlewares?: INavimi_Middleware[];
     hot?: number | boolean;
     bustCache?: string;
@@ -57,6 +59,7 @@ interface INavimi_Services {
     navimiState?: INavimi_State,
     navimiHot?: INavimi_Hot,
     navimiHelpers?: INavimi_Helpers
+    navimiComponents?: INavimi_Components,
 }
 
 interface hotPayload {

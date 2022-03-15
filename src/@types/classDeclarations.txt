@@ -4,7 +4,8 @@
  * @property {string} routes.jsUrl - The path to the route script
  * @property {string=} routes.cssUrl - The path to the route css
  * @property {string=} routes.templatesUrl - The path to the templates file of this route 
- * @property {string[]=} routes.dependsOn - An array of services names for this route
+ * @property {string[]=} routes.services - An array of services names for this route
+ * @property {string[]=} routes.components - An array of component names for this route
  * @property {Object.<string, *>=} routes.metadata - Any literal you need to pass down to this route and middlewares 
  */
 

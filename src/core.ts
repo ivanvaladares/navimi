@@ -174,7 +174,7 @@ class __Navimi_Core {
 
         try {
 
-            const { title, jsUrl, cssUrl, templatesUrl, dependsOn } = routeItem || {};
+            const { title, jsUrl, cssUrl, templatesUrl, services, components } = routeItem || {};
 
             if (!jsUrl && !templatesUrl) {
                 throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
@@ -196,7 +196,7 @@ class __Navimi_Core {
             this._navimiCSSs.fetchCss(this._abortController, cssUrl).catch(_ => { });
             this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl).catch(_ => { });
             try {
-                this._navimiJSs.loadServices(this._abortController, jsUrl, dependsOn);
+                this._navimiJSs.loadDependencies(this._abortController, jsUrl, services, components);
             } catch (ex) {
                 this._reportError(ex);
             }

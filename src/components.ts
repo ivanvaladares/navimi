@@ -1,10 +1,12 @@
 class __Navimi_Components implements INavimi_Components {
 
     private _components: INavimi_KeyList<any> = {};
+    private _navimiHelpers: INavimi_Helpers;
 
-    public init(): void {
+    public init(navimiHelpers: INavimi_Helpers): void {
 
         this._components = {};
+        this._navimiHelpers = navimiHelpers;
 
         // todo: check if I shold remove this and fire the register after the route render
         new MutationObserver((mutations: MutationRecord[]) => {
