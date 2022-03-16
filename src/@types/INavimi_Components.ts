@@ -16,10 +16,9 @@ interface INavimi_Component extends Element {
 
     props: INavimi_ComponentProps;
 
-    init: () => void;
-    update: () => void;
-    render: () => void;
-
+    init: () => Promise<void> | void;
+    update: () => Promise<void> | void;
+    render: () => Promise<string> | string;
     shouldUpdate?: (prevAttributes: INavimi_KeyList<any>, nextAttributes: INavimi_KeyList<any>) => boolean;
     onAfterRender?: () => void;
     onAfterRemove?: () => void;

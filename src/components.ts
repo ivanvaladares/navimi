@@ -21,7 +21,7 @@ class __Navimi_Components implements INavimi_Components {
                         } else {
                             //@ts-ignore
                             for (child of node.children) {
-                                if (this._components[child.localName]) {
+                                if (child.localName && this._components[child.localName]) {
                                     this._registerTag(child);
                                 }
                             }
@@ -39,6 +39,15 @@ class __Navimi_Components implements INavimi_Components {
                 this._createComponentClass(componentClass, this._removeChildComponents, this._registerChildComponents);
         }
     };
+
+    private _removeComponent = (component: INavimi_Component): void => {
+        if (component.localName && this._components[component.localName]) {
+            this._removeChildComponents(component);
+            this._disconnectComponent(component);
+            component.remove();
+            component.onAfterRemove && component.onAfterRemove();
+        }
+    }
 
     private _disconnectComponent = (node: INavimi_Component): void => {
         if (node.props && node.props.parentComponent) {
@@ -61,13 +70,7 @@ class __Navimi_Components implements INavimi_Components {
     private _removeChildComponents = (node: INavimi_Component): void => {
         node.props && node.props.childComponents &&
             node.props.childComponents.map((child: INavimi_Component) => {
-                this._removeChildComponents(child);
-
-                this._disconnectComponent(child);
-
-                child.remove();
-
-                child.onAfterRemove && child.onAfterRemove();
+                this._removeComponent(child);
             });
     };
 
@@ -87,7 +90,7 @@ class __Navimi_Components implements INavimi_Components {
         return prevAttributes;
     }
 
-    private _registerTag = (tag: INavimi_Component): void => {
+    private _registerTag = async (tag: INavimi_Component): Promise<void> => {
         if (tag.props) {
             return;
         }
@@ -95,7 +98,8 @@ class __Navimi_Components implements INavimi_Components {
         const componentClass = this._components[tag.localName];
 
         // connects the component class to the tag 
-        Object.setPrototypeOf(tag, componentClass.prototype);
+        // todo: pass navimi services to the component class
+        Object.setPrototypeOf(tag, new componentClass());
 
         // initializes the component props
         tag.props = {};
@@ -106,15 +110,27 @@ class __Navimi_Components implements INavimi_Components {
 
         // observer to detect removed components
         tag._observer = new MutationObserver((mutations: MutationRecord[]) => {
-            if (mutations.find(mutation => mutation.removedNodes.length > 0)) {
-                if (!parent.contains(tag)) {
-                    this._removeChildComponents(tag);
-                    this._disconnectComponent(tag);
-                    tag.onAfterRemove && tag.onAfterRemove();
+            for (let mutation of mutations) {
+                let node: INavimi_Component;
+                let child: INavimi_Component;
+                //@ts-ignore
+                for (node of mutation.removedNodes) {
+                    if (node.localName) {
+                        if (this._components[node.localName]) {
+                            this._removeComponent(node);
+                        } else {
+                            //@ts-ignore
+                            for (child of node.children) {
+                                if (child.localName && this._components[child.localName]) {
+                                    this._removeComponent(child);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });
-        tag._observer.observe(parent, { childList: true });
+        tag._observer.observe(parent, { childList: true, subtree: true });
 
         // observer to detect changes in the dom and refresh the attributes
         tag._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
@@ -129,8 +145,7 @@ class __Navimi_Components implements INavimi_Components {
 
         this._findParentComponent(tag);
 
-        tag.init();
-
+        await tag.init();
     };
 
     private _findParentComponent = (node: INavimi_Component): void => {
@@ -183,16 +198,20 @@ class __Navimi_Components implements INavimi_Components {
 
         return class extends (componentClass) {
 
-            init() {
-                super.init && super.init();
+            constructor() {
+                super();
+            }
+
+            async init() {
+                super.init && await super.init();
                 this.render();
             }
 
-            update() {
+            async update() {
                 this.render();
             }
 
-            render() {
+            async render() {
 
                 beforeRender(this);
 
@@ -201,7 +220,7 @@ class __Navimi_Components implements INavimi_Components {
                 }
 
                 // todo: use virtual or shadow dom.
-                this.innerHTML = super.render && super.render();
+                this.innerHTML = super.render && await super.render();
 
                 afterRender(this);
 
