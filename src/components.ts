@@ -44,9 +44,9 @@ class __Navimi_Components implements INavimi_Components {
                     .filter((child: INavimi_Component) => child != node);
         }
 
-        if (node._observer) {
-            node._observer.disconnect();
-            node._observer = null;
+        if (node._tagObserver) {
+            node._tagObserver.disconnect();
+            node._tagObserver = null;
         }
 
         if (node._attrObserver) {
@@ -111,7 +111,7 @@ class __Navimi_Components implements INavimi_Components {
         const parent = node.parentElement;
 
         // observer to detect removed components
-        node._observer = new MutationObserver((mutations: MutationRecord[]) => {
+        node._tagObserver = new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let removedNode: INavimi_Component;
                 //@ts-ignore
@@ -120,7 +120,7 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         });
-        node._observer.observe(parent, { childList: true });
+        node._tagObserver.observe(parent, { childList: true });
 
         // observer to detect changes in the dom and refresh the attributes
         node._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {

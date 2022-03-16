@@ -1,6 +1,6 @@
 interface INavimi_Components {
     init: (navimiHelpers: INavimi_Helpers) => void;
-    registerComponent: (name: string, componentClass: InstanceType<any>) => void;
+    registerComponent: (componentName: string, componentClass: InstanceType<any>) => void;
 }
 
 interface INavimi_ComponentProps {
@@ -11,7 +11,7 @@ interface INavimi_ComponentProps {
 }
 
 interface INavimi_Component extends Element {
-    _observer: MutationObserver;
+    _tagObserver: MutationObserver;
     _attrObserver: MutationObserver;
 
     props: INavimi_ComponentProps;
