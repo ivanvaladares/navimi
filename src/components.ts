@@ -12,21 +12,9 @@ class __Navimi_Components implements INavimi_Components {
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let addedNode: INavimi_Component;
-                let childNode: INavimi_Component;
                 //@ts-ignore
                 for (addedNode of mutation.addedNodes) {
-                    if (addedNode.localName) {
-                        if (this._components[addedNode.localName]) {
-                            this._registerTag(addedNode);
-                        } else {
-                            //@ts-ignore
-                            for (childNode of addedNode.children) {
-                                if (childNode.localName && this._components[childNode.localName]) {
-                                    this._registerTag(childNode);
-                                }
-                            }
-                        }
-                    }
+                    this._traverseTree(addedNode, this._registerTag);
                 }
             }
         }).observe(document.documentElement, { childList: true, subtree: true });
@@ -90,6 +78,20 @@ class __Navimi_Components implements INavimi_Components {
         return prevAttributes;
     }
 
+    private _traverseTree = (node: INavimi_Component, callback: (node: INavimi_Component) => void): void => {
+        if (node.localName) {
+            if (this._components[node.localName]) {
+                callback(node);
+            } else {
+                let childNode: INavimi_Component;
+                //@ts-ignore
+                for (childNode of node.children) {
+                    this._traverseTree(childNode, callback);
+                }
+            }
+        }
+    }
+
     private _registerTag = async (node: INavimi_Component): Promise<void> => {
         if (node.props) {
             return;
@@ -112,25 +114,13 @@ class __Navimi_Components implements INavimi_Components {
         node._observer = new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let removedNode: INavimi_Component;
-                let childNode: INavimi_Component;
                 //@ts-ignore
                 for (removedNode of mutation.removedNodes) {
-                    if (removedNode.localName) {
-                        if (this._components[removedNode.localName]) {
-                            this._removeComponent(removedNode);
-                        } else {
-                            //@ts-ignore
-                            for (childNode of removedNode.children) {
-                                if (childNode.localName && this._components[childNode.localName]) {
-                                    this._removeComponent(childNode);
-                                }
-                            }
-                        }
-                    }
+                    this._traverseTree(removedNode, this._removeComponent);
                 }
             }
         });
-        node._observer.observe(parent, { childList: true, subtree: true });
+        node._observer.observe(parent, { childList: true });
 
         // observer to detect changes in the dom and refresh the attributes
         node._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
