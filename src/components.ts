@@ -11,18 +11,18 @@ class __Navimi_Components implements INavimi_Components {
         // todo: check if I shold remove this and fire the register after the route render
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
-                let node: INavimi_Component;
-                let child: INavimi_Component;
+                let addedNode: INavimi_Component;
+                let childNode: INavimi_Component;
                 //@ts-ignore
-                for (node of mutation.addedNodes) {
-                    if (node.localName) {
-                        if (this._components[node.localName]) {
-                            this._registerTag(node);
+                for (addedNode of mutation.addedNodes) {
+                    if (addedNode.localName) {
+                        if (this._components[addedNode.localName]) {
+                            this._registerTag(addedNode);
                         } else {
                             //@ts-ignore
-                            for (child of node.children) {
-                                if (child.localName && this._components[child.localName]) {
-                                    this._registerTag(child);
+                            for (childNode of addedNode.children) {
+                                if (childNode.localName && this._components[childNode.localName]) {
+                                    this._registerTag(childNode);
                                 }
                             }
                         }
@@ -32,20 +32,20 @@ class __Navimi_Components implements INavimi_Components {
         }).observe(document.documentElement, { childList: true, subtree: true });
     }
 
-    public registerComponent = (name: string, componentClass: InstanceType<any>): void => {
-        if (!this._components[name] && /\-/.test(name)) {
+    public registerComponent = (componentName: string, componentClass: InstanceType<any>): void => {
+        if (!this._components[componentName] && /\-/.test(componentName)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-            this._components[name] =
+            this._components[componentName] =
                 this._createComponentClass(componentClass, this._removeChildComponents, this._registerChildComponents);
         }
     };
 
-    private _removeComponent = (component: INavimi_Component): void => {
-        if (component.localName && this._components[component.localName]) {
-            this._removeChildComponents(component);
-            this._disconnectComponent(component);
-            component.remove();
-            component.onAfterRemove && component.onAfterRemove();
+    private _removeComponent = (node: INavimi_Component): void => {
+        if (node.localName && this._components[node.localName]) {
+            this._removeChildComponents(node);
+            this._disconnectComponent(node);
+            node.remove();
+            node.onAfterRemove && node.onAfterRemove();
         }
     }
 
@@ -90,39 +90,39 @@ class __Navimi_Components implements INavimi_Components {
         return prevAttributes;
     }
 
-    private _registerTag = async (tag: INavimi_Component): Promise<void> => {
-        if (tag.props) {
+    private _registerTag = async (node: INavimi_Component): Promise<void> => {
+        if (node.props) {
             return;
         }
 
-        const componentClass = this._components[tag.localName];
+        const componentClass = this._components[node.localName];
 
         // connects the component class to the tag 
         // todo: pass navimi services to the component class
-        Object.setPrototypeOf(tag, new componentClass());
+        Object.setPrototypeOf(node, new componentClass());
 
         // initializes the component props
-        tag.props = {};
+        node.props = {};
 
-        this._readAttributes(tag);
+        this._readAttributes(node);
 
-        const parent = tag.parentElement;
+        const parent = node.parentElement;
 
         // observer to detect removed components
-        tag._observer = new MutationObserver((mutations: MutationRecord[]) => {
+        node._observer = new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
-                let node: INavimi_Component;
-                let child: INavimi_Component;
+                let removedNode: INavimi_Component;
+                let childNode: INavimi_Component;
                 //@ts-ignore
-                for (node of mutation.removedNodes) {
-                    if (node.localName) {
-                        if (this._components[node.localName]) {
-                            this._removeComponent(node);
+                for (removedNode of mutation.removedNodes) {
+                    if (removedNode.localName) {
+                        if (this._components[removedNode.localName]) {
+                            this._removeComponent(removedNode);
                         } else {
                             //@ts-ignore
-                            for (child of node.children) {
-                                if (child.localName && this._components[child.localName]) {
-                                    this._removeComponent(child);
+                            for (childNode of removedNode.children) {
+                                if (childNode.localName && this._components[childNode.localName]) {
+                                    this._removeComponent(childNode);
                                 }
                             }
                         }
@@ -130,22 +130,22 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         });
-        tag._observer.observe(parent, { childList: true, subtree: true });
+        node._observer.observe(parent, { childList: true, subtree: true });
 
         // observer to detect changes in the dom and refresh the attributes
-        tag._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
+        node._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
             if (mutations.find(mutation => mutation.type === "attributes")) {
-                const prevAttributes = this._readAttributes(tag);
-                if (!tag.shouldUpdate || tag.shouldUpdate(prevAttributes, tag.props.attributes)) {
-                    tag.update();
+                const prevAttributes = this._readAttributes(node);
+                if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props.attributes)) {
+                    node.update();
                 }
             }
         });
-        tag._attrObserver.observe(tag, { attributes: true });
+        node._attrObserver.observe(node, { attributes: true });
 
-        this._findParentComponent(tag);
+        this._findParentComponent(node);
 
-        await tag.init();
+        await node.init();
     };
 
     private _findParentComponent = (node: INavimi_Component): void => {
@@ -163,31 +163,31 @@ class __Navimi_Components implements INavimi_Components {
         }
     }
 
-    private _registerChildEvents = (parent: INavimi_Component, child: INavimi_Component): void => {
-        if (child.attributes) {
-            for (let list of [].slice.call(child.attributes)) {
+    private _registerChildEvents = (parentNode: INavimi_Component, childNode: INavimi_Component): void => {
+        if (childNode.attributes) {
+            for (let list of [].slice.call(childNode.attributes)) {
                 const name = list.name;
                 //@ts-ignore
-                typeof child[name] === "function" && (child[name] = child[name].bind(parent));
+                typeof childNode[name] === "function" && (childNode[name] = childNode[name].bind(parentNode));
             }
         }
     };
 
-    private _registerChildComponents = (parent: INavimi_Component): void => {
+    private _registerChildComponents = (parentNode: INavimi_Component): void => {
         const traverse = (node: INavimi_Component): void => {
-            let child: INavimi_Component;
+            let childNode: INavimi_Component;
             //@ts-ignore
-            for (child of node.childNodes) {
-                if (this._components[child.localName]) {
-                    this._registerTag(child);
+            for (childNode of node.childNodes) {
+                if (this._components[childNode.localName]) {
+                    this._registerTag(childNode);
                 } else {
                     // bind child tags events to the parent
-                    this._registerChildEvents(parent, child);
-                    traverse(child);
+                    this._registerChildEvents(parentNode, childNode);
+                    traverse(childNode);
                 }
             }
         };
-        traverse(parent);
+        traverse(parentNode);
     }
 
     private _createComponentClass = (
@@ -208,7 +208,7 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             async update() {
-                this.render();
+                await this.render();
             }
 
             async render() {
