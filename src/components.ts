@@ -41,7 +41,7 @@ class __Navimi_Components implements INavimi_Components {
         if (node.props && node.props.parentComponent) {
             node.props.parentComponent.props.childComponents =
                 node.props.parentComponent.props.childComponents
-                    .filter((child: INavimi_Component) => child != node);
+                    .filter((child: INavimi_Component) => child !== node);
         }
 
         if (node._tagObserver) {
@@ -92,7 +92,7 @@ class __Navimi_Components implements INavimi_Components {
         }
     }
 
-    private _registerTag = async (node: INavimi_Component): Promise<void> => {
+    private _registerTag = async (node: INavimi_Component, parentNode?: INavimi_Component): Promise<void> => {
         if (node.props) {
             return;
         }
@@ -133,20 +133,28 @@ class __Navimi_Components implements INavimi_Components {
         });
         node._attrObserver.observe(node, { attributes: true });
 
-        this._findParentComponent(node);
+        this._connectParentComponent(node, parentNode);
 
         await node.init();
     };
 
-    private _findParentComponent = (node: INavimi_Component): void => {
+    private _connectParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
         let parent = node.parentNode as INavimi_Component;
+        const connect = (parent: INavimi_Component): void => {
+            node.props.parentComponent = parent;
+            parent.props.childComponents = [
+                ...parent.props.childComponents || [],
+                node,
+            ];
+        };
+        if (parentNode) {
+            connect(parentNode);
+            return;
+        }
+        // no parent defined, let's find the parent in the dom
         while (parent) {
             if (/\-/.test(parent.localName) && this._components[parent.localName]) {
-                node.props.parentComponent = parent;
-                parent.props.childComponents = [
-                    ...parent.props.childComponents || [],
-                    node,
-                ];
+                connect(parent);
                 return;
             }
             parent = parent.parentNode as INavimi_Component;
@@ -169,7 +177,7 @@ class __Navimi_Components implements INavimi_Components {
             //@ts-ignore
             for (childNode of node.childNodes) {
                 if (this._components[childNode.localName]) {
-                    this._registerTag(childNode);
+                    this._registerTag(childNode, parentNode);
                 } else {
                     // bind child tags events to the parent
                     this._registerChildEvents(parentNode, childNode);
