@@ -232,7 +232,7 @@ describe('Test components -', () => {
         });
 
         dom.window.document.querySelector("body").insertAdjacentHTML('beforeend', `
-            <counter-component count=1></counter-component>
+            <counter-component n-count=1></counter-component>
         `);
         
         setTimeout(() => {
@@ -256,7 +256,7 @@ describe('Test components -', () => {
 
         const timer1 = component.querySelector("#div-date").innerHTML;
 
-        component.setAttribute("count", '2');
+        component.setAttribute("n-count", '2');
 
         setTimeout(() => {
 
@@ -281,7 +281,7 @@ describe('Test components -', () => {
         const timer2 = component.querySelector("#div-date").innerHTML;
 
         // this should not rerender the component
-        component.setAttribute("another", 'done!');
+        component.setAttribute("n-another", 'done!');
 
         setTimeout(() => {
             
