@@ -65,13 +65,14 @@ class __Navimi_Components implements INavimi_Components {
     private _readAttributes = (node: INavimi_Component): INavimi_KeyList<any> => {
         const prevAttributes = node.props.attributes;
         node.props.attributes = undefined;
-        for (let list of [].slice.call(node.attributes)) {
-            const name = list.name;
+        for (let attr of [].slice.call(node.attributes)) {
+            let name = attr.name;
             //@ts-ignore
-            if (typeof node[name] !== "function") {
+            if (/^n\-.*/.test(name)) {
+                name = name.substring(2);
                 node.props.attributes = {
                     ...node.props.attributes || {},
-                    [name]: list.value
+                    [name]: attr.value
                 };
             }
         }
@@ -163,8 +164,8 @@ class __Navimi_Components implements INavimi_Components {
 
     private _registerChildEvents = (parentNode: INavimi_Component, childNode: INavimi_Component): void => {
         if (childNode.attributes) {
-            for (let list of [].slice.call(childNode.attributes)) {
-                const name = list.name;
+            for (let attr of [].slice.call(childNode.attributes)) {
+                const name = attr.name;
                 //@ts-ignore
                 typeof childNode[name] === "function" && (childNode[name] = childNode[name].bind(parentNode));
             }

@@ -19,10 +19,11 @@ class __Navimi_State implements INavimi_State {
             this.stateDiff = {};
             // fire deep keys first
             keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
-                Object.keys(this.stateWatchers[key]).map((cs: string) => {
-                    const sNew = this.getState(key);
-                    this.stateWatchers[key][cs] &&
-                        this.stateWatchers[key][cs].map((cb: (state: any) => void) => cb && cb(sNew));
+                Object.keys(this.stateWatchers[key]).map((jsUrl: string) => {
+                    const state = this.getState(key);
+                    this.stateWatchers[key][jsUrl] &&
+                        this.stateWatchers[key][jsUrl].map((cb: (state: any) => void) => cb && 
+                            cb(state));
                 });
             });
         }, 10);
