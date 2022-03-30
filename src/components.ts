@@ -8,7 +8,6 @@ class __Navimi_Components implements INavimi_Components {
         this._components = {};
         this._navimiHelpers = navimiHelpers;
 
-        // todo: check if I shold remove this and fire the register after the route render
         new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let addedNode: INavimi_Component;
@@ -24,12 +23,13 @@ class __Navimi_Components implements INavimi_Components {
         if (!this._components[componentName] && /\-/.test(componentName)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
             this._components[componentName] =
-                this._createComponentClass(componentClass, this._removeChildComponents, this._registerChildComponents);
+                this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
         }
     };
 
     private _removeComponent = (node: INavimi_Component): void => {
-        if (node.localName && this._components[node.localName]) {
+        if (node.localName && node.__rendered && this._components[node.localName]) {
+            node.__rendered = false;
             this._removeChildComponents(node);
             this._disconnectComponent(node);
             node.remove();
@@ -38,46 +38,45 @@ class __Navimi_Components implements INavimi_Components {
     }
 
     private _disconnectComponent = (node: INavimi_Component): void => {
-        if (node.props && node.props.parentComponent) {
-            node.props.parentComponent.props.childComponents =
-                node.props.parentComponent.props.childComponents
+        if (node.parentComponent) {
+            node.parentComponent.childComponents =
+                node.parentComponent.childComponents
                     .filter((child: INavimi_Component) => child !== node);
         }
 
-        if (node._tagObserver) {
-            node._tagObserver.disconnect();
-            node._tagObserver = null;
+        if (node.__tagObserver) {
+            node.__tagObserver.disconnect();
+            node.__tagObserver = null;
         }
 
-        if (node._attrObserver) {
-            node._attrObserver.disconnect();
-            node._attrObserver = null;
+        if (node.__attrObserver) {
+            node.__attrObserver.disconnect();
+            node.__attrObserver = null;
         }
     };
 
     private _removeChildComponents = (node: INavimi_Component): void => {
-        node.props && node.props.childComponents &&
-            node.props.childComponents.map((child: INavimi_Component) => {
+        node.childComponents &&
+            node.childComponents.map((child: INavimi_Component) => {
                 this._removeComponent(child);
             });
     };
 
     private _readAttributes = (node: INavimi_Component): INavimi_KeyList<any> => {
-        const prevAttributes = node.props.attributes;
-        node.props.attributes = undefined;
+        const prevAttributes = node.props;
+        node.props = {};
         for (let attr of [].slice.call(node.attributes)) {
-            let name = attr.name;
+            const name = attr.name;
             //@ts-ignore
-            if (/^n\-.*/.test(name)) {
-                name = name.substring(2);
-                node.props.attributes = {
-                    ...node.props.attributes || {},
+            if (typeof node[name] !== "function") {
+                node.props = {
+                    ...node.props || {},
                     [name]: attr.value
                 };
             }
         }
         return prevAttributes;
-    }
+    };
 
     private _traverseTree = (node: INavimi_Component, callback: (node: INavimi_Component) => void): void => {
         if (node.localName) {
@@ -91,7 +90,7 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         }
-    }
+    };
 
     private _registerTag = async (node: INavimi_Component, parentNode?: INavimi_Component): Promise<void> => {
         if (node.props) {
@@ -100,19 +99,26 @@ class __Navimi_Components implements INavimi_Components {
 
         const componentClass = this._components[node.localName];
 
+        // initializes the component props
+        node.props = {};
+        node.__rendered = false;
+        node.__oldTemplate = undefined;
+        node.__initalInnerHtml = node.innerHTML;
+        node.innerHTML = "";
+        node.parentComponent = undefined;
+        node.childComponents = [];
+
+        this._findParentComponent(node, parentNode);
+        this._readAttributes(node);
+
         // connects the component class to the tag 
         // todo: pass navimi services to the component class
         Object.setPrototypeOf(node, new componentClass());
 
-        // initializes the component props
-        node.props = {};
-
-        this._readAttributes(node);
-
         const parent = node.parentElement;
 
         // observer to detect removed components
-        node._tagObserver = new MutationObserver((mutations: MutationRecord[]) => {
+        node.__tagObserver = new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
                 let removedNode: INavimi_Component;
                 //@ts-ignore
@@ -121,41 +127,42 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         });
-        node._tagObserver.observe(parent, { childList: true });
+        node.__tagObserver.observe(parent, { childList: true });
 
         // observer to detect changes in the dom and refresh the attributes
-        node._attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
+        node.__attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
             if (mutations.find(mutation => mutation.type === "attributes")) {
                 const prevAttributes = this._readAttributes(node);
-                if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props.attributes)) {
+                if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
                     node.update();
                 }
             }
         });
-        node._attrObserver.observe(node, { attributes: true });
-
-        this._connectParentComponent(node, parentNode);
+        node.__attrObserver.observe(node, { attributes: true });
 
         await node.init();
     };
 
-    private _connectParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
-        let parent = node.parentNode as INavimi_Component;
-        const connect = (parent: INavimi_Component): void => {
-            node.props.parentComponent = parent;
-            parent.props.childComponents = [
-                ...parent.props.childComponents || [],
+    private _findParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
+
+        const register = (parent: INavimi_Component) => {
+            node.parentComponent = parent;
+            parent.childComponents = [
+                ...parent.childComponents || [],
                 node,
             ];
-        };
+        }
+
         if (parentNode) {
-            connect(parentNode);
+            register(parentNode);
             return;
         }
-        // no parent defined, let's find the parent in the dom
+
+        let parent = node.parentNode as INavimi_Component;
+
         while (parent) {
             if (/\-/.test(parent.localName) && this._components[parent.localName]) {
-                connect(parent);
+                register(parent);
                 return;
             }
             parent = parent.parentNode as INavimi_Component;
@@ -167,7 +174,10 @@ class __Navimi_Components implements INavimi_Components {
             for (let attr of [].slice.call(childNode.attributes)) {
                 const name = attr.name;
                 //@ts-ignore
-                typeof childNode[name] === "function" && (childNode[name] = childNode[name].bind(parentNode));
+                if (typeof childNode[name] === "function") {
+                    //@ts-ignore
+                    childNode[name] = childNode[name].bind(parentNode);
+                }
             }
         }
     };
@@ -187,23 +197,131 @@ class __Navimi_Components implements INavimi_Components {
             }
         };
         traverse(parentNode);
-    }
+    };
+
+    private mergeHtml = (template: DocumentFragment, node: DocumentFragment) => {
+
+        const getNodeType = (node: any) => {
+            if (node.nodeType === 3) return 'text';
+            if (node.nodeType === 8) return 'comment';
+            return node.tagName.toLowerCase();
+        };
+
+        const getNodeContent = (node: any) => {
+            if (node.childNodes && node.childNodes.length > 0) return null;
+            return node.textContent;
+        };
+
+        var documentNodes = [].slice.call(node.childNodes);
+        var templateNodes = [].slice.call(template.childNodes);
+        var diffCount = documentNodes.length - templateNodes.length;
+
+        for (let index = 0; index < templateNodes.length; index++) {
+
+            let templateNode = templateNodes[index];
+
+            // new node, create it
+            if (!documentNodes[index]) {
+                node.appendChild(templateNode.cloneNode(true));
+                continue;
+            }
+
+            // add/remove nodes to match the template
+            if (getNodeType(templateNode) !== getNodeType(documentNodes[index])) {
+                if (diffCount > 0) {
+                    this._traverseTree(documentNodes[index], this._removeComponent);
+                    if (documentNodes[index].parentNode) {
+                        documentNodes[index].parentNode.removeChild(documentNodes[index]);
+                    }
+                    index--;
+                } else {
+                    node.insertBefore(templateNode.cloneNode(true), documentNodes[index]);
+                }
+                documentNodes = [].slice.call(node.childNodes);
+                continue;
+            }
+
+            // update text content
+            var templateContent = getNodeContent(templateNode);
+            if (templateContent && templateContent !== getNodeContent(documentNodes[index])) {
+                documentNodes[index].textContent = templateContent;
+            }
+
+            if (templateNode.localName) {
+
+                // sync attributes
+                if (templateNode.localName === documentNodes[index].localName) {
+                    const attr1 = [].slice.call(documentNodes[index].attributes);
+                    const attr2 = [].slice.call(templateNode.attributes);
+
+                    const update = attr2.filter((n: any) => attr1.find((x: any) => n.name === x.name && n.value !== x.value));
+                    const remove = attr1.filter((n: any) => !attr2.find((x: any) => n.name === x.name));
+                    const add = attr2.filter((n: any) => !attr1.find((x: any) => n.name === x.name));
+
+                    remove.map((attr: any) => {
+                        documentNodes[index].removeAttribute(attr.name);
+                    });
+
+                    [...update, ...add].map((attr: any) => {
+                        documentNodes[index].setAttribute(attr.name, attr.value);
+                    });
+                }
+
+                if (this._components[templateNode.localName]) {
+                    // stop here! do not work on others component's childrens
+                    continue;
+                };
+
+                // clear child nodes
+                if (documentNodes[index].childNodes.length > 0 && templateNode.childNodes.length < 1) {
+                    documentNodes[index].innerHTML = '';
+                    continue;
+                }
+
+                // prepare empty node for next round
+                if (documentNodes[index].childNodes.length < 1 && templateNode.childNodes.length > 0) {
+                    var fragment = document.createDocumentFragment();
+                    this.mergeHtml(templateNode, fragment);
+                    documentNodes[index].appendChild(fragment);
+                    continue;
+                }
+
+                // dive deeper into the tree
+                if (templateNode.childNodes.length > 0) {
+                    this.mergeHtml(templateNode, documentNodes[index]);
+                }
+            }
+
+        }
+
+        // remove extra elements
+        diffCount = documentNodes.length - templateNodes.length;
+        while (diffCount > 0) {
+            const index = documentNodes.length - diffCount;
+            this._traverseTree(documentNodes[index], this._removeComponent);
+            documentNodes[index].parentNode &&
+                documentNodes[index].parentNode.removeChild(documentNodes[index]);
+            diffCount--;
+        }
+
+    };
 
     private _createComponentClass = (
         componentClass: InstanceType<any>,
-        beforeRender: (node: any) => void,
-        afterRender: (node: any) => void
+        registerChildComponents: (node: any) => void,
+        mergeHtml: (template: any, node: any) => void
     ): InstanceType<any> => {
 
         return class extends (componentClass) {
 
-            constructor() {
-                super();
+            constructor(props: any) {
+                super(props);
             }
 
             async init() {
                 super.init && await super.init();
-                this.render();
+                await this.render();
+                super.onAfterMount && await super.onAfterMount();
             }
 
             async update() {
@@ -212,16 +330,22 @@ class __Navimi_Components implements INavimi_Components {
 
             async render() {
 
-                beforeRender(this);
+                this.__rendered = true;
 
-                if (this.props.children === undefined) {
-                    this.props.children = this.innerHTML;
+                const html = super.render && await super.render(this.__initalInnerHtml);
+
+                if (html && html !== this.__oldTemplate) {
+
+                    this.__oldTemplate = html;
+
+                    const domParser = new DOMParser();
+
+                    const template = domParser.parseFromString(html, "text/html");
+
+                    mergeHtml(template.querySelector("body"), this);
+
+                    registerChildComponents(this);
                 }
-
-                // todo: use virtual or shadow dom.
-                this.innerHTML = super.render && await super.render();
-
-                afterRender(this);
 
                 super.onAfterRender && super.onAfterRender();
 

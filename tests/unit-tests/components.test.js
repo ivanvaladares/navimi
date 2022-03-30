@@ -108,9 +108,9 @@ describe('Test components -', () => {
 
             const component = dom.window.document.querySelector("outer-component");
 
-            expect(component.props.childComponents.length).to.be.equal(1);
+            expect(component.childComponents.length).to.be.equal(1);
 
-            expect(component.props.childComponents[0].props.parentComponent).to.be.equal(component);
+            expect(component.childComponents[0].parentComponent).to.be.equal(component);
 
             expect(component.innerHTML).to.be.equal('<anon-class><div>OK!</div></anon-class>');
     
@@ -125,15 +125,26 @@ describe('Test components -', () => {
 
         navimiComponents.registerComponent('click-component', class {
 
+            constructor() {
+                this.lines = [];
+            }
+
             addChild() {
-                this.querySelector("#click-component-children").insertAdjacentHTML('beforeend', `
-                    <anon-class></anon-class>
-                `);
+                this.lines.push(`<anon-class></anon-class>`);
+                this.update();
+            }
+
+            onAfterMount() {
+                this.querySelector("button").addEventListener("click", this.addChild.bind(this));
             }
 
             render() {
-                return `<button onclick="this.addChild()"></button>
-                        <div id="click-component-children"></div>`;
+                return `<div>
+                            <button>Click me!</button>
+                            <div id="click-component-children">
+                                ${this.lines.join('\n')}
+                            </div>
+                        </div>`;
             }
 
         });
@@ -146,13 +157,13 @@ describe('Test components -', () => {
 
             const component = dom.window.document.querySelector("click-component");
 
-            expect(component.props.childComponents).to.be.equal(undefined);
+            expect(component.childComponents.length).to.be.equal(0);
 
             component.querySelector("button").click();
 
             setTimeout(() => {
 
-                expect(component.props.childComponents.length).to.be.equal(1);
+                expect(component.childComponents.length).to.be.equal(1);
 
                 expect(component.innerHTML.indexOf('<div>OK!</div>') > 0).to.be.true;
 
@@ -172,7 +183,7 @@ describe('Test components -', () => {
 
         setTimeout(() => {
 
-            expect(component.props.childComponents.length).to.be.equal(2);
+            expect(component.childComponents.length).to.be.equal(2);
 
             done();
 
@@ -188,7 +199,7 @@ describe('Test components -', () => {
 
         setTimeout(() => {
 
-            expect(component.props.childComponents.length).to.be.equal(0);
+            expect(component.childComponents.length).to.be.equal(0);
 
             done();
 
@@ -205,7 +216,7 @@ describe('Test components -', () => {
 
         setTimeout(() => {
 
-            expect(wrapperComponent.props.childComponents.length).to.be.equal(0);
+            expect(wrapperComponent.childComponents.length).to.be.equal(0);
 
             expect(innerComponent.wasRemoved).to.be.equal(true);
    
@@ -225,14 +236,14 @@ describe('Test components -', () => {
             }
 
             render() {
-                return `<div id="div-count">${this.props.attributes.count}</div>
+                return `<div id="div-count">${this.props.count}</div>
                         <div id="div-date">${new Date().getTime()}</div>`;
             }
 
         });
 
         dom.window.document.querySelector("body").insertAdjacentHTML('beforeend', `
-            <counter-component n-count=1></counter-component>
+            <counter-component count=1></counter-component>
         `);
         
         setTimeout(() => {
@@ -240,8 +251,8 @@ describe('Test components -', () => {
             const component = dom.window.document.querySelector("counter-component");
             const counter1 = component.querySelector("#div-count").innerHTML;
 
-            expect(component.props.attributes.count).to.be.equal('1');
-            expect(component.props.attributes.count).to.be.equal(counter1);
+            expect(component.props.count).to.be.equal('1');
+            expect(component.props.count).to.be.equal(counter1);
 
             done()
 
@@ -256,15 +267,15 @@ describe('Test components -', () => {
 
         const timer1 = component.querySelector("#div-date").innerHTML;
 
-        component.setAttribute("n-count", '2');
+        component.setAttribute("count", '2');
 
         setTimeout(() => {
 
             const counter2 = component.querySelector("#div-count").innerHTML;
             const timer2 = component.querySelector("#div-date").innerHTML;
 
-            expect(component.props.attributes.count).to.be.equal('2');
-            expect(component.props.attributes.count).to.be.equal(counter2);
+            expect(component.props.count).to.be.equal('2');
+            expect(component.props.count).to.be.equal(counter2);
             expect(timer1).not.to.be.equal(timer2);
 
             done();
@@ -281,15 +292,15 @@ describe('Test components -', () => {
         const timer2 = component.querySelector("#div-date").innerHTML;
 
         // this should not rerender the component
-        component.setAttribute("n-another", 'done!');
+        component.setAttribute("another", 'done!');
 
         setTimeout(() => {
             
             const counter3 = component.querySelector("#div-count").innerHTML;
             const timer3 = component.querySelector("#div-date").innerHTML;
 
-            expect(component.props.attributes.count).to.be.equal('2');
-            expect(component.props.attributes.another).to.be.equal('done!');
+            expect(component.props.count).to.be.equal('2');
+            expect(component.props.another).to.be.equal('done!');
             expect(counter2).to.be.equal(counter3);
             expect(timer2).to.be.equal(timer3);
 

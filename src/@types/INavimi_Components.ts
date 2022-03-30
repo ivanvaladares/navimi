@@ -3,23 +3,22 @@ interface INavimi_Components {
     registerComponent: (componentName: string, componentClass: InstanceType<any>) => void;
 }
 
-interface INavimi_ComponentProps {
+interface INavimi_Component extends Element {
+    __tagObserver: MutationObserver;
+    __attrObserver: MutationObserver;
+    __initalInnerHtml: string;
+    __rendered: boolean;
+    __oldTemplate: string;
+
+    props: INavimi_KeyList<any>;
     parentComponent?: INavimi_Component;
     childComponents?: INavimi_Component[];
-    attributes?: INavimi_KeyList<any>;
-    children?: string;
-}
-
-interface INavimi_Component extends Element {
-    _tagObserver: MutationObserver;
-    _attrObserver: MutationObserver;
-
-    props: INavimi_ComponentProps;
 
     init: () => Promise<void> | void;
     update: () => Promise<void> | void;
     render: () => Promise<string> | string;
     shouldUpdate?: (prevAttributes: INavimi_KeyList<any>, nextAttributes: INavimi_KeyList<any>) => boolean;
+    onAfterMount?: () => void;
     onAfterRender?: () => void;
     onAfterRemove?: () => void;
 }
