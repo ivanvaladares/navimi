@@ -60,15 +60,37 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
-    public debounce = (task: (args: any[]) => any, ms: number): () => void => {
-        let timeout: any;
+    public debounce = (task: Function, wait: number): () => void => {
+        let timeout: ReturnType<typeof setTimeout>;
+
         return function () {
             const func = (): void => {
                 timeout = null;
                 task.apply(this, arguments);
             };
             clearTimeout(timeout);
-            timeout = setTimeout(func, ms);
+            timeout = setTimeout(func, wait);
+        };
+    };
+
+    public throttle = (task: Function, wait: number, context: any): () => void => {
+        let timeout: ReturnType<typeof setTimeout>;
+        let lastTime: number;
+
+        return function () {
+            const args = arguments;
+            const now = Date.now();
+
+            if (lastTime && now < lastTime + wait) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    lastTime = now;
+                    task.apply(context, args);
+                }, wait);
+            } else {
+                lastTime = now;
+                task.apply(context, args);
+            }
         };
     };
 
@@ -76,6 +98,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
         const location = document.location;
         const matches = location.toString().match(/^[^#]*(#.+)$/);
         const hash = matches ? matches[1] : "";
+        
         return [location.pathname, location.search, hash].join("");
     };
 
@@ -87,7 +110,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
     public stringify = (obj: any) => {
         const visited: any[] = [];
 
-        const iterateObject = (obj: any) : any => {
+        const iterateObject = (obj: any): any => {
 
             if (typeof obj === 'function') {
                 return String(obj);
@@ -137,16 +160,16 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return JSON.stringify(iterateObject(obj));
     };
 
-    public cloneObject = (obj: any) : INavimi_KeyList<any> => {
+    public cloneObject = (obj: any): INavimi_KeyList<any> => {
         //todo: error cloning is not working
-        return obj === null || typeof obj !== "object" ? obj :  
-                Object.keys(obj).reduce((prev: any, current: string) => 
-                    obj[current] !== null && typeof obj[current] === "object" ? 
-                        (prev[current] = this.cloneObject(obj[current]), prev) : 
-                        (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
+        return obj === null || typeof obj !== "object" ? obj :
+            Object.keys(obj).reduce((prev: any, current: string) =>
+                obj[current] !== null && typeof obj[current] === "object" ?
+                    (prev[current] = this.cloneObject(obj[current]), prev) :
+                    (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
-    public getRouteAndParams = (url: string, routingList: INavimi_KeyList<INavimi_Route>): {routeItem: INavimi_Route, params: any} => {
+    public getRouteAndParams = (url: string, routingList: INavimi_KeyList<INavimi_Route>): { routeItem: INavimi_Route, params: any } => {
         const urlParams = this.splitPath(url);
         const catchAll = routingList["*"];
         let routeItem, params;
@@ -162,7 +185,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
                 }
             }
         }
-        
+
         if (!routeItem && catchAll) {
             params = this.parsePath(url, url);
             routeItem = catchAll;
