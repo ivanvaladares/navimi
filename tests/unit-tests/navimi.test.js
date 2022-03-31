@@ -11,7 +11,7 @@ const _mock_fetch = new (require('./_mock_fetch'))();
 
 let Navimi;
 
-describe('Test fetch -', () => {
+describe('Test Navimi -', () => {
 
     before(done => {
 
