@@ -33,7 +33,7 @@ class __Navimi_Components implements INavimi_Components {
             this._removeChildComponents(node);
             this._disconnectComponent(node);
             node.remove();
-            node.onAfterRemove && node.onAfterRemove();
+            node.onUnmount && node.onUnmount();
         }
     }
 
@@ -114,6 +114,9 @@ class __Navimi_Components implements INavimi_Components {
         // connects the component class to the tag 
         // todo: pass navimi services to the component class
         Object.setPrototypeOf(node, new componentClass());
+        
+        // todo: check if this time (10) can become an option in case someone needs higher frame rates
+        node.update = this._navimiHelpers.throttle(node.render, 10, node); 
 
         const parent = node.parentElement;
 
@@ -321,11 +324,7 @@ class __Navimi_Components implements INavimi_Components {
             async init() {
                 super.init && await super.init();
                 await this.render();
-                super.onAfterMount && await super.onAfterMount();
-            }
-
-            async update() {
-                await this.render();
+                super.onMount && await super.onMount();
             }
 
             async render() {
@@ -347,7 +346,7 @@ class __Navimi_Components implements INavimi_Components {
                     registerChildComponents(this);
                 }
 
-                super.onAfterRender && super.onAfterRender();
+                super.onRender && super.onRender();
 
             }
         }

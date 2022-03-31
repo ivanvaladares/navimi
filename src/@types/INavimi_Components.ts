@@ -15,10 +15,11 @@ interface INavimi_Component extends Element {
     childComponents?: INavimi_Component[];
 
     init: () => Promise<void> | void;
-    update: () => Promise<void> | void;
     render: () => Promise<string> | string;
+    update: () => Promise<void> | void;
+    
     shouldUpdate?: (prevAttributes: INavimi_KeyList<any>, nextAttributes: INavimi_KeyList<any>) => boolean;
-    onAfterMount?: () => void;
-    onAfterRender?: () => void;
-    onAfterRemove?: () => void;
+    onMount?: () => void;
+    onRender?: () => void;
+    onUnmount?: () => void;
 }
