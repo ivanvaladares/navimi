@@ -36,7 +36,7 @@ describe('Test components -', () => {
                 this.wasRemoved = false;
             }
 
-            onAfterRemove() {
+            onUnmount() {
                 this.wasRemoved = true;
             }
 
@@ -134,7 +134,7 @@ describe('Test components -', () => {
                 this.update();
             }
 
-            onAfterMount() {
+            onMount() {
                 this.querySelector("button").addEventListener("click", this.addChild.bind(this));
             }
 
