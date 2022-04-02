@@ -118,8 +118,6 @@ class __Navimi_Components implements INavimi_Components {
         // todo: check if this time (10) can become an option in case someone needs higher frame rates
         node.update = this._navimiHelpers.throttle(node.render, 10, node); 
 
-        const parent = node.parentElement;
-
         // observer to detect removed components
         node.__tagObserver = new MutationObserver((mutations: MutationRecord[]) => {
             for (let mutation of mutations) {
@@ -130,7 +128,7 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         });
-        node.__tagObserver.observe(parent, { childList: true });
+        node.__tagObserver.observe(document.documentElement, { childList: true, subtree: true });
 
         // observer to detect changes in the dom and refresh the attributes
         node.__attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
