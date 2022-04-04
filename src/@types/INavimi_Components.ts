@@ -4,11 +4,9 @@ interface INavimi_Components {
 }
 
 interface INavimi_Component extends Element {
-    __tagObserver: MutationObserver;
-    __attrObserver: MutationObserver;
-    __initalInnerHtml: string;
     __rendered: boolean;
-    __oldTemplate: string;
+    __initalInnerHTML: string;
+    __previousTemplate: string;
 
     props: INavimi_KeyList<any>;
     parentComponent?: INavimi_Component;
@@ -19,7 +17,7 @@ interface INavimi_Component extends Element {
     update: () => Promise<void> | void;
     
     shouldUpdate?: (prevAttributes: INavimi_KeyList<any>, nextAttributes: INavimi_KeyList<any>) => boolean;
-    onMount?: () => void;
     onRender?: () => void;
+    onMount?: () => void;
     onUnmount?: () => void;
 }

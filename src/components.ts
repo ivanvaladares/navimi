@@ -9,14 +9,25 @@ class __Navimi_Components implements INavimi_Components {
         this._navimiHelpers = navimiHelpers;
 
         new MutationObserver((mutations: MutationRecord[]) => {
-            for (let mutation of mutations) {
-                let addedNode: INavimi_Component;
-                //@ts-ignore
-                for (addedNode of mutation.addedNodes) {
-                    this._traverseTree(addedNode, this._registerTag);
+            for (const mutation of mutations) {
+                if (mutation.type === "attributes") {
+                    const node = mutation.target as INavimi_Component;
+                    if (this._components[node.localName]) {
+                        const prevAttributes = this._readAttributes(node);
+                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
+                            node.update();
+                        }
+                    }
+                } else {
+                    for (const addedNode of mutation.addedNodes) {
+                        this._traverseTree(addedNode as INavimi_Component, this._registerTag);
+                    }
+                    for (const removedNode of mutation.removedNodes) {
+                        this._traverseTree(removedNode as INavimi_Component, this._removeComponent);
+                    }
                 }
             }
-        }).observe(document.documentElement, { childList: true, subtree: true });
+        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
     }
 
     public registerComponent = (componentName: string, componentClass: InstanceType<any>): void => {
@@ -42,16 +53,6 @@ class __Navimi_Components implements INavimi_Components {
             node.parentComponent.childComponents =
                 node.parentComponent.childComponents
                     .filter((child: INavimi_Component) => child !== node);
-        }
-
-        if (node.__tagObserver) {
-            node.__tagObserver.disconnect();
-            node.__tagObserver = null;
-        }
-
-        if (node.__attrObserver) {
-            node.__attrObserver.disconnect();
-            node.__attrObserver = null;
         }
     };
 
@@ -102,44 +103,22 @@ class __Navimi_Components implements INavimi_Components {
         // initializes the component props
         node.props = {};
         node.__rendered = false;
-        node.__oldTemplate = undefined;
-        node.__initalInnerHtml = node.innerHTML;
+        node.__previousTemplate = undefined;
+        node.__initalInnerHTML = node.innerHTML;
         node.innerHTML = "";
         node.parentComponent = undefined;
         node.childComponents = [];
 
         this._findParentComponent(node, parentNode);
+
         this._readAttributes(node);
 
         // connects the component class to the tag 
-        // todo: pass navimi services to the component class
+        // todo: pass down navimi services to the component'd constructor
         Object.setPrototypeOf(node, new componentClass());
-        
+
         // todo: check if this time (10) can become an option in case someone needs higher frame rates
-        node.update = this._navimiHelpers.throttle(node.render, 10, node); 
-
-        // observer to detect removed components
-        node.__tagObserver = new MutationObserver((mutations: MutationRecord[]) => {
-            for (let mutation of mutations) {
-                let removedNode: INavimi_Component;
-                //@ts-ignore
-                for (removedNode of mutation.removedNodes) {
-                    this._traverseTree(removedNode, this._removeComponent);
-                }
-            }
-        });
-        node.__tagObserver.observe(document.documentElement, { childList: true, subtree: true });
-
-        // observer to detect changes in the dom and refresh the attributes
-        node.__attrObserver = new MutationObserver((mutations: MutationRecord[]) => {
-            if (mutations.find(mutation => mutation.type === "attributes")) {
-                const prevAttributes = this._readAttributes(node);
-                if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                    node.update();
-                }
-            }
-        });
-        node.__attrObserver.observe(node, { attributes: true });
+        node.update = this._navimiHelpers.throttle(node.render, 10, node);
 
         await node.init();
     };
@@ -203,8 +182,8 @@ class __Navimi_Components implements INavimi_Components {
     private mergeHtml = (template: DocumentFragment, node: DocumentFragment) => {
 
         const getNodeType = (node: any) => {
-            if (node.nodeType === 3) return 'text';
-            if (node.nodeType === 8) return 'comment';
+            if (node.nodeType === 3) return "text";
+            if (node.nodeType === 8) return "comment";
             return node.tagName.toLowerCase();
         };
 
@@ -275,7 +254,7 @@ class __Navimi_Components implements INavimi_Components {
 
                 // clear child nodes
                 if (documentNodes[index].childNodes.length > 0 && templateNode.childNodes.length < 1) {
-                    documentNodes[index].innerHTML = '';
+                    documentNodes[index].innerHTML = "";
                     continue;
                 }
 
@@ -329,11 +308,11 @@ class __Navimi_Components implements INavimi_Components {
 
                 this.__rendered = true;
 
-                const html = super.render && await super.render(this.__initalInnerHtml);
+                const html = super.render && await super.render(this.__initalInnerHTML);
 
-                if (html && html !== this.__oldTemplate) {
+                if (html && html !== this.__previousTemplate) {
 
-                    this.__oldTemplate = html;
+                    this.__previousTemplate = html;
 
                     const domParser = new DOMParser();
 
