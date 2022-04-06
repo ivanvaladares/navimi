@@ -26,7 +26,7 @@ class __Navimi_JSs implements INavimi_JSs {
         navimiFetch: INavimi_Fetch,
         navimiTemplates: INavimi_Templates,
         navimiState: INavimi_State,
-        navimiComponents: INavimi_Components, 
+        navimiComponents: INavimi_Components,
         navimiHelpers: INavimi_Helpers,
         options: INavimi_Options
     ) {
@@ -155,48 +155,13 @@ class __Navimi_JSs implements INavimi_JSs {
 
             let services: INavimi_KeyList<InstanceType<any>> = {};
 
-            // wait for all services to load
-            if (this._routesJSsServices[jsUrl] && this._routesJSsServices[jsUrl].length > 0) {
-                while (true) {
-                    if (this._routesJSsServices[jsUrl].map((name: string) =>
-                        this._othersJSs[this._options.services[name]] === undefined).indexOf(true) === -1) {
-                        break;
-                    }
-                    if (this._routesJSsServices[jsUrl].map(name =>
-                        this._options.services[name]).find(url => this._navimiFetch.getErrors(url))) {
-                        return;
-                    }
-                    await this._navimiHelpers.timeout(10);
-                }
-
-                this._routesJSsServices[jsUrl].map((sn: string) => {
-                    services = {
-                        ...services,
-                        [sn]: this._othersJSs[this._options.services[sn]]
-                    };
-                });
-            }
-
-            // wait for all components to load
-            if (this._routesJSsComponents[jsUrl] && this._routesJSsComponents[jsUrl].length > 0) {
-                while (true) {
-                    if (this._routesJSsComponents[jsUrl].map((name: string) =>
-                        this._othersJSs[this._options.components[name]] === undefined).indexOf(true) === -1) {
-                        break;
-                    }
-                    if (this._routesJSsComponents[jsUrl].map(name =>
-                        this._options.components[name]).find(url => this._navimiFetch.getErrors(url))) {
-                        return;
-                    }
-                    await this._navimiHelpers.timeout(10);
-                }
-
-                //register all loaded components
-                this._routesJSsComponents[jsUrl].map((name: string) => {
-                    const componentClass = this._othersJSs[this._options.components[name]];
-                    this._navimiComponents.registerComponent(name, componentClass);
-                });
-            }
+            //gather all services
+            this._routesJSsServices[jsUrl].map((sn: string) => {
+                services = {
+                    ...services,
+                    [sn]: this._othersJSs[this._options.services[sn]]
+                };
+            });
 
             let jsInstance = new JsClass(Object.freeze(routerFunctions), services);
 
@@ -254,7 +219,7 @@ class __Navimi_JSs implements INavimi_JSs {
         return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
     };
 
-    public loadDependencies = (abortController: AbortController, jsUrl: string, services: string[], components: string[]): void => {
+    public loadDependencies = async (abortController: AbortController, jsUrl: string, services: string[], components: string[]): Promise<void> => {
 
         if (!jsUrl) {
             return;
@@ -299,8 +264,25 @@ class __Navimi_JSs implements INavimi_JSs {
             .map(url => this.fetchJS(abortController, [url], "service")));
 
         Promise.all(componentsUrls.filter(url => url !== undefined)
-            .map(url => this.fetchJS(abortController, [url], "component")));
+            .map(url =>
+                this
+                    .fetchJS(abortController, [url], "component")
+                    .then((componentClass: InstanceType<any>) => {
 
+                        //register components as soon as they are loaded
+                        Object.keys(this._options.components).map((name: string) => {
+                            if (this._options.components[name] === url) {
+                                this._navimiComponents.registerComponent(name, componentClass);
+                            }
+                        });
+
+                    })
+            ));
+
+        await this._waitForDependency(jsUrl, this._routesJSsServices, this._options.services);
+        await this._waitForDependency(jsUrl, this._routesJSsComponents, this._options.components);
+
+        return;
     };
 
     public initJS = async (jsUrl: string, params: INavimi_KeyList<any>): Promise<void> => {
@@ -309,6 +291,26 @@ class __Navimi_JSs implements INavimi_JSs {
 
         jsInstance && jsInstance.init &&
             await jsInstance.init(params);
+
+    };
+
+    private _waitForDependency = async (jsUrl: string, dependencyCol: INavimi_KeyList<string[]>, optionsCol: INavimi_KeyList<string>): Promise<void> => {
+
+        if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
+            return;
+        }
+
+        while (true) {
+            if (dependencyCol[jsUrl].map((name: string) =>
+                this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
+                break;
+            }
+            if (dependencyCol[jsUrl].map(name =>
+                optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
+                return;
+            }
+            await this._navimiHelpers.timeout(10);
+        }
 
     };
 

@@ -196,7 +196,7 @@ class __Navimi_Core {
             this._navimiCSSs.fetchCss(this._abortController, cssUrl).catch(_ => { });
             this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl).catch(_ => { });
             try {
-                this._navimiJSs.loadDependencies(this._abortController, jsUrl, services, components);
+                await this._navimiJSs.loadDependencies(this._abortController, jsUrl || url, services, components);
             } catch (ex) {
                 this._reportError(ex);
             }
