@@ -23,6 +23,7 @@ class __Navimi_Components implements INavimi_Components {
                         this._traverseTree(addedNode as INavimi_Component, this._registerTag);
                     }
                     for (const removedNode of mutation.removedNodes) {
+                        // todo: create a queue to remove components and give priority to adding components
                         this._traverseTree(removedNode as INavimi_Component, this._removeComponent);
                     }
                 }
@@ -115,7 +116,7 @@ class __Navimi_Components implements INavimi_Components {
 
         // connects the component class to the tag 
         // todo: pass down navimi services to the component'd constructor
-        Object.setPrototypeOf(node, new componentClass());
+        Object.setPrototypeOf(node, new componentClass(node.props));
 
         // todo: check if this time (10) can become an option in case someone needs higher frame rates
         node.update = this._navimiHelpers.throttle(node.render, 10, node);
@@ -329,3 +330,7 @@ class __Navimi_Components implements INavimi_Components {
         }
     };
 }
+
+//removeIf(dist)
+module.exports.components = __Navimi_Components;
+//endRemoveIf(dist)

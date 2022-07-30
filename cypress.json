@@ -2,11 +2,11 @@
     "reporter": "junit",
     "browser": "chrome",
     "video": false,
-    "projectId": "tests/cypress",
+    "projectId": "./cypress",
     "fixturesFolder": false,
-    "integrationFolder": "tests/cypress/integration",
-    "screenshotsFolder": "tests/cypress/screenshots",
-    "videosFolder": "tests/cypress/videos",
+    "integrationFolder": "./cypress/integration",
+    "screenshotsFolder": "./cypress/screenshots",
+    "videosFolder": "./cypress/videos",
     "pluginsFile": false,
     "supportFile": false
 }

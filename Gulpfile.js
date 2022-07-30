@@ -5,15 +5,16 @@ const ts = require('gulp-typescript');
 const uglify = require('gulp-uglify');
 const rename = require("gulp-rename");
 const header = require('gulp-header');
+const removeCode = require('gulp-remove-code');
 const pkg = require('./package.json');
 
 const paths = {
-    tsSource: './src/**/*.ts',
+    tsSource: ['./src/**/!(*.spec)*.ts'],
     jsSource: './dist/**/*.js',
     dirOutput: './dist',
     examples: './examples/*/scripts',
     hotPath: './examples/06.hot/scripts',
-    testPath: './tests/cypress/site/scripts',
+    testPath: './cypress/site/scripts',
 };
 
 const banner = ['/**',
@@ -36,18 +37,16 @@ function TSScripts() {
     tsProject.options.outFile = './navimi.js';
     return gulp.src(paths.tsSource)
         .pipe(tsProject())
+        .pipe(removeCode({ dist: true, minify: false }))
         .pipe(header(banner, { pkg : pkg } ))
         .pipe(gulp.dest(paths.dirOutput));
 }
 
 function minify() {
     return gulp.src(paths.jsSource)
+        .pipe(removeCode({ minify: true }))
         .pipe(uglify({
             compress: {
-                global_defs: {
-                    __NAVIMI_DEV: false,
-                    __NAVIMI_PROD: true
-                },
                 unused: true, 
                 dead_code: true
             }
@@ -77,5 +76,5 @@ function copyJsToExamplesAndTest(done) {
     done();
 }
 
-exports.build = gulp.series(cleanDist, TSScripts, minify, copyJsToExamplesAndTest);
+exports.build = gulp.series(cleanDist, TSScripts);
 exports.default = gulp.series(cleanDist, TSScripts, minify, copyJsToExamplesAndTest);

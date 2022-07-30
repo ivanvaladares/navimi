@@ -71,25 +71,25 @@ class __Navimi_Core {
     }
 
     private _initHot() {
-        if (__NAVIMI_PROD) {
-            console.warn('HOT is disabled! Use the unminified version to enable it.');
-        }
-        if (__NAVIMI_DEV) {
-            setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot,
-                (callback: (globalCssUrl: string,
-                    globalTemplatesUrl: string,
-                    currentJs: string,
-                    routesList: INavimi_KeyList<INavimi_Route>,
-                    initRoute: any) => void) => {
+        //removeIf(!minify)
+        console.warn('HOT is disabled! Use the unminified version to enable it.');
+        //endRemoveIf(!minify)
+        //removeIf(minify)
+        setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot,
+            (callback: (globalCssUrl: string,
+                globalTemplatesUrl: string,
+                currentJs: string,
+                routesList: INavimi_KeyList<INavimi_Route>,
+                initRoute: any) => void) => {
 
-                    callback(this._options.globalCssUrl,
-                        this._options.globalTemplatesUrl,
-                        this._currentJS,
-                        this._routesList, () => {
-                            this._initRoute(undefined, this._routesParams[this._currentJS], true);
-                        });
-                });
-        }
+                callback(this._options.globalCssUrl,
+                    this._options.globalTemplatesUrl,
+                    this._currentJS,
+                    this._routesList, () => {
+                        this._initRoute(undefined, this._routesParams[this._currentJS], true);
+                    });
+            });
+        //endRemoveIf(minify)
     }
 
     private _navigateTo = (url: string, params?: INavimi_KeyList<any>): void => {
@@ -164,9 +164,9 @@ class __Navimi_Core {
         }).catch(this._reportError);
 
         if (callId < this._callId) {
-            if (__NAVIMI_DEV) {
-                console.warn("Navimi: A middleware has exited or errored.");
-            }
+            //removeIf(minify)
+            console.warn("Navimi: A middleware has exited or errored.");
+            //endRemoveIf(minify)
             return;
         }
 

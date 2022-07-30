@@ -9,9 +9,9 @@
   "homepage": "https://github.com/ivanvaladares/navimi",
   "main": "index.js",
   "scripts": {
-    "test": "mocha tests/unit-tests/*.js -R list --timeout 60000",
-    "cypress": "node cypress.js",
-    "build": "gulp build"
+    "test": "jest --coverage",
+    "cypress": "node ./cypress/cypress.js",
+    "build": "gulp"
   },
   "keywords": [],
   "license": "MIT",
@@ -20,19 +20,23 @@
     "url": "git://github.com/ivanvaladares/navimi.git"
   },
   "devDependencies": {
-    "chai": "^4.3.6",
+    "@types/jest": "^28.1.6",
     "cypress": "^8.5.0",
     "express": "^4.17.1",
     "glob": "^7.2.0",
+    "global-jsdom": "^8.5.0",
     "gulp": "^4.0.2",
     "gulp-clean": "^0.4.0",
     "gulp-header": "^2.0.9",
+    "gulp-remove-code": "3.0.4",
     "gulp-rename": "^2.0.0",
     "gulp-sourcemaps": "^3.0.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "gulp-uglify": "^3.0.2",
+    "jest": "^28.1.3",
+    "jest-environment-jsdom": "^28.1.3",
     "jsdom": "^19.0.0",
-    "mocha": "^9.2.1",
+    "ts-jest": "^28.0.7",
     "typescript": "^4.3.5"
   }
 }

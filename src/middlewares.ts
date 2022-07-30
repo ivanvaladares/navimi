@@ -11,11 +11,11 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
     public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: INavimi_KeyList<any>) => void): Promise<any> => {
         let prevIndex = -1;
         const runner = async (resolve: (value?: unknown) => void, reject: (reason?: any) => void, index: number = 0): Promise<void> => {
-            if (__NAVIMI_DEV) {
-                if (index === prevIndex) {
-                    console.warn('next() called multiple times');
-                }
+            //removeIf(minify)
+            if (index === prevIndex) {
+                console.warn('next() called multiple times');
             }
+            //endRemoveIf(minify)
             prevIndex = index;
             const middleware = this._middlewareStack[index];
             if (middleware) {
@@ -43,3 +43,7 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
     };
 
 }
+
+//removeIf(dist)
+module.exports.middlewares = __Navimi_Middlewares;
+//endRemoveIf(dist)

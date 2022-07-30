@@ -60,7 +60,7 @@ new Navimi({
             (ctx, next) => {
                 console.log("middleware 3", ctx);
                 //adding common services to all routes
-                ctx.routeItem.dependsOn = ["myfx", "linksFx"];
+                ctx.routeItem.services = ["myfx", "linksFx"];
                 next();
             },
         ],

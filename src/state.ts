@@ -126,4 +126,30 @@ class __Navimi_State implements INavimi_State {
         Object.keys(this.stateWatchers).map(remove);
     };
 
+    public clear = (key?: string | string[]): void => {
+        const keys = Array.isArray(key) ? key : [key];
+        console.log("clear", keys);
+        keys.map(id => {
+            const state = id ?
+            id.split('.')
+                    .reduce((v, k) => (v && v[k]) || undefined, this.state) : 
+                this.state;
+
+            console.log(id)
+
+            if (state instanceof Object) {
+                Object.keys(state).map(sk => {
+                    if (state[sk] instanceof Object) {
+                        this.clear(id + "." + sk);
+                    }
+                    delete state[sk];
+                });
+            }
+        });
+    }
+
 }
+
+//removeIf(dist)
+module.exports.state = __Navimi_State;
+//endRemoveIf(dist)

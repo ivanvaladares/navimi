@@ -6,10 +6,10 @@ const http = require('http');
 const app = express();
 const server = http.createServer(app);
 
-app.use(express.static(path.resolve(__dirname, "tests/cypress/site")));
+app.use(express.static(path.resolve(__dirname, "./site")));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, "tests/cypress/site/index.html"));
+  res.sendFile(path.resolve(__dirname, "./site/index.html"));
 });
 
 server.listen(3000, () => {

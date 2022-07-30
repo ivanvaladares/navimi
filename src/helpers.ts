@@ -194,3 +194,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return { routeItem, params };
     };
 }
+
+//removeIf(dist)
+module.exports.helpers = __Navimi_Helpers;
+//endRemoveIf(dist)

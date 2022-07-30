@@ -4,4 +4,5 @@ interface INavimi_State {
     getState: (key?: string, _state?: any) => INavimi_KeyList<any>;
     watchState: (jsUrl: string, key: string, callback: (state: any) => void) => void;
     unwatchState: (jsUrl: string, key?: string | string[]) => void;
+    clear: (key?: string | string[]) => void;
 }

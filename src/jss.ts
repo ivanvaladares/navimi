@@ -314,61 +314,60 @@ class __Navimi_JSs implements INavimi_JSs {
 
     };
 
+    //removeIf(minify)
     public reloadJs = (filePath: string,
         jsCode: string,
         routeList: INavimi_KeyList<INavimi_Route>,
         currentJS: string,
         callback: () => void): void => {
 
-        if (__NAVIMI_DEV) {
+        const isSameFile = this._navimiHelpers.isSameFile;
 
-            const isSameFile = this._navimiHelpers.isSameFile;
+        for (const routeUrl in routeList) {
+            const { jsUrl } = routeList[routeUrl];
 
-            for (const routeUrl in routeList) {
-                const { jsUrl } = routeList[routeUrl];
+            if (isSameFile(jsUrl, filePath)) {
 
-                if (isSameFile(jsUrl, filePath)) {
+                console.log(`${filePath} updated.`);
 
-                    console.log(`${filePath} updated.`);
+                delete this._routesJSs[jsUrl];
 
-                    delete this._routesJSs[jsUrl];
+                this._navimiLoader[this._promiseNS + jsUrl] = () => {
+                    if (jsUrl === currentJS) {
+                        //reload route if current JS is updated
+                        callback();
+                    }
+                };
 
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        if (jsUrl === currentJS) {
+                this._insertJS(jsUrl, jsCode, "route");
+
+                return;
+            }
+        }
+
+        for (const jsUrl in this._dependencyJSsMap) {
+            if (isSameFile(jsUrl, filePath)) {
+                console.log(`${filePath} updated.`);
+
+                delete this._othersJSs[jsUrl];
+
+                this._navimiLoader[this._promiseNS + jsUrl] = () => {
+                    Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
+                        //clear all dependent JSs that depends of this JS
+                        delete this._routesJSs[s];
+
+                        if (s === currentJS) {
                             //reload route if current JS is updated
                             callback();
                         }
-                    };
+                    });
+                };
 
-                    this._insertJS(jsUrl, jsCode, "route");
-
-                    return;
-                }
-            }
-
-            for (const jsUrl in this._dependencyJSsMap) {
-                if (isSameFile(jsUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-
-                    delete this._othersJSs[jsUrl];
-
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
-                            //clear all dependent JSs that depends of this JS
-                            delete this._routesJSs[s];
-
-                            if (s === currentJS) {
-                                //reload route if current JS is updated
-                                callback();
-                            }
-                        });
-                    };
-
-                    //todo: check for modules, services and components
-                    this._insertJS(filePath, jsCode, "javascript");
-                }
+                //todo: check for modules, services and components
+                this._insertJS(filePath, jsCode, "javascript");
             }
         }
+        
     };
-
+    //endRemoveIf(minify)
 }

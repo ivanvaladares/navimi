@@ -46,39 +46,38 @@ class __Navimi_CSSs implements INavimi_CSSs {
         });
     };
 
+    //removeIf(minify)
     public reloadCss = (filePath: string, cssCode: string, routeList: INavimi_KeyList<INavimi_Route>, currentJS: string, globalCssUrl: string): void => {
 
-        if (__NAVIMI_DEV) {
-            
-            const isSameFile = this._navimiHelpers.isSameFile;
+        const isSameFile = this._navimiHelpers.isSameFile;
 
-            if (isSameFile(globalCssUrl, filePath)) {
+        if (isSameFile(globalCssUrl, filePath)) {
+            console.log(`${filePath} updated.`);
+
+            this._loadedCsss[globalCssUrl] = cssCode;
+
+            this._navimiDom.insertCss(cssCode, "globalCss");
+
+            return;
+        }
+
+        for (const routeUrl in routeList) {
+            const { jsUrl, cssUrl } = routeList[routeUrl];
+
+            if (isSameFile(cssUrl, filePath)) {
                 console.log(`${filePath} updated.`);
 
-                this._loadedCsss[globalCssUrl] = cssCode;
+                this._loadedCsss[cssUrl] = cssCode;
 
-                this._navimiDom.insertCss(cssCode, "globalCss");
+                if (currentJS === jsUrl) {
+                    this._navimiDom.insertCss(cssCode, "routeCss");
+                }
 
                 return;
-            }
-
-            for (const routeUrl in routeList) {
-                const { jsUrl, cssUrl } = routeList[routeUrl];
-
-                if (isSameFile(cssUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-
-                    this._loadedCsss[cssUrl] = cssCode;
-
-                    if (currentJS === jsUrl) {
-                        this._navimiDom.insertCss(cssCode, "routeCss");
-                    }
-
-                    return;
-                }
             }
         }
 
     };
+    //endRemoveIf(minify)
 
 }

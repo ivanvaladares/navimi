@@ -47,13 +47,13 @@ class Navimi {
 
         navimiComponents.init(navimiHelpers);
 
-        if (__NAVIMI_DEV) {
-            navimiHot.init(
-                navimiCSSs,
-                navimiJSs,
-                navimiTemplates
-            );
-        }
+        //removeIf(minify)
+        navimiHot.init(
+            navimiCSSs,
+            navimiJSs,
+            navimiTemplates
+        );
+        //endRemoveIf(minify)
 
         const _services = {
             navimiFetch,
@@ -73,3 +73,7 @@ class Navimi {
     }
 
 }
+
+//removeIf(dist)
+module.exports.Navimi = Navimi;
+//endRemoveIf(dist)

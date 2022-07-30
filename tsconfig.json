@@ -2,14 +2,15 @@
   "compilerOptions": {
     "target": "es2017",
     "module": "none",
-    "moduleResolution": "classic",
+    "moduleResolution": "Node",
     "outFile": "./dist/navimi.js",
     "noImplicitAny": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "removeComments": false,
     "allowJs": false,
     "noEmitOnError": true,
-    "declaration": false
+    "declaration": false,
+    "esModuleInterop": true
   },  
   "lib": ["dom", "es2015", "es2016"],
   "exclude": [

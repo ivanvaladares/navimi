@@ -1,13 +1,10 @@
 class __Navimi_Fetch implements INavimi_Fetch {
 
     private _bustCache: string;
-    private _fetch: (input: RequestInfo, init?: RequestInit) => Promise<Response>;
-
     private loadErrors: INavimi_KeyList<string> = {};
 
-    public init = (options: INavimi_Options, fetch?: (input: RequestInfo, init?: RequestInit) => Promise<Response>): void => {
+    public init = (options: INavimi_Options): void => {
         this._bustCache = options.bustCache;
-        this._fetch = fetch;
     };
 
     public getErrors = (url: string): string => {
@@ -20,8 +17,7 @@ class __Navimi_Fetch implements INavimi_Fetch {
 
             const requestUrl = url + (this._bustCache ? '?v=' + this._bustCache : '');
 
-            //todo: add retry with options
-            (this._fetch || fetch)(requestUrl, options)
+            fetch(requestUrl, options)
                 .then(async (data: Response) => {
                     if (!data || !data.ok) {
                         const error = `Could not load the file! - ${url}`;
@@ -40,3 +36,7 @@ class __Navimi_Fetch implements INavimi_Fetch {
     };
 
 }
+
+//removeIf(dist)
+module.exports.fetch = __Navimi_Fetch;
+//endRemoveIf(dist)
