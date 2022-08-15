@@ -23,18 +23,29 @@ class __Navimi_Dom implements INavimi_Dom {
         });
     };
 
-    public insertCss = (cssCode: string, type?: string, prepend?: boolean): void => {
-        const oldTag = type ? document.querySelector(`[cssId='${type}']`) : undefined;
-        oldTag && oldTag.remove();
+    public insertCss = (cssCode: string, url: string, type: string, prepend?: boolean): void => {
+        document.querySelector(`[cssUrl='${url}']`)?.remove();
+        if (type === "routeCss") {
+            document.querySelector(`[cssType='${type}']`)?.remove();
+        }
         if (!cssCode) {
             return;
         }
         const style: HTMLStyleElement = document.createElement("style");
         style.innerHTML = cssCode;
-        type && style.setAttribute("cssId", type);
+        url && style.setAttribute("cssUrl", url);
+        url && style.setAttribute("cssType", type);
         const head = document.getElementsByTagName("head")[0];
         const target = (head || document.body);
         prepend ? target.prepend(style) : target.appendChild(style);
+    };
+
+    public replaceCss = (cssCode: string, url: string): void => {
+        const oldTag: HTMLStyleElement = url ? document.querySelector(`[cssUrl='${url}']`) : undefined;
+        if (!oldTag) {
+            return;
+        }
+        oldTag.innerHTML = cssCode;
     };
 
     public insertJS = (jsCode: string, jsUrl: string, isModule: boolean): void => {
@@ -64,7 +75,9 @@ class __Navimi_Dom implements INavimi_Dom {
 
         urls.length > 0 && await Promise.all(urls.map(obj => {
             if (obj.type.toLowerCase() === "css") {
-                this._navimiCSSs.fetchCss(undefined, obj.url, true);
+                this._navimiCSSs.fetchCss(undefined, obj.url).then((cssCode) => {
+                    this.insertCss(cssCode, obj.url, 'library', true);
+                });
             } else {
                 const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
                 return this._navimiJSs.fetchJS(undefined, [obj.url], type);

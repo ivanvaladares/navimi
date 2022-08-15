@@ -19,8 +19,7 @@ class Navimi {
 
         navimiCSSs.init(
             navimiDom,
-            navimiFetch,
-            navimiHelpers
+            navimiFetch
         );
 
         navimiDom.init(
@@ -38,22 +37,11 @@ class Navimi {
             options
         );
 
-        navimiTemplates.init(
-            navimiFetch,
-            navimiHelpers
-        );
+        navimiTemplates.init(navimiFetch);
 
         navimiState.init(navimiHelpers);
 
         navimiComponents.init(navimiHelpers);
-
-        //removeIf(minify)
-        navimiHot.init(
-            navimiCSSs,
-            navimiJSs,
-            navimiTemplates
-        );
-        //endRemoveIf(minify)
 
         const _services = {
             navimiFetch,

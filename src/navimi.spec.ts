@@ -18,7 +18,7 @@ describe('navimi.spec', () => {
         )
     );
 
-    it('Test constructor mock', (done) => {
+    test('Test constructor mock', (done) => {
 
         const routes = {
             "/": {

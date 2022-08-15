@@ -3,42 +3,6 @@ class __Navimi_Components implements INavimi_Components {
     private _components: INavimi_KeyList<any> = {};
     private _navimiHelpers: INavimi_Helpers;
 
-    public init(navimiHelpers: INavimi_Helpers): void {
-
-        this._components = {};
-        this._navimiHelpers = navimiHelpers;
-
-        new MutationObserver((mutations: MutationRecord[]) => {
-            for (const mutation of mutations) {
-                if (mutation.type === "attributes") {
-                    const node = mutation.target as INavimi_Component;
-                    if (this._components[node.localName]) {
-                        const prevAttributes = this._readAttributes(node);
-                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                            node.update();
-                        }
-                    }
-                } else {
-                    for (const addedNode of mutation.addedNodes) {
-                        this._traverseTree(addedNode as INavimi_Component, this._registerTag);
-                    }
-                    for (const removedNode of mutation.removedNodes) {
-                        // todo: create a queue to remove components and give priority to adding components
-                        this._traverseTree(removedNode as INavimi_Component, this._removeComponent);
-                    }
-                }
-            }
-        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-    }
-
-    public registerComponent = (componentName: string, componentClass: InstanceType<any>): void => {
-        if (!this._components[componentName] && /\-/.test(componentName)) {
-            Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-            this._components[componentName] =
-                this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
-        }
-    };
-
     private _removeComponent = (node: INavimi_Component): void => {
         if (node.localName && node.__rendered && this._components[node.localName]) {
             node.__rendered = false;
@@ -329,6 +293,43 @@ class __Navimi_Components implements INavimi_Components {
             }
         }
     };
+
+    public init(navimiHelpers: INavimi_Helpers): void {
+
+        this._components = {};
+        this._navimiHelpers = navimiHelpers;
+
+        new MutationObserver((mutations: MutationRecord[]) => {
+            for (const mutation of mutations) {
+                if (mutation.type === "attributes") {
+                    const node = mutation.target as INavimi_Component;
+                    if (this._components[node.localName]) {
+                        const prevAttributes = this._readAttributes(node);
+                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
+                            node.update();
+                        }
+                    }
+                } else {
+                    for (const addedNode of mutation.addedNodes) {
+                        this._traverseTree(addedNode as INavimi_Component, this._registerTag);
+                    }
+                    for (const removedNode of mutation.removedNodes) {
+                        // todo: create a queue to remove components and give priority to adding components
+                        this._traverseTree(removedNode as INavimi_Component, this._removeComponent);
+                    }
+                }
+            }
+        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    }
+
+    public registerComponent = (componentName: string, componentClass: InstanceType<any>): void => {
+        if (!this._components[componentName] && /\-/.test(componentName)) {
+            Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+            this._components[componentName] =
+                this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
+        }
+    };
+
 }
 
 //removeIf(dist)

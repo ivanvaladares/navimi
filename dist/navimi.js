@@ -7,13 +7,6 @@
 class __Navimi_Components {
     constructor() {
         this._components = {};
-        this.registerComponent = (componentName, componentClass) => {
-            if (!this._components[componentName] && /\-/.test(componentName)) {
-                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-                this._components[componentName] =
-                    this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
-            }
-        };
         this._removeComponent = (node) => {
             if (node.localName && node.__rendered && this._components[node.localName]) {
                 node.__rendered = false;
@@ -249,6 +242,13 @@ class __Navimi_Components {
                 }
             };
         };
+        this.registerComponent = (componentName, componentClass) => {
+            if (!this._components[componentName] && /\-/.test(componentName)) {
+                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+                this._components[componentName] =
+                    this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
+            }
+        };
     }
     init(navimiHelpers) {
         this._components = {};
@@ -415,7 +415,7 @@ class __Navimi_Core {
                         return;
                     }
                     this._navimiDom.setNavimiLinks();
-                    this._navimiDom.insertCss(this._navimiCSSs.getCss(cssUrl), "routeCss");
+                    this._navimiDom.insertCss(this._navimiCSSs.getCss(cssUrl), cssUrl, 'routeCss');
                     this._options.onAfterRoute &&
                         this._options.onAfterRoute({ url, routeItem, params }, this._navigateTo);
                 }
@@ -459,17 +459,15 @@ class __Navimi_Core {
             await Promise.all([
                 this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
                 this._navimiTemplates.fetchTemplate(undefined, this._options.globalTemplatesUrl),
-            ]).catch(this._reportError);
-            this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), "globalCss");
+            ]).then(() => {
+                this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), this._options.globalCssUrl, 'globalCss');
+            }).catch(this._reportError);
         }
     }
     _initHot() {
         //removeIf(minify)
-        setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot, (callback) => {
-            callback(this._options.globalCssUrl, this._options.globalTemplatesUrl, this._currentJS, this._routesList, () => {
-                this._initRoute(undefined, this._routesParams[this._currentJS], true);
-            });
-        });
+        this._navimiHot.init(this._navimiCSSs, this._navimiJSs, this._navimiTemplates, this._initRoute);
+        setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot);
         //endRemoveIf(minify)
     }
 }
@@ -482,10 +480,10 @@ class __Navimi_CSSs {
         this.getCss = (url) => {
             return this._loadedCsss[url];
         };
-        this.fetchCss = (abortController, url, autoInsert) => {
+        this.fetchCss = (abortController, url) => {
             return new Promise(async (resolve, reject) => {
                 if (!url || this._loadedCsss[url]) {
-                    return resolve();
+                    return resolve(this._loadedCsss[url]);
                 }
                 try {
                     const cssCode = await this._navimiFetch.fetchFile(url, {
@@ -494,14 +492,8 @@ class __Navimi_CSSs {
                         },
                         signal: abortController ? abortController.signal : undefined
                     });
-                    if (autoInsert) {
-                        this._navimiDom.insertCss(cssCode, url, true);
-                        this._loadedCsss[url] = "loaded";
-                    }
-                    else {
-                        this._loadedCsss[url] = cssCode;
-                    }
-                    resolve();
+                    this._loadedCsss[url] = cssCode;
+                    resolve(cssCode);
                 }
                 catch (ex) {
                     reject(ex);
@@ -509,32 +501,18 @@ class __Navimi_CSSs {
             });
         };
         //removeIf(minify)
-        this.reloadCss = (filePath, cssCode, routeList, currentJS, globalCssUrl) => {
-            const isSameFile = this._navimiHelpers.isSameFile;
-            if (isSameFile(globalCssUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-                this._loadedCsss[globalCssUrl] = cssCode;
-                this._navimiDom.insertCss(cssCode, "globalCss");
+        this.reloadCss = (filePath, cssCode) => {
+            if (!this.isCssLoaded(filePath)) {
                 return;
             }
-            for (const routeUrl in routeList) {
-                const { jsUrl, cssUrl } = routeList[routeUrl];
-                if (isSameFile(cssUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    this._loadedCsss[cssUrl] = cssCode;
-                    if (currentJS === jsUrl) {
-                        this._navimiDom.insertCss(cssCode, "routeCss");
-                    }
-                    return;
-                }
-            }
+            console.log(`${filePath} updated.`);
+            this._navimiDom.replaceCss(cssCode, filePath);
         };
         //endRemoveIf(minify)
     }
-    init(navimiDom, navimiFetch, navimiHelpers) {
+    init(navimiDom, navimiFetch) {
         this._navimiDom = navimiDom;
         this._navimiFetch = navimiFetch;
-        this._navimiHelpers = navimiHelpers;
     }
 }
 class __Navimi_Dom {
@@ -552,18 +530,30 @@ class __Navimi_Dom {
                 });
             });
         };
-        this.insertCss = (cssCode, type, prepend) => {
-            const oldTag = type ? document.querySelector(`[cssId='${type}']`) : undefined;
-            oldTag && oldTag.remove();
+        this.insertCss = (cssCode, url, type, prepend) => {
+            let removeTag = document.querySelector(`[cssUrl='${url}']`);
+            removeTag && removeTag.remove();
+            if (type === "routeCss") {
+                removeTag = document.querySelector(`[cssType='${type}']`);
+                removeTag && removeTag.remove();
+            }
             if (!cssCode) {
                 return;
             }
             const style = document.createElement("style");
             style.innerHTML = cssCode;
-            type && style.setAttribute("cssId", type);
+            url && style.setAttribute("cssUrl", url);
+            url && style.setAttribute("cssType", type);
             const head = document.getElementsByTagName("head")[0];
             const target = (head || document.body);
             prepend ? target.prepend(style) : target.appendChild(style);
+        };
+        this.replaceCss = (cssCode, url) => {
+            const oldTag = url ? document.querySelector(`[cssUrl='${url}']`) : undefined;
+            if (!oldTag) {
+                return;
+            }
+            oldTag.innerHTML = cssCode;
         };
         this.insertJS = (jsCode, jsUrl, isModule) => {
             const oldTag = document.querySelector(`[jsUrl='${jsUrl}']`);
@@ -588,7 +578,9 @@ class __Navimi_Dom {
             }).filter((obj) => !this._navimiJSs.isJsLoaded(obj.url));
             urls.length > 0 && await Promise.all(urls.map(obj => {
                 if (obj.type.toLowerCase() === "css") {
-                    this._navimiCSSs.fetchCss(undefined, obj.url, true);
+                    this._navimiCSSs.fetchCss(undefined, obj.url).then((cssCode) => {
+                        this.insertCss(cssCode, obj.url, 'library', true);
+                    });
                 }
                 else {
                     const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
@@ -797,7 +789,7 @@ class __Navimi_Helpers {
 }
 class __Navimi_Hot {
     constructor() {
-        this.openHotWs = (hotOption, callback) => {
+        this.openHotWs = (hotOption) => {
             try {
                 if (!('WebSocket' in window)) {
                     console.error("Websocket is not supported by your browser!");
@@ -809,15 +801,13 @@ class __Navimi_Hot {
                 this._wsHotClient = new WebSocket(`ws://localhost:${port}`);
                 this._wsHotClient.addEventListener('message', (e) => {
                     try {
-                        const json = JSON.parse(e.data || "");
-                        if (json.message) {
-                            console.warn(json.message);
+                        const payload = JSON.parse(e.data || "");
+                        if (payload.message) {
+                            console.warn(payload.message);
                             return;
                         }
-                        if (json.filePath) {
-                            callback((globalCssUrl, globalTemplatesUrl, currentJs, routesList, initRoute) => {
-                                this._digestHot(json, globalCssUrl, globalTemplatesUrl, currentJs, routesList, initRoute);
-                            });
+                        if (payload.filePath) {
+                            this._digestHot(payload);
                         }
                     }
                     catch (ex) {
@@ -833,32 +823,29 @@ class __Navimi_Hot {
                 console.error(ex);
             }
         };
-        this._digestHot = (payload, globalCssUrl, globalTemplatesUrl, currentJs, routesList, initRoute) => {
+        this._digestHot = (payload) => {
+            var _a;
             try {
                 const filePath = payload.filePath.replace(/\\/g, "/");
-                const fileType = filePath.split(".").pop();
-                const data = payload.data;
+                const fileType = (_a = filePath.split(".").pop()) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase();
+                const data = payload === null || payload === void 0 ? void 0 : payload.data;
                 switch (fileType) {
                     case "css":
-                        this._navimiCSSs.reloadCss(filePath, data, routesList, currentJs, globalCssUrl);
+                        this._navimiCSSs.reloadCss(filePath, data);
                         break;
                     case "html":
                     case "htm":
-                        this._navimiTemplates.reloadTemplate(filePath, data, routesList, currentJs, globalTemplatesUrl, () => {
-                            initRoute();
-                        });
+                        this._navimiTemplates.reloadTemplate(filePath, data, this._initRouteFunc);
                         break;
                     case "js":
-                        this._navimiJSs.reloadJs(filePath, data, routesList, currentJs, () => {
-                            initRoute();
-                        });
+                        this._navimiJSs.reloadJs(filePath, data, this._initRouteFunc);
                         break;
                     case "gif":
                     case "jpg":
                     case "jpeg":
                     case "png":
                     case "svg":
-                        initRoute();
+                        this._initRouteFunc();
                         break;
                 }
             }
@@ -868,10 +855,11 @@ class __Navimi_Hot {
         };
         //endRemoveIf(minify)
     }
-    init(navimiCSSs, navimiJSs, navimiTemplates) {
+    init(navimiCSSs, navimiJSs, navimiTemplates, initRoute) {
         this._navimiCSSs = navimiCSSs;
         this._navimiJSs = navimiJSs;
         this._navimiTemplates = navimiTemplates;
+        this._initRouteFunc = initRoute;
     }
 }
 class __Navimi_JSs {
@@ -961,7 +949,7 @@ class __Navimi_JSs {
                         return this.fetchJS(undefined, urls, "javascript");
                     },
                     fetchTemplate: (url) => {
-                        return this._navimiTemplates.fetchTemplate(undefined, url, jsUrl);
+                        return this._navimiTemplates.fetchTemplate(undefined, url);
                     },
                     setState: this._navimiState.setState,
                     getState: this._navimiState.getState,
@@ -981,6 +969,20 @@ class __Navimi_JSs {
             }
             catch (error) {
                 promiseToReject && promiseToReject(error);
+            }
+        };
+        this._waitForDependency = async (jsUrl, dependencyCol, optionsCol) => {
+            if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
+                return;
+            }
+            while (true) {
+                if (dependencyCol[jsUrl].map((name) => this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
+                    break;
+                }
+                if (dependencyCol[jsUrl].map(name => optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
+                    return;
+                }
+                await this._navimiHelpers.timeout(10);
             }
         };
         this.isJsLoaded = (url) => {
@@ -1070,56 +1072,55 @@ class __Navimi_JSs {
             jsInstance && jsInstance.init &&
                 await jsInstance.init(params);
         };
-        this._waitForDependency = async (jsUrl, dependencyCol, optionsCol) => {
-            if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
+        //removeIf(minify)
+        this.reloadJs = (filePath, jsCode, callback) => {
+            if (!this.isJsLoaded(filePath)) {
                 return;
             }
-            while (true) {
-                if (dependencyCol[jsUrl].map((name) => this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
-                    break;
-                }
-                if (dependencyCol[jsUrl].map(name => optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
-                    return;
-                }
-                await this._navimiHelpers.timeout(10);
-            }
-        };
-        //removeIf(minify)
-        this.reloadJs = (filePath, jsCode, routeList, currentJS, callback) => {
-            const isSameFile = this._navimiHelpers.isSameFile;
-            for (const routeUrl in routeList) {
-                const { jsUrl } = routeList[routeUrl];
-                if (isSameFile(jsUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    delete this._routesJSs[jsUrl];
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        if (jsUrl === currentJS) {
-                            //reload route if current JS is updated
-                            callback();
-                        }
-                    };
-                    this._insertJS(jsUrl, jsCode, "route");
-                    return;
-                }
-            }
-            for (const jsUrl in this._dependencyJSsMap) {
-                if (isSameFile(jsUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    delete this._othersJSs[jsUrl];
-                    this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                        Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
-                            //clear all dependent JSs that depends of this JS
-                            delete this._routesJSs[s];
-                            if (s === currentJS) {
-                                //reload route if current JS is updated
-                                callback();
-                            }
-                        });
-                    };
-                    //todo: check for modules, services and components
-                    this._insertJS(filePath, jsCode, "javascript");
-                }
-            }
+            //discover the js type
+            //call destroy and unload for all js that are referencing this js
+            //remove the js from the loaded js list
+            //load the js again
+            //callback
+            // private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
+            // private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
+            // private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
+            // private _routesJSsServices: INavimi_KeyList<string[]> = {};
+            // private _routesJSsComponents: INavimi_KeyList<string[]> = {};
+            // const isSameFile = this._navimiHelpers.isSameFile;
+            // for (const routeUrl in routeList) {
+            //     const { jsUrl } = routeList[routeUrl];
+            //     if (isSameFile(jsUrl, filePath)) {
+            //         console.log(`${filePath} updated.`);
+            //         delete this._routesJSs[jsUrl];
+            //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
+            //             if (jsUrl === currentJS) {
+            //                 //reload route if current JS is updated
+            //                 callback();
+            //             }
+            //         };
+            //         this._insertJS(jsUrl, jsCode, "route");
+            //         return;
+            //     }
+            // }
+            // for (const jsUrl in this._dependencyJSsMap) {
+            //     if (isSameFile(jsUrl, filePath)) {
+            //         console.log(`${filePath} updated.`);
+            //         delete this._othersJSs[jsUrl];
+            //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
+            //             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
+            //                 //clear all dependent JSs that depends of this JS
+            //                 delete this._routesJSs[s];
+            //                 if (s === currentJS) {
+            //                     //reload route if current JS is updated
+            //                     callback();
+            //                 }
+            //             });
+            //         };
+            //         //todo: check for modules, services and components
+            //         this._insertJS(filePath, jsCode, "javascript");
+            //     }
+            // }
         };
         //endRemoveIf(minify)
     }
@@ -1199,15 +1200,12 @@ class Navimi {
         const navimiComponents = (_k = services === null || services === void 0 ? void 0 : services.navimiComponents) !== null && _k !== void 0 ? _k : new __Navimi_Components();
         // setup DI
         navimiFetch.init(options);
-        navimiCSSs.init(navimiDom, navimiFetch, navimiHelpers);
+        navimiCSSs.init(navimiDom, navimiFetch);
         navimiDom.init(navimiCSSs, navimiJSs);
         navimiJSs.init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiComponents, navimiHelpers, options);
-        navimiTemplates.init(navimiFetch, navimiHelpers);
+        navimiTemplates.init(navimiFetch);
         navimiState.init(navimiHelpers);
         navimiComponents.init(navimiHelpers);
-        //removeIf(minify)
-        navimiHot.init(navimiCSSs, navimiJSs, navimiTemplates);
-        //endRemoveIf(minify)
         const _services = {
             navimiFetch,
             navimiJSs,
@@ -1356,7 +1354,6 @@ class __Navimi_Templates {
     constructor() {
         this._templatesCache = {};
         this._loadedTemplates = {};
-        this._dependencyTemplatesMap = {};
         this.loadTemplate = (templateCode, url) => {
             const regIni = new RegExp("<t ([^>]+)>");
             const regEnd = new RegExp("</t>");
@@ -1389,7 +1386,7 @@ class __Navimi_Templates {
             const arrTemplates = ids.map(id => this._templatesCache[id]);
             return arrTemplates.length > 1 ? arrTemplates : arrTemplates[0];
         };
-        this.fetchTemplate = (abortController, url, jsUrl) => {
+        this.fetchTemplate = (abortController, url) => {
             const init = (url) => {
                 return new Promise(async (resolve, reject) => {
                     if (!url || this._loadedTemplates[url]) {
@@ -1412,48 +1409,20 @@ class __Navimi_Templates {
                 });
             };
             const urls = Array.isArray(url) ? url : [url];
-            if (jsUrl) {
-                urls.map((u) => {
-                    this._dependencyTemplatesMap[u] = Object.assign(Object.assign({}, this._dependencyTemplatesMap[u] || {}), { [jsUrl]: true });
-                });
-            }
             return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
         };
         //removeIf(minify)
-        this.reloadTemplate = (filePath, templateCode, routeList, currentJS, globalTemplatesUrl, callback) => {
-            const isSameFile = this._navimiHelpers.isSameFile;
-            if (isSameFile(globalTemplatesUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-                this.loadTemplate(templateCode, globalTemplatesUrl);
-                callback();
+        this.reloadTemplate = (filePath, templateCode, callback) => {
+            if (!this.isTemplateLoaded(filePath)) {
                 return;
             }
-            for (const routeUrl in routeList) {
-                const { jsUrl, templatesUrl } = routeList[routeUrl];
-                if (isSameFile(templatesUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    this.loadTemplate(templateCode, templatesUrl);
-                    currentJS === jsUrl && callback();
-                    return;
-                }
-            }
-            for (const templatesUrl in this._dependencyTemplatesMap) {
-                if (isSameFile(templatesUrl, filePath)) {
-                    console.log(`${filePath} updated.`);
-                    this.loadTemplate(templateCode, templatesUrl);
-                    Object.keys(this._dependencyTemplatesMap[templatesUrl]).map(s => {
-                        if (s === currentJS) {
-                            //reload route if current JS is updated
-                            callback();
-                        }
-                    });
-                }
-            }
+            console.log(`${filePath} updated.`);
+            this.loadTemplate(templateCode, filePath);
+            callback();
         };
         //endRemoveIf(minify)
     }
-    init(navimiFetch, navimiHelpers) {
+    init(navimiFetch) {
         this._navimiFetch = navimiFetch;
-        this._navimiHelpers = navimiHelpers;
     }
 }

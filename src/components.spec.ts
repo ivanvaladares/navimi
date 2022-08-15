@@ -12,7 +12,7 @@ describe('Test components -', () => {
         navimi_components.init(navimi_helpers);
     });
 
-    it('Test anonymous class', (done) => {
+    test('Test anonymous class', (done) => {
 
         navimi_components.registerComponent('anon-class', class {
 
@@ -48,7 +48,7 @@ describe('Test components -', () => {
 
     });
 
-    it('Test named class', (done) => {
+    test('Test named class', (done) => {
 
         class NamedClass {
 
@@ -76,7 +76,7 @@ describe('Test components -', () => {
 
     });
    
-    it('Test nested component', (done) => {
+    test('Test nested component', (done) => {
 
         navimi_components.registerComponent('outer-component', class {
 
@@ -107,7 +107,7 @@ describe('Test components -', () => {
     });
 
 
-    it('Test event handling', (done) => {
+    test('Test event handling', (done) => {
 
         navimi_components.registerComponent('click-component', class {
             lines: any[];
@@ -164,7 +164,7 @@ describe('Test components -', () => {
 
     });
 
-    it('Test event handling 2', (done) => {
+    test('Test event handling 2', (done) => {
 
         const component = window.document.querySelector("click-component");
         
@@ -180,7 +180,7 @@ describe('Test components -', () => {
 
     });
     
-    it('Test child removal', (done) => {
+    test('Test child removal', (done) => {
 
         const component = window.document.querySelector("click-component");
         
@@ -196,7 +196,7 @@ describe('Test components -', () => {
 
     });
 
-    it('Test parent removal', (done) => {
+    test('Test parent removal', (done) => {
 
         const wrapperComponent = window.document.querySelector("outer-component");
         const innerComponent = wrapperComponent.querySelector("anon-class");
@@ -215,7 +215,7 @@ describe('Test components -', () => {
 
     });
 
-    it('Test shouldUpdate 1', (done) => {
+    test('Test shouldUpdate 1', (done) => {
 
         navimi_components.registerComponent('counter-component', class {
             props: any;
@@ -251,7 +251,7 @@ describe('Test components -', () => {
     });
 
     
-    it('Test shouldUpdate 2', (done) => {
+    test('Test shouldUpdate 2', (done) => {
 
         const component = window.document.querySelector("counter-component");
 
@@ -274,7 +274,7 @@ describe('Test components -', () => {
 
     });
 
-    it('Test shouldUpdate 3', (done) => {
+    test('Test shouldUpdate 3', (done) => {
 
         const component = window.document.querySelector("counter-component");
 

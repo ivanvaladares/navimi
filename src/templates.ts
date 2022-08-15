@@ -2,14 +2,10 @@ class __Navimi_Templates implements INavimi_Templates {
 
     private _templatesCache: INavimi_KeyList<string> = {};
     private _loadedTemplates: INavimi_KeyList<boolean> = {};
-    private _dependencyTemplatesMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
-    
     private _navimiFetch: INavimi_Fetch;
-    private _navimiHelpers: INavimi_Helpers;
 
-    public init(navimiFetch: INavimi_Fetch, navimiHelpers: INavimi_Helpers): void {
+    public init(navimiFetch: INavimi_Fetch): void {
         this._navimiFetch = navimiFetch;
-        this._navimiHelpers = navimiHelpers;
     }
 
     private loadTemplate = (templateCode: string, url?: string): void => {
@@ -53,7 +49,7 @@ class __Navimi_Templates implements INavimi_Templates {
         return arrTemplates.length > 1 ? arrTemplates : arrTemplates[0];
     };
 
-    public fetchTemplate = (abortController: AbortController, url: string | string[], jsUrl?: string): Promise<void | void[]> => {
+    public fetchTemplate = (abortController: AbortController, url: string | string[]): Promise<void | void[]> => {
         const init = (url: string): Promise<void> => {
             return new Promise(async (resolve, reject) => {
                 if (!url || this._loadedTemplates[url]) {
@@ -79,63 +75,21 @@ class __Navimi_Templates implements INavimi_Templates {
 
         const urls: string[] = Array.isArray(url) ? url : [url];
 
-        if (jsUrl) {
-            urls.map((u: string) => {
-                this._dependencyTemplatesMap[u] = {
-                    ...this._dependencyTemplatesMap[u] || {},
-                    [jsUrl]: true
-                };
-            });
-        }
-
         return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
     };
 
     //removeIf(minify)
-    public reloadTemplate = (filePath: string,
-        templateCode: string,
-        routeList: INavimi_KeyList<INavimi_Route>,
-        currentJS: string,
-        globalTemplatesUrl: string,
-        callback: () => void): void => {
-
-        const isSameFile = this._navimiHelpers.isSameFile;
-
-        if (isSameFile(globalTemplatesUrl, filePath)) {
-            console.log(`${filePath} updated.`);
-            this.loadTemplate(templateCode, globalTemplatesUrl);
-            callback();
+    public reloadTemplate = (filePath: string, templateCode: string, callback: Function): void => {
+        
+        if (!this.isTemplateLoaded(filePath)) {
             return;
         }
 
-        for (const routeUrl in routeList) {
-            const { jsUrl, templatesUrl } = routeList[routeUrl];
+        console.log(`${filePath} updated.`);
+        
+        this.loadTemplate(templateCode, filePath);
 
-            if (isSameFile(templatesUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-
-                this.loadTemplate(templateCode, templatesUrl);
-
-                currentJS === jsUrl && callback();
-                return;
-            }
-        }
-
-        for (const templatesUrl in this._dependencyTemplatesMap) {
-            if (isSameFile(templatesUrl, filePath)) {
-                console.log(`${filePath} updated.`);
-
-                this.loadTemplate(templateCode, templatesUrl);
-
-                Object.keys(this._dependencyTemplatesMap[templatesUrl]).map(s => {
-                    if (s === currentJS) {
-                        //reload route if current JS is updated
-                        callback();
-                    }
-                });
-
-            }
-        }
+        callback();
     };
     //endRemoveIf(minify)
 

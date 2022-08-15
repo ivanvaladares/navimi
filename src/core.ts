@@ -64,9 +64,10 @@ class __Navimi_Core {
             await Promise.all([
                 this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
                 this._navimiTemplates.fetchTemplate(undefined, this._options.globalTemplatesUrl),
-            ]).catch(this._reportError);
+            ]).then(() => {
+                this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), this._options.globalCssUrl, 'globalCss');
+            }).catch(this._reportError);
 
-            this._navimiDom.insertCss(this._navimiCSSs.getCss(this._options.globalCssUrl), "globalCss");
         }
     }
 
@@ -75,20 +76,13 @@ class __Navimi_Core {
         console.warn('HOT is disabled! Use the unminified version to enable it.');
         //endRemoveIf(!minify)
         //removeIf(minify)
-        setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot,
-            (callback: (globalCssUrl: string,
-                globalTemplatesUrl: string,
-                currentJs: string,
-                routesList: INavimi_KeyList<INavimi_Route>,
-                initRoute: any) => void) => {
-
-                callback(this._options.globalCssUrl,
-                    this._options.globalTemplatesUrl,
-                    this._currentJS,
-                    this._routesList, () => {
-                        this._initRoute(undefined, this._routesParams[this._currentJS], true);
-                    });
-            });
+        this._navimiHot.init(
+            this._navimiCSSs,
+            this._navimiJSs,
+            this._navimiTemplates,
+            this._initRoute,
+        );
+        setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot);
         //endRemoveIf(minify)
     }
 
@@ -264,7 +258,7 @@ class __Navimi_Core {
 
                 this._navimiDom.setNavimiLinks();
 
-                this._navimiDom.insertCss(this._navimiCSSs.getCss(cssUrl), "routeCss");
+                this._navimiDom.insertCss(this._navimiCSSs.getCss(cssUrl), cssUrl, 'routeCss');
 
                 this._options.onAfterRoute &&
                     this._options.onAfterRoute({ url, routeItem, params }, this._navigateTo);

@@ -11,5 +11,5 @@ interface INavimi_JSs {
     fetchJS: (abortController: AbortController, urls: string[], type: string) => Promise<InstanceType<any> | InstanceType<any>[]>;
     loadDependencies: (abortController: AbortController, jsUrl: string, services: string[], components: string[]) => Promise<void>;
     initJS: (jsUrl: string, params: INavimi_KeyList<any>) => Promise<void>;
-    reloadJs: (filePath: string, jsCode: string, routeList: INavimi_KeyList<INavimi_Route>, currentJS: string, callback: () => void) => void;
+    reloadJs: (filePath: string, jsCode: string, callback: Function) => void;
 }

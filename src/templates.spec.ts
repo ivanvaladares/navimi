@@ -1,6 +1,5 @@
 describe('templates.spec', () => {
     const { templates } = require('./templates');
-    const { helpers } = require('./helpers');
 
     let navimi_templates: INavimi_Templates;
     
@@ -16,13 +15,11 @@ describe('templates.spec', () => {
     } as INavimi_Fetch;
 
     beforeAll(() => {
-        const navimi_helpers = new helpers() as INavimi_Helpers;
-
         navimi_templates = new templates() as INavimi_Templates;
-        navimi_templates.init(navimi_fetch_mock, navimi_helpers)
+        navimi_templates.init(navimi_fetch_mock)
     });
 
-    it('fetchTemplate and getTemplate 1', (done) => {
+    test('fetchTemplate and getTemplate 1', (done) => {
 
         const url = "/template1.html";
         const templateId = "template1";
@@ -40,7 +37,7 @@ describe('templates.spec', () => {
 
     });
 
-    it('fetchTemplate and getTemplate 2', (done) => {
+    test('fetchTemplate and getTemplate 2', (done) => {
 
         const url = "/template2.html";
         const templateId = "template2";
@@ -59,7 +56,7 @@ describe('templates.spec', () => {
     });
 
 
-    it('fetchTemplate and getTemplate 3', (done) => {
+    test('fetchTemplate and getTemplate 3', (done) => {
 
         const url = "/template3.html";
 
@@ -96,7 +93,7 @@ describe('templates.spec', () => {
 
     });
 
-    it('isTemplateLoaded 1', () => {
+    test('isTemplateLoaded 1', () => {
 
         const url = "/template1.html";
 
@@ -105,7 +102,7 @@ describe('templates.spec', () => {
         expect(result).toBeTruthy();
     });
 
-    it('isTemplateLoaded 2', () => {
+    test('isTemplateLoaded 2', () => {
 
         const url = "/xxxx.html";
 

@@ -9,7 +9,7 @@
   "homepage": "https://github.com/ivanvaladares/navimi",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage --silent",
     "cypress": "node ./cypress/cypress.js",
     "build": "gulp"
   },

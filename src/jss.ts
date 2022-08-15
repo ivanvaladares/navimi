@@ -143,7 +143,7 @@ class __Navimi_JSs implements INavimi_JSs {
                     return this.fetchJS(undefined, urls, "javascript");
                 },
                 fetchTemplate: (url: string | string[]) => {
-                    return this._navimiTemplates.fetchTemplate(undefined, url, jsUrl);
+                    return this._navimiTemplates.fetchTemplate(undefined, url);
                 },
                 setState: this._navimiState.setState,
                 getState: this._navimiState.getState,
@@ -172,6 +172,26 @@ class __Navimi_JSs implements INavimi_JSs {
         } catch (error) {
             promiseToReject && promiseToReject(error);
 
+        }
+
+    };
+
+    private _waitForDependency = async (jsUrl: string, dependencyCol: INavimi_KeyList<string[]>, optionsCol: INavimi_KeyList<string>): Promise<void> => {
+
+        if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
+            return;
+        }
+
+        while (true) {
+            if (dependencyCol[jsUrl].map((name: string) =>
+                this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
+                break;
+            }
+            if (dependencyCol[jsUrl].map(name =>
+                optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
+                return;
+            }
+            await this._navimiHelpers.timeout(10);
         }
 
     };
@@ -294,80 +314,78 @@ class __Navimi_JSs implements INavimi_JSs {
 
     };
 
-    private _waitForDependency = async (jsUrl: string, dependencyCol: INavimi_KeyList<string[]>, optionsCol: INavimi_KeyList<string>): Promise<void> => {
+    //removeIf(minify)
+    public reloadJs = (filePath: string, jsCode: string, callback: Function): void => {
 
-        if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
+        if (!this.isJsLoaded(filePath)) {
             return;
         }
 
-        while (true) {
-            if (dependencyCol[jsUrl].map((name: string) =>
-                this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
-                break;
-            }
-            if (dependencyCol[jsUrl].map(name =>
-                optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
-                return;
-            }
-            await this._navimiHelpers.timeout(10);
-        }
+        //discover the js type
+        //call destroy and unload for all js that are referencing this js
+        //remove the js from the loaded js list
+        //load the js again
+        //callback
 
-    };
+        // private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
+        // private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
+        // private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
+        // private _routesJSsServices: INavimi_KeyList<string[]> = {};
+        // private _routesJSsComponents: INavimi_KeyList<string[]> = {};
 
-    //removeIf(minify)
-    public reloadJs = (filePath: string,
-        jsCode: string,
-        routeList: INavimi_KeyList<INavimi_Route>,
-        currentJS: string,
-        callback: () => void): void => {
 
-        const isSameFile = this._navimiHelpers.isSameFile;
+        // const isSameFile = this._navimiHelpers.isSameFile;
 
-        for (const routeUrl in routeList) {
-            const { jsUrl } = routeList[routeUrl];
+        // for (const routeUrl in routeList) {
+        //     const { jsUrl } = routeList[routeUrl];
 
-            if (isSameFile(jsUrl, filePath)) {
+        //     if (isSameFile(jsUrl, filePath)) {
 
-                console.log(`${filePath} updated.`);
+        //         console.log(`${filePath} updated.`);
 
-                delete this._routesJSs[jsUrl];
+        //         delete this._routesJSs[jsUrl];
 
-                this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                    if (jsUrl === currentJS) {
-                        //reload route if current JS is updated
-                        callback();
-                    }
-                };
+        //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
+        //             if (jsUrl === currentJS) {
+        //                 //reload route if current JS is updated
+        //                 callback();
+        //             }
+        //         };
 
-                this._insertJS(jsUrl, jsCode, "route");
+        //         this._insertJS(jsUrl, jsCode, "route");
 
-                return;
-            }
-        }
+        //         return;
+        //     }
+        // }
 
-        for (const jsUrl in this._dependencyJSsMap) {
-            if (isSameFile(jsUrl, filePath)) {
-                console.log(`${filePath} updated.`);
+        // for (const jsUrl in this._dependencyJSsMap) {
+        //     if (isSameFile(jsUrl, filePath)) {
+        //         console.log(`${filePath} updated.`);
 
-                delete this._othersJSs[jsUrl];
+        //         delete this._othersJSs[jsUrl];
 
-                this._navimiLoader[this._promiseNS + jsUrl] = () => {
-                    Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
-                        //clear all dependent JSs that depends of this JS
-                        delete this._routesJSs[s];
+        //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
+        //             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
+        //                 //clear all dependent JSs that depends of this JS
+        //                 delete this._routesJSs[s];
 
-                        if (s === currentJS) {
-                            //reload route if current JS is updated
-                            callback();
-                        }
-                    });
-                };
+        //                 if (s === currentJS) {
+        //                     //reload route if current JS is updated
+        //                     callback();
+        //                 }
+        //             });
+        //         };
 
-                //todo: check for modules, services and components
-                this._insertJS(filePath, jsCode, "javascript");
-            }
-        }
+        //         //todo: check for modules, services and components
+        //         this._insertJS(filePath, jsCode, "javascript");
+        //     }
+        // }
         
     };
     //endRemoveIf(minify)
 }
+
+
+//removeIf(dist)
+module.exports.jss = __Navimi_JSs
+//endRemoveIf(dist)

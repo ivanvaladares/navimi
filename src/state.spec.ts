@@ -11,13 +11,13 @@ describe("state.spec", () => {
         navimi_state.init(navimi_helpers)
     });
 
-    it('Initial state', () => {
+    test('Initial state', () => {
         let currentState = navimi_state.getState();
 
         expect(currentState).toEqual({});
     });
 
-    it('Initial test', () => {
+    test('Initial test', () => {
 
         navimi_state.setState({
             teste: "ok"
@@ -28,7 +28,7 @@ describe("state.spec", () => {
         expect(currentState?.teste).toBe("ok");
     });
 
-    it('Watch test', (done) => {
+    test('Watch test', (done) => {
 
         navimi_state.watchState("testUrl", "teste", (state: any) => {
             expect(state).toBe("changed!");
@@ -41,7 +41,7 @@ describe("state.spec", () => {
 
     });
 
-    it('Unwatch test', (done) => {
+    test('Unwatch test', (done) => {
         let error: string;
 
         navimi_state.watchState("testUrl", "silent", () => {
@@ -61,7 +61,7 @@ describe("state.spec", () => {
 
     });
 
-    it('Merge test', () => {
+    test('Merge test', () => {
 
         navimi_state.setState({
             client: {
@@ -108,7 +108,7 @@ describe("state.spec", () => {
 
     });
 
-    it('Get nested key test', () => {
+    test('Get nested key test', () => {
 
         const currentState = navimi_state.getState("client.address");
 
@@ -119,7 +119,7 @@ describe("state.spec", () => {
     });
 
 
-    it('Watch nested key test', (done) => {
+    test('Watch nested key test', (done) => {
 
         navimi_state.watchState("testUrl", "client.address.number", (state: any) => {
             expect(state).toEqual(456);
@@ -136,7 +136,7 @@ describe("state.spec", () => {
 
     });
 
-    // it('Clear nested state test', (done) => {
+    // test('Clear nested state test', (done) => {
 
     //     state.clear("client");
 

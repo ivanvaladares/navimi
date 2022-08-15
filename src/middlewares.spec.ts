@@ -7,7 +7,7 @@ describe('middlewares.spec', () => {
         navimi_middlewares = new middlewares() as INavimi_Middlewares;
     });
 
-    it('Add middlewares', (done) => {
+    test('Add middlewares', (done) => {
 
         navimi_middlewares.addMiddlewares([
             (ctx: INavimi_Context, next) => {
@@ -42,7 +42,7 @@ describe('middlewares.spec', () => {
 
     });
 
-    it('Execute middlewares in order', (done) => {
+    test('Execute middlewares in order', (done) => {
 
         let context = { 
             url: null, 
@@ -67,7 +67,7 @@ describe('middlewares.spec', () => {
 
     });
 
-    it('Get error', (done) => {
+    test('Get error', (done) => {
 
         let context = {
             url: null, 
@@ -88,7 +88,7 @@ describe('middlewares.spec', () => {
 
     });
 
-    it('Navigate away', (done) => {
+    test('Navigate away', (done) => {
 
         let context = {
             url: null, 
