@@ -3,5 +3,5 @@ interface INavimi_CSSs {
     isCssLoaded: (url: string) => boolean;
     getCss: (url: string) => string;
     fetchCss: (abortController: AbortController, url: string) => Promise<string>;
-    reloadCss: (filePath: string, cssCode: string) => void;
+    digestHot: (payload: hotPayload) => Promise<void>;
 }

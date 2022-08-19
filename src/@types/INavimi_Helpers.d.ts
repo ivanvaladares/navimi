@@ -1,5 +1,4 @@
 interface INavimi_Helpers {
-    isSameFile: (path1: string, path2: string) => boolean;
     timeout: (ms: number) => Promise<void>;
     debounce: (task: Function, wait: number) => () => void;
     throttle: (task: Function, wait: number, context: any) => () => void;

@@ -157,9 +157,9 @@ class __Navimi_Components implements INavimi_Components {
             return node.textContent;
         };
 
-        var documentNodes = [].slice.call(node.childNodes);
-        var templateNodes = [].slice.call(template.childNodes);
-        var diffCount = documentNodes.length - templateNodes.length;
+        const templateNodes = [].slice.call(template.childNodes);
+        let documentNodes = [].slice.call(node.childNodes);
+        let diffCount = documentNodes.length - templateNodes.length;
 
         for (let index = 0; index < templateNodes.length; index++) {
 
@@ -187,7 +187,7 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             // update text content
-            var templateContent = getNodeContent(templateNode);
+            const templateContent = getNodeContent(templateNode);
             if (templateContent && templateContent !== getNodeContent(documentNodes[index])) {
                 documentNodes[index].textContent = templateContent;
             }
@@ -225,7 +225,7 @@ class __Navimi_Components implements INavimi_Components {
 
                 // prepare empty node for next round
                 if (documentNodes[index].childNodes.length < 1 && templateNode.childNodes.length > 0) {
-                    var fragment = document.createDocumentFragment();
+                    const fragment = document.createDocumentFragment();
                     this.mergeHtml(templateNode, fragment);
                     documentNodes[index].appendChild(fragment);
                     continue;

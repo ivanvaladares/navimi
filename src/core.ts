@@ -80,7 +80,7 @@ class __Navimi_Core {
             this._navimiCSSs,
             this._navimiJSs,
             this._navimiTemplates,
-            this._initRoute,
+            () => this._initRoute(undefined, undefined, true),
         );
         setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot);
         //endRemoveIf(minify)
@@ -121,14 +121,14 @@ class __Navimi_Core {
             };
         }
 
-        if (this._options.onBeforeRoute) {
-            const shouldContinue = await this._options.onBeforeRoute({ url, routeItem, params }, this._navigateTo);
-            if (shouldContinue === false) {
-                return;
-            }
-        }
-
         if (this._currentJS && !force) {
+            if (this._options.onBeforeRoute) {
+                const shouldContinue = await this._options.onBeforeRoute({ url, routeItem, params }, this._navigateTo);
+                if (shouldContinue === false) {
+                    return;
+                }
+            }
+
             const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
 
             if (currentJsInstance) {

@@ -2,34 +2,38 @@ class __Navimi_Templates implements INavimi_Templates {
 
     private _templatesCache: INavimi_KeyList<string> = {};
     private _loadedTemplates: INavimi_KeyList<boolean> = {};
-    private _navimiFetch: INavimi_Fetch;
+    private _navimiFetch: INavimi_Fetch;        
+    private _regIni: RegExp;
+    private _regEnd: RegExp;
+    private _regId: RegExp;
 
     public init(navimiFetch: INavimi_Fetch): void {
         this._navimiFetch = navimiFetch;
+
+        this._regIni = new RegExp("<t ([^>]+)>");
+        this._regEnd = new RegExp("</t>");
+        this._regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
     }
 
     private loadTemplate = (templateCode: string, url?: string): void => {
-        const regIni = new RegExp("<t ([^>]+)>");
-        const regEnd = new RegExp("</t>");
-        const regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
         let tempCode = templateCode;
 
-        if (!regIni.exec(tempCode)) {
+        if (!this._regIni.exec(tempCode)) {
             this._templatesCache[url] = tempCode;
             return;
         }
 
         while (templateCode && templateCode.length > 0) {
-            const iniTemplate = regIni.exec(tempCode);
+            const iniTemplate = this._regIni.exec(tempCode);
 
             if (!iniTemplate || iniTemplate.length === 0) {
                 break;
             }
 
-            const regIdRes = regId.exec(iniTemplate[1]);
+            const regIdRes = this._regId.exec(iniTemplate[1]);
             const idTemplate = regIdRes.length > 0 && regIdRes[1].slice(1, -1);
             tempCode = tempCode.substr(iniTemplate.index + iniTemplate[0].length);
-            const endTemplate = regEnd.exec(tempCode);
+            const endTemplate = this._regEnd.exec(tempCode);
 
             if (!idTemplate || !endTemplate || endTemplate.length === 0) {
                 break;
@@ -79,17 +83,17 @@ class __Navimi_Templates implements INavimi_Templates {
     };
 
     //removeIf(minify)
-    public reloadTemplate = (filePath: string, templateCode: string, callback: Function): void => {
+    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
         
         if (!this.isTemplateLoaded(filePath)) {
             return;
         }
+        
+        this.loadTemplate(data, filePath);
 
         console.log(`${filePath} updated.`);
-        
-        this.loadTemplate(templateCode, filePath);
 
-        callback();
+        return Promise.resolve();
     };
     //endRemoveIf(minify)
 

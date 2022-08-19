@@ -111,7 +111,26 @@ describe('templates.spec', () => {
         expect(result).toBeFalsy();
     });
 
+    test('digestHot', (done) => {
+
+        const templateId = "template1";
+
+        const hotPayload: hotPayload = {
+            filePath: "/template1.html",
+            data: `<t id="${templateId}">updated</t>`
+        }
+
+        navimi_templates.digestHot(hotPayload).then(() => {
+            const result = navimi_templates.getTemplate(templateId);
+
+            expect(result).toEqual('updated');
+
+            done();
+        });
+
+    });
+
     //todo: test fetchTemplate with an array of urls
-    //todo: test reloadTemplate
+    //todo: test abortController
 
 });

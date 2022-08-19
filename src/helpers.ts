@@ -51,11 +51,6 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return params;
     };
 
-    public isSameFile = (path1: string, path2: string) => {
-        return path1 && path2 && path1.split("?").shift().toLowerCase() ==
-            path2.split("?").shift().toLowerCase();
-    }
-
     public timeout = (ms: number): Promise<void> => {
         return new Promise(resolve => setTimeout(resolve, ms));
     };

@@ -40,15 +40,19 @@ class __Navimi_CSSs implements INavimi_CSSs {
     };
 
     //removeIf(minify)
-    public reloadCss = (filePath: string, cssCode: string): void => {
+    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
 
         if (!this.isCssLoaded(filePath)) {
             return;
         }
+        
+        this._loadedCsss[filePath] = data;
+
+        this._navimiDom.replaceCss(data, filePath);
 
         console.log(`${filePath} updated.`);
-        
-        this._navimiDom.replaceCss(cssCode, filePath);
+
+        return Promise.resolve();
 
     };
     //endRemoveIf(minify)

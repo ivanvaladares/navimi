@@ -1,45 +1,74 @@
 describe('navimi.spec', () => {
     const { Navimi } = require('./navimi');
 
-    const fetch_data_mock = {} as any;
+    const routes = {
+        "/": {
+            title: "Home",
+            jsUrl: "/scripts/home.js",
+            templatesUrl: "/templates/home.html",
+        },
+        "/about": {
+            title: "About",
+            jsUrl: "/scripts/about.js",
+            templatesUrl: "/templates/about.html"
+        },
+        "*": {
+            title: "Not found",
+            jsUrl: "/scripts/404.js"
+        }
+    } as INavimi_KeyList<INavimi_Route>;
 
-    beforeAll(() =>
-        global.fetch = jest.fn((url: string) =>
-            new Promise((resolve, reject) => {
-                if (fetch_data_mock[url]) {
-                    resolve({
-                        text: async () => { return Promise.resolve(fetch_data_mock[url]); },
-                        ok: true
-                    } as any);
-                    return;
-                }
-                reject(new Error(`File ${url} not found`));
-            })
-        )
-    );
+    const options = {
+        globalCssUrl: "/css/global.css",
+    } as INavimi_Options;
 
-    test('Test constructor mock', (done) => {
 
-        const routes = {
-            "/": {
-                title: "Home",
-                jsUrl: "/scripts/home.js",
-                templatesUrl: "/templates/home.html",
-            },
-            "/about": {
-                title: "About",
-                jsUrl: "/scripts/about.js",
-                templatesUrl: "/templates/about.html"
-            },
-            "*": {
-                title: "Not found",
-                jsUrl: "/scripts/404.js"
+    test('Test constructor', () => {
+
+        const initMock = jest.fn(() => {
+            return {
+                init: jest.fn()
             }
-        };
+        });
 
-        const options = {
-            globalCssUrl: "/css/global.css",
-        };
+        //@ts-ignore
+        window.__Navimi_Fetch = initMock;
+        //@ts-ignore
+        window.__Navimi_Dom = initMock;
+        //@ts-ignore
+        window.__Navimi_CSSs = initMock;
+        //@ts-ignore
+        window.__Navimi_JSs = initMock;
+        //@ts-ignore
+        window.__Navimi_Templates = initMock
+        //@ts-ignore
+        window.__Navimi_Middlewares = initMock;
+        //@ts-ignore
+        window.__Navimi_State = initMock;
+        //@ts-ignore
+        window.__Navimi_Hot = initMock;
+        //@ts-ignore
+        window.__Navimi_Helpers = initMock;
+        //@ts-ignore
+        window.__Navimi_Components = initMock;
+        
+        let coreReturn = {} as any;
+        //@ts-ignore
+        window.__Navimi_Core = jest.fn((routes, services, options) => {
+            coreReturn = { routes, services, options };
+            return {}
+        });;
+
+        new Navimi(routes, options);
+
+        //@ts-ignore
+        expect(window.__Navimi_Core).toHaveBeenCalled();
+        expect(coreReturn.routes).toEqual(routes);
+        expect(coreReturn.options).toEqual(options);
+
+    });
+
+    test('Test inject services', (done) => {
 
         const services = {
             navimiFetch: { init: () => { } },
@@ -52,9 +81,9 @@ describe('navimi.spec', () => {
             navimiMiddlewares: {},
             navimiHelpers: {},
             navimiComponents: { init: () => { } },
-        };
+        } as unknown as INavimi_Services;
 
-        new Navimi(routes, options, services as any, 
+        new Navimi(routes, options, services, 
             (_routes: INavimi_KeyList<INavimi_Route>, _services: INavimi_Services, _options?: INavimi_Options) => {
 
             expect({

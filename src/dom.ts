@@ -79,7 +79,7 @@ class __Navimi_Dom implements INavimi_Dom {
                     this.insertCss(cssCode, obj.url, 'library', true);
                 });
             } else {
-                const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
+                const type = obj.type.toLowerCase() === "module" ? "module" : "library";
                 return this._navimiJSs.fetchJS(undefined, [obj.url], type);
             }
         })).catch(ex => {

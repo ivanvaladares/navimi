@@ -33,7 +33,6 @@ class Navimi {
             navimiTemplates,
             navimiState,
             navimiComponents,
-            navimiHelpers,
             options
         );
 

@@ -8,9 +8,10 @@ describe('Test fetch -', () => {
         global.fetch = jest.fn((url: string) =>
             new Promise((resolve, reject) => {
                 if (fetch_data_mock[url]) {
+                    const { text, ok } = fetch_data_mock[url];
                     resolve({
-                        text: async () => { return Promise.resolve(fetch_data_mock[url]); },
-                        ok: true
+                        text: async () => { return Promise.resolve(text); },
+                        ok
                     } as any);
                     return;
                 }
@@ -25,7 +26,7 @@ describe('Test fetch -', () => {
     it('Test success', (done) => {
 
         const url = "/template1.html";
-        fetch_data_mock[url] = `testing... ok!`;
+        fetch_data_mock[url] = { text: `testing... ok!`, ok: true };
 
         navimi_fetch.fetchFile(url).then((data: any) => {
 
@@ -39,6 +40,19 @@ describe('Test fetch -', () => {
     it('Test not found', (done) => {
 
         const url = "/template2.html";
+
+        navimi_fetch.fetchFile(url).then(() => {
+            done("Should not get here!");
+        }).catch(() => {
+            done();
+        });
+
+    });
+
+    it('Test error', (done) => {
+
+        const url = "/template3.html";
+        fetch_data_mock[url] = { ok: false };
 
         navimi_fetch.fetchFile(url).then(() => {
             done("Should not get here!");

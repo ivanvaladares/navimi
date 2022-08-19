@@ -5,8 +5,8 @@ class __Navimi_JSs implements INavimi_JSs {
     private _promiseNS: string = "_promise_";
 
     private _loadedJSs: INavimi_KeyList<string> = {};
-    private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
-    private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
+    private _jsType: INavimi_KeyList<jsType> = {};
+    private _jsInstances: INavimi_KeyList<InstanceType<any>> = {};
     private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
     private _routesJSsServices: INavimi_KeyList<string[]> = {};
     private _routesJSsComponents: INavimi_KeyList<string[]> = {};
@@ -19,7 +19,6 @@ class __Navimi_JSs implements INavimi_JSs {
     private _navimiTemplates: INavimi_Templates;
     private _navimiState: INavimi_State;
     private _navimiComponents: INavimi_Components;
-    private _navimiHelpers: INavimi_Helpers;
 
     public init(
         navimiDom: INavimi_Dom,
@@ -27,7 +26,6 @@ class __Navimi_JSs implements INavimi_JSs {
         navimiTemplates: INavimi_Templates,
         navimiState: INavimi_State,
         navimiComponents: INavimi_Components,
-        navimiHelpers: INavimi_Helpers,
         options: INavimi_Options
     ) {
 
@@ -36,7 +34,6 @@ class __Navimi_JSs implements INavimi_JSs {
         this._navimiTemplates = navimiTemplates;
         this._navimiState = navimiState;
         this._navimiComponents = navimiComponents;
-        this._navimiHelpers = navimiHelpers;
 
         this._options = options;
 
@@ -47,24 +44,33 @@ class __Navimi_JSs implements INavimi_JSs {
 
     }
 
+    private _resolvePromise = (value: unknown, jsUrl: string): void => {
+        this._navimiLoader[this._promiseNS + jsUrl](value);
+    };
+
+    private _rejectPromise = (reason: any, jsUrl: string): void => {
+        this._navimiLoader[this._promiseNS + jsUrl + "_reject"](reason);
+    };
+
     private _awaitJS = (jsUrl: string) => {
         return new Promise<InstanceType<any>>((resolve, reject) => {
 
             const loadInterval = setInterval(() => {
-                if (this._routesJSs[jsUrl]) {
+                if (this._jsInstances[jsUrl]) {
                     clearInterval(loadInterval);
-                    return resolve(this._routesJSs[jsUrl]);
+                    return resolve(this._jsInstances[jsUrl]);
                 }
-                if (this._navimiLoader[this._promiseNS + jsUrl] === undefined) {
+                const error = this._navimiFetch.getErrors(jsUrl);
+                if (error) {
                     clearInterval(loadInterval);
-                    return reject(`Error loading file! ${jsUrl}`);
+                    return reject(error);
                 }
-            }, 50);
+            }, 10);
 
         });
     };
 
-    private _fetch = (abortController: AbortController, url: string, type: string): Promise<void | void[]> => {
+    private _fetch = (abortController: AbortController, url: string, type: jsType): Promise<void> => {
         return new Promise<void>(async (resolve, reject) => {
             try {
                 let jsCode: string;
@@ -77,13 +83,13 @@ class __Navimi_JSs implements INavimi_JSs {
                         },
                         signal: abortController ? abortController.signal : undefined
                     });
-
                 }
 
+                this._jsType[url] = type;
                 this._insertJS(url, jsCode, type);
 
-                if (type !== "route" && type !== "service") {
-                    this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
+                if (type !== "route" && type !== "service") { // todo: get the correct types to use here
+                    this._resolvePromise(true, url); // resolve the promise - script is loaded
                 }
 
                 resolve();
@@ -94,7 +100,7 @@ class __Navimi_JSs implements INavimi_JSs {
         });
     };
 
-    private _insertJS = (url: string, jsCode: string, type: string): void => {
+    private _insertJS = (url: string, jsCode: string, type: jsType): void => {
         let jsHtmlBody = (type === "module" || type === "library") ? jsCode :
             `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", "${type}", (function(){return ${jsCode}   
                 })())}())`;
@@ -105,11 +111,8 @@ class __Navimi_JSs implements INavimi_JSs {
 
     private _instantiateJS = async (
         jsUrl: string,
-        type: string,
+        type: jsType,
         JsClass: InstanceType<any>): Promise<void> => {
-
-        const promiseToResolve: (value?: unknown) => void = this._navimiLoader[this._promiseNS + jsUrl];
-        const promiseToReject: (reason?: any) => void = this._navimiLoader[this._promiseNS + jsUrl + "_reject"];
 
         // remove callbacks
         setTimeout(() => {
@@ -119,8 +122,8 @@ class __Navimi_JSs implements INavimi_JSs {
 
         if (type !== "route") {
             // keep this instance to reuse later
-            this._othersJSs[jsUrl] = JsClass;
-            promiseToResolve && promiseToResolve(Object.freeze(JsClass));
+            this._jsInstances[jsUrl] = JsClass;
+            this._resolvePromise(Object.freeze(JsClass), jsUrl);
             return;
         }
 
@@ -159,41 +162,25 @@ class __Navimi_JSs implements INavimi_JSs {
             this._routesJSsServices[jsUrl].map((sn: string) => {
                 services = {
                     ...services,
-                    [sn]: this._othersJSs[this._options.services[sn]]
+                    [sn]: this._jsInstances[this._options.services[sn]]
                 };
             });
 
             let jsInstance = new JsClass(Object.freeze(routerFunctions), services);
 
             //keep this instance to reuse later
-            this._routesJSs[jsUrl] = jsInstance;
-            promiseToResolve && promiseToResolve(jsInstance);
+            this._jsInstances[jsUrl] = jsInstance;
+            this._resolvePromise(jsInstance, jsUrl);
 
         } catch (error) {
-            promiseToReject && promiseToReject(error);
+            this._rejectPromise(error, jsUrl);
 
         }
 
     };
 
-    private _waitForDependency = async (jsUrl: string, dependencyCol: INavimi_KeyList<string[]>, optionsCol: INavimi_KeyList<string>): Promise<void> => {
-
-        if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
-            return;
-        }
-
-        while (true) {
-            if (dependencyCol[jsUrl].map((name: string) =>
-                this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
-                break;
-            }
-            if (dependencyCol[jsUrl].map(name =>
-                optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
-                return;
-            }
-            await this._navimiHelpers.timeout(10);
-        }
-
+    private _isJsLoading = (jsUrl: string): boolean => {
+        return this._navimiLoader[this._promiseNS + jsUrl] !== undefined;
     };
 
     public isJsLoaded = (url: string): boolean => {
@@ -201,25 +188,21 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     public getInstance = (url: string): InstanceType<any> => {
-        return this._routesJSs[url];
+        return this._jsInstances[url];
     };
 
-    public fetchJS = (abortController: AbortController, urls: string[], type: string): Promise<InstanceType<any> | InstanceType<any>[]> => {
+    public fetchJS = (abortController: AbortController, urls: string[], type: jsType): Promise<InstanceType<any> | InstanceType<any>[]> => {
 
         const init = (url: string): Promise<InstanceType<any>> => {
             return new Promise<InstanceType<any>>(async (resolve, reject) => {
 
                 // return the instance if this js is already loaded
-                if (type !== "route" && this._othersJSs[url]) {
-                    return resolve(this._othersJSs[url]);
-                } else {
-                    if (this._routesJSs[url]) {
-                        return resolve(this._routesJSs[url]);
-                    }
+                if (this._jsInstances[url]) {
+                    return resolve(this._jsInstances[url]);
                 }
 
                 // route repeated calls to an awaiter
-                if (this._navimiLoader[this._promiseNS + url]) {
+                if (this._isJsLoading(url)) {
                     await this._awaitJS(url)
                         .then(resolve)
                         .catch(reject);
@@ -230,9 +213,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 this._navimiLoader[this._promiseNS + url] = resolve;
                 this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
 
-                this._fetch(abortController, url, type).catch(ex => {
-                    this._navimiLoader[this._promiseNS + url + "_reject"](ex);
-                });
+                this._fetch(abortController, url, type).catch(reject);
             });
         }
 
@@ -254,10 +235,12 @@ class __Navimi_JSs implements INavimi_JSs {
                     notFound.push(name);
                 } else {
                     type === "services" &&
-                        this._routesJSsServices[jsUrl].indexOf(name) === -1 && this._routesJSsServices[jsUrl].push(name);
+                        this._routesJSsServices[jsUrl].indexOf(name) === -1 && 
+                        this._routesJSsServices[jsUrl].push(name);
 
                     type === "components" &&
-                        this._routesJSsComponents[jsUrl].indexOf(name) === -1 && this._routesJSsComponents[jsUrl].push(name);
+                        this._routesJSsComponents[jsUrl].indexOf(name) === -1 && 
+                        this._routesJSsComponents[jsUrl].push(name);
 
                     this._dependencyJSsMap[url] = {
                         ...this._dependencyJSsMap[url] || {},
@@ -299,8 +282,9 @@ class __Navimi_JSs implements INavimi_JSs {
                     })
             ));
 
-        await this._waitForDependency(jsUrl, this._routesJSsServices, this._options.services);
-        await this._waitForDependency(jsUrl, this._routesJSsComponents, this._options.components);
+        // wait for all dependencies to be loaded
+        await Promise.all(servicesUrls.map(this._awaitJS));
+        await Promise.all(componentsUrls.map(this._awaitJS));
 
         return;
     };
@@ -315,26 +299,35 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     //removeIf(minify)
-    public reloadJs = (filePath: string, jsCode: string, callback: Function): void => {
+    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
 
         if (!this.isJsLoaded(filePath)) {
             return;
         }
 
+        return Promise.resolve();
+
         //discover the js type
+        // "module"
+        // "library"
+
+        // "route"
+        // "javascript"
+        // "service"
+        // "component"
+
         //call destroy and unload for all js that are referencing this js
+
         //remove the js from the loaded js list
         //load the js again
         //callback
+        
 
         // private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
-        // private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
         // private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
         // private _routesJSsServices: INavimi_KeyList<string[]> = {};
         // private _routesJSsComponents: INavimi_KeyList<string[]> = {};
 
-
-        // const isSameFile = this._navimiHelpers.isSameFile;
 
         // for (const routeUrl in routeList) {
         //     const { jsUrl } = routeList[routeUrl];
@@ -361,8 +354,6 @@ class __Navimi_JSs implements INavimi_JSs {
         // for (const jsUrl in this._dependencyJSsMap) {
         //     if (isSameFile(jsUrl, filePath)) {
         //         console.log(`${filePath} updated.`);
-
-        //         delete this._othersJSs[jsUrl];
 
         //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
         //             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {

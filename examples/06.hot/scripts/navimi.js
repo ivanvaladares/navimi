@@ -140,9 +140,9 @@ class __Navimi_Components {
                     return null;
                 return node.textContent;
             };
-            var documentNodes = [].slice.call(node.childNodes);
-            var templateNodes = [].slice.call(template.childNodes);
-            var diffCount = documentNodes.length - templateNodes.length;
+            const templateNodes = [].slice.call(template.childNodes);
+            let documentNodes = [].slice.call(node.childNodes);
+            let diffCount = documentNodes.length - templateNodes.length;
             for (let index = 0; index < templateNodes.length; index++) {
                 let templateNode = templateNodes[index];
                 // new node, create it
@@ -166,7 +166,7 @@ class __Navimi_Components {
                     continue;
                 }
                 // update text content
-                var templateContent = getNodeContent(templateNode);
+                const templateContent = getNodeContent(templateNode);
                 if (templateContent && templateContent !== getNodeContent(documentNodes[index])) {
                     documentNodes[index].textContent = templateContent;
                 }
@@ -197,7 +197,7 @@ class __Navimi_Components {
                     }
                     // prepare empty node for next round
                     if (documentNodes[index].childNodes.length < 1 && templateNode.childNodes.length > 0) {
-                        var fragment = document.createDocumentFragment();
+                        const fragment = document.createDocumentFragment();
                         this.mergeHtml(templateNode, fragment);
                         documentNodes[index].appendChild(fragment);
                         continue;
@@ -304,13 +304,13 @@ class __Navimi_Core {
             if (navParams !== undefined) {
                 params = Object.assign(Object.assign({}, params), navParams);
             }
-            if (this._options.onBeforeRoute) {
-                const shouldContinue = await this._options.onBeforeRoute({ url, routeItem, params }, this._navigateTo);
-                if (shouldContinue === false) {
-                    return;
-                }
-            }
             if (this._currentJS && !force) {
+                if (this._options.onBeforeRoute) {
+                    const shouldContinue = await this._options.onBeforeRoute({ url, routeItem, params }, this._navigateTo);
+                    if (shouldContinue === false) {
+                        return;
+                    }
+                }
                 const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
                 if (currentJsInstance) {
                     const beforeLeave = currentJsInstance.beforeLeave;
@@ -466,7 +466,7 @@ class __Navimi_Core {
     }
     _initHot() {
         //removeIf(minify)
-        this._navimiHot.init(this._navimiCSSs, this._navimiJSs, this._navimiTemplates, this._initRoute);
+        this._navimiHot.init(this._navimiCSSs, this._navimiJSs, this._navimiTemplates, () => this._initRoute(undefined, undefined, true));
         setTimeout(this._navimiHot.openHotWs, 1000, this._options.hot);
         //endRemoveIf(minify)
     }
@@ -501,12 +501,14 @@ class __Navimi_CSSs {
             });
         };
         //removeIf(minify)
-        this.reloadCss = (filePath, cssCode) => {
+        this.digestHot = ({ filePath, data }) => {
             if (!this.isCssLoaded(filePath)) {
                 return;
             }
+            this._loadedCsss[filePath] = data;
+            this._navimiDom.replaceCss(data, filePath);
             console.log(`${filePath} updated.`);
-            this._navimiDom.replaceCss(cssCode, filePath);
+            return Promise.resolve();
         };
         //endRemoveIf(minify)
     }
@@ -531,11 +533,10 @@ class __Navimi_Dom {
             });
         };
         this.insertCss = (cssCode, url, type, prepend) => {
-            let removeTag = document.querySelector(`[cssUrl='${url}']`);
-            removeTag && removeTag.remove();
+            var _a, _b;
+            (_a = document.querySelector(`[cssUrl='${url}']`)) === null || _a === void 0 ? void 0 : _a.remove();
             if (type === "routeCss") {
-                removeTag = document.querySelector(`[cssType='${type}']`);
-                removeTag && removeTag.remove();
+                (_b = document.querySelector(`[cssType='${type}']`)) === null || _b === void 0 ? void 0 : _b.remove();
             }
             if (!cssCode) {
                 return;
@@ -583,7 +584,7 @@ class __Navimi_Dom {
                     });
                 }
                 else {
-                    const type = obj.type.toLowerCase().indexOf("module") >= 0 ? "module" : "library";
+                    const type = obj.type.toLowerCase() === "module" ? "module" : "library";
                     return this._navimiJSs.fetchJS(undefined, [obj.url], type);
                 }
             })).catch(ex => {
@@ -669,10 +670,6 @@ class __Navimi_Helpers {
                 }
             }
             return params;
-        };
-        this.isSameFile = (path1, path2) => {
-            return path1 && path2 && path1.split("?").shift().toLowerCase() ==
-                path2.split("?").shift().toLowerCase();
         };
         this.timeout = (ms) => {
             return new Promise(resolve => setTimeout(resolve, ms));
@@ -828,17 +825,16 @@ class __Navimi_Hot {
             try {
                 const filePath = payload.filePath.replace(/\\/g, "/");
                 const fileType = (_a = filePath.split(".").pop()) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase();
-                const data = payload === null || payload === void 0 ? void 0 : payload.data;
                 switch (fileType) {
                     case "css":
-                        this._navimiCSSs.reloadCss(filePath, data);
+                        this._navimiCSSs.digestHot(payload);
                         break;
                     case "html":
                     case "htm":
-                        this._navimiTemplates.reloadTemplate(filePath, data, this._initRouteFunc);
+                        this._navimiTemplates.digestHot(payload).then(() => this._initRouteFunc());
                         break;
                     case "js":
-                        this._navimiJSs.reloadJs(filePath, data, this._initRouteFunc);
+                        this._navimiJSs.digestHot(payload).then(() => this._initRouteFunc());
                         break;
                     case "gif":
                     case "jpg":
@@ -868,23 +864,30 @@ class __Navimi_JSs {
         this._callBackNS = "_jsLoaderCallback";
         this._promiseNS = "_promise_";
         this._loadedJSs = {};
-        this._routesJSs = {};
-        this._othersJSs = {};
+        this._jsType = {};
+        this._jsInstances = {};
         this._dependencyJSsMap = {};
         this._routesJSsServices = {};
         this._routesJSsComponents = {};
+        this._resolvePromise = (value, jsUrl) => {
+            this._navimiLoader[this._promiseNS + jsUrl](value);
+        };
+        this._rejectPromise = (reason, jsUrl) => {
+            this._navimiLoader[this._promiseNS + jsUrl + "_reject"](reason);
+        };
         this._awaitJS = (jsUrl) => {
             return new Promise((resolve, reject) => {
                 const loadInterval = setInterval(() => {
-                    if (this._routesJSs[jsUrl]) {
+                    if (this._jsInstances[jsUrl]) {
                         clearInterval(loadInterval);
-                        return resolve(this._routesJSs[jsUrl]);
+                        return resolve(this._jsInstances[jsUrl]);
                     }
-                    if (this._navimiLoader[this._promiseNS + jsUrl] === undefined) {
+                    const error = this._navimiFetch.getErrors(jsUrl);
+                    if (error) {
                         clearInterval(loadInterval);
-                        return reject(`Error loading file! ${jsUrl}`);
+                        return reject(error);
                     }
-                }, 50);
+                }, 10);
             });
         };
         this._fetch = (abortController, url, type) => {
@@ -902,9 +905,10 @@ class __Navimi_JSs {
                             signal: abortController ? abortController.signal : undefined
                         });
                     }
+                    this._jsType[url] = type;
                     this._insertJS(url, jsCode, type);
-                    if (type !== "route" && type !== "service") {
-                        this._navimiLoader[this._promiseNS + url](true); // resolve the promise - script is loaded
+                    if (type !== "route" && type !== "service") { // todo: get the correct types to use here
+                        this._resolvePromise(true, url); // resolve the promise - script is loaded
                     }
                     resolve();
                 }
@@ -921,8 +925,6 @@ class __Navimi_JSs {
             this._navimiDom.insertJS(jsHtmlBody, url, type === "module");
         };
         this._instantiateJS = async (jsUrl, type, JsClass) => {
-            const promiseToResolve = this._navimiLoader[this._promiseNS + jsUrl];
-            const promiseToReject = this._navimiLoader[this._promiseNS + jsUrl + "_reject"];
             // remove callbacks
             setTimeout(() => {
                 delete this._navimiLoader[this._promiseNS + jsUrl];
@@ -930,8 +932,8 @@ class __Navimi_JSs {
             }, 10);
             if (type !== "route") {
                 // keep this instance to reuse later
-                this._othersJSs[jsUrl] = JsClass;
-                promiseToResolve && promiseToResolve(Object.freeze(JsClass));
+                this._jsInstances[jsUrl] = JsClass;
+                this._resolvePromise(Object.freeze(JsClass), jsUrl);
                 return;
             }
             try {
@@ -960,51 +962,35 @@ class __Navimi_JSs {
                 let services = {};
                 //gather all services
                 this._routesJSsServices[jsUrl].map((sn) => {
-                    services = Object.assign(Object.assign({}, services), { [sn]: this._othersJSs[this._options.services[sn]] });
+                    services = Object.assign(Object.assign({}, services), { [sn]: this._jsInstances[this._options.services[sn]] });
                 });
                 let jsInstance = new JsClass(Object.freeze(routerFunctions), services);
                 //keep this instance to reuse later
-                this._routesJSs[jsUrl] = jsInstance;
-                promiseToResolve && promiseToResolve(jsInstance);
+                this._jsInstances[jsUrl] = jsInstance;
+                this._resolvePromise(jsInstance, jsUrl);
             }
             catch (error) {
-                promiseToReject && promiseToReject(error);
+                this._rejectPromise(error, jsUrl);
             }
         };
-        this._waitForDependency = async (jsUrl, dependencyCol, optionsCol) => {
-            if (!dependencyCol[jsUrl] || dependencyCol[jsUrl].length === 0) {
-                return;
-            }
-            while (true) {
-                if (dependencyCol[jsUrl].map((name) => this._othersJSs[optionsCol[name]] === undefined).indexOf(true) === -1) {
-                    break;
-                }
-                if (dependencyCol[jsUrl].map(name => optionsCol[name]).find(url => this._navimiFetch.getErrors(url))) {
-                    return;
-                }
-                await this._navimiHelpers.timeout(10);
-            }
+        this._isJsLoading = (jsUrl) => {
+            return this._navimiLoader[this._promiseNS + jsUrl] !== undefined;
         };
         this.isJsLoaded = (url) => {
             return this._loadedJSs[url] !== undefined;
         };
         this.getInstance = (url) => {
-            return this._routesJSs[url];
+            return this._jsInstances[url];
         };
         this.fetchJS = (abortController, urls, type) => {
             const init = (url) => {
                 return new Promise(async (resolve, reject) => {
                     // return the instance if this js is already loaded
-                    if (type !== "route" && this._othersJSs[url]) {
-                        return resolve(this._othersJSs[url]);
-                    }
-                    else {
-                        if (this._routesJSs[url]) {
-                            return resolve(this._routesJSs[url]);
-                        }
+                    if (this._jsInstances[url]) {
+                        return resolve(this._jsInstances[url]);
                     }
                     // route repeated calls to an awaiter
-                    if (this._navimiLoader[this._promiseNS + url]) {
+                    if (this._isJsLoading(url)) {
                         await this._awaitJS(url)
                             .then(resolve)
                             .catch(reject);
@@ -1013,9 +999,7 @@ class __Navimi_JSs {
                     // let the js resolve the promise itself when it loads (in _instantiateJS)
                     this._navimiLoader[this._promiseNS + url] = resolve;
                     this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
-                    this._fetch(abortController, url, type).catch(ex => {
-                        this._navimiLoader[this._promiseNS + url + "_reject"](ex);
-                    });
+                    this._fetch(abortController, url, type).catch(reject);
                 });
             };
             return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
@@ -1034,9 +1018,11 @@ class __Navimi_JSs {
                     }
                     else {
                         type === "services" &&
-                            this._routesJSsServices[jsUrl].indexOf(name) === -1 && this._routesJSsServices[jsUrl].push(name);
+                            this._routesJSsServices[jsUrl].indexOf(name) === -1 &&
+                            this._routesJSsServices[jsUrl].push(name);
                         type === "components" &&
-                            this._routesJSsComponents[jsUrl].indexOf(name) === -1 && this._routesJSsComponents[jsUrl].push(name);
+                            this._routesJSsComponents[jsUrl].indexOf(name) === -1 &&
+                            this._routesJSsComponents[jsUrl].push(name);
                         this._dependencyJSsMap[url] = Object.assign(Object.assign({}, this._dependencyJSsMap[url] || {}), { [jsUrl]: true });
                     }
                     return url;
@@ -1063,8 +1049,9 @@ class __Navimi_JSs {
                     }
                 });
             })));
-            await this._waitForDependency(jsUrl, this._routesJSsServices, this._options.services);
-            await this._waitForDependency(jsUrl, this._routesJSsComponents, this._options.components);
+            // wait for all dependencies to be loaded
+            await Promise.all(servicesUrls.map(this._awaitJS));
+            await Promise.all(componentsUrls.map(this._awaitJS));
             return;
         };
         this.initJS = async (jsUrl, params) => {
@@ -1073,21 +1060,26 @@ class __Navimi_JSs {
                 await jsInstance.init(params);
         };
         //removeIf(minify)
-        this.reloadJs = (filePath, jsCode, callback) => {
+        this.digestHot = ({ filePath, data }) => {
             if (!this.isJsLoaded(filePath)) {
                 return;
             }
+            return Promise.resolve();
             //discover the js type
+            // "module"
+            // "library"
+            // "route"
+            // "javascript"
+            // "service"
+            // "component"
             //call destroy and unload for all js that are referencing this js
             //remove the js from the loaded js list
             //load the js again
             //callback
             // private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
-            // private _othersJSs: INavimi_KeyList<InstanceType<any>> = {};
             // private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
             // private _routesJSsServices: INavimi_KeyList<string[]> = {};
             // private _routesJSsComponents: INavimi_KeyList<string[]> = {};
-            // const isSameFile = this._navimiHelpers.isSameFile;
             // for (const routeUrl in routeList) {
             //     const { jsUrl } = routeList[routeUrl];
             //     if (isSameFile(jsUrl, filePath)) {
@@ -1106,7 +1098,6 @@ class __Navimi_JSs {
             // for (const jsUrl in this._dependencyJSsMap) {
             //     if (isSameFile(jsUrl, filePath)) {
             //         console.log(`${filePath} updated.`);
-            //         delete this._othersJSs[jsUrl];
             //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
             //             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
             //                 //clear all dependent JSs that depends of this JS
@@ -1124,13 +1115,12 @@ class __Navimi_JSs {
         };
         //endRemoveIf(minify)
     }
-    init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiComponents, navimiHelpers, options) {
+    init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiComponents, options) {
         this._navimiDom = navimiDom;
         this._navimiFetch = navimiFetch;
         this._navimiTemplates = navimiTemplates;
         this._navimiState = navimiState;
         this._navimiComponents = navimiComponents;
-        this._navimiHelpers = navimiHelpers;
         this._options = options;
         // @ts-ignore
         this._navimiLoader = window[this._navimiLoaderNS] = {
@@ -1202,7 +1192,7 @@ class Navimi {
         navimiFetch.init(options);
         navimiCSSs.init(navimiDom, navimiFetch);
         navimiDom.init(navimiCSSs, navimiJSs);
-        navimiJSs.init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiComponents, navimiHelpers, options);
+        navimiJSs.init(navimiDom, navimiFetch, navimiTemplates, navimiState, navimiComponents, options);
         navimiTemplates.init(navimiFetch);
         navimiState.init(navimiHelpers);
         navimiComponents.init(navimiHelpers);
@@ -1355,23 +1345,20 @@ class __Navimi_Templates {
         this._templatesCache = {};
         this._loadedTemplates = {};
         this.loadTemplate = (templateCode, url) => {
-            const regIni = new RegExp("<t ([^>]+)>");
-            const regEnd = new RegExp("</t>");
-            const regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
             let tempCode = templateCode;
-            if (!regIni.exec(tempCode)) {
+            if (!this._regIni.exec(tempCode)) {
                 this._templatesCache[url] = tempCode;
                 return;
             }
             while (templateCode && templateCode.length > 0) {
-                const iniTemplate = regIni.exec(tempCode);
+                const iniTemplate = this._regIni.exec(tempCode);
                 if (!iniTemplate || iniTemplate.length === 0) {
                     break;
                 }
-                const regIdRes = regId.exec(iniTemplate[1]);
+                const regIdRes = this._regId.exec(iniTemplate[1]);
                 const idTemplate = regIdRes.length > 0 && regIdRes[1].slice(1, -1);
                 tempCode = tempCode.substr(iniTemplate.index + iniTemplate[0].length);
-                const endTemplate = regEnd.exec(tempCode);
+                const endTemplate = this._regEnd.exec(tempCode);
                 if (!idTemplate || !endTemplate || endTemplate.length === 0) {
                     break;
                 }
@@ -1412,17 +1399,20 @@ class __Navimi_Templates {
             return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
         };
         //removeIf(minify)
-        this.reloadTemplate = (filePath, templateCode, callback) => {
+        this.digestHot = ({ filePath, data }) => {
             if (!this.isTemplateLoaded(filePath)) {
                 return;
             }
+            this.loadTemplate(data, filePath);
             console.log(`${filePath} updated.`);
-            this.loadTemplate(templateCode, filePath);
-            callback();
+            return Promise.resolve();
         };
         //endRemoveIf(minify)
     }
     init(navimiFetch) {
         this._navimiFetch = navimiFetch;
+        this._regIni = new RegExp("<t ([^>]+)>");
+        this._regEnd = new RegExp("</t>");
+        this._regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
     }
 }

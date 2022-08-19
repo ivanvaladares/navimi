@@ -3,32 +3,36 @@ describe('jss.spec', () => {
 
     let navimi_hot: INavimi_Hot;
 
-    const webSocketMock = {} as any;
+    const webSocketMessageEventMock = {} as any;
 
     const initRouteMock = jest.fn();
 
-    const css = {
-        reloadCss: jest.fn()
+    const cssMock = {
+        digestHot: jest.fn(() => Promise.resolve())
     } as unknown as __Navimi_CSSs;
 
-    const jss = {
-        reloadJs: jest.fn()
+    const jssMock = {
+        digestHot: jest.fn(() => Promise.resolve())
     } as unknown as __Navimi_JSs;
 
-    const templates = {
-        reloadTemplate: jest.fn()
+    const templatesMock = {
+        digestHot: jest.fn(() => Promise.resolve())
     } as unknown as __Navimi_Templates;
 
     beforeAll(() => {
 
-        window.WebSocket = jest.fn().mockImplementation(() => {
+        window.WebSocket = jest.fn(() => {
             return {
                 addEventListener: (eventName: string, callback: Function) => {
-                    webSocketMock[eventName] = callback;
-                },
-                onclose: jest.fn(),
-            };
-        }) as unknown as typeof WebSocket;
+                    webSocketMessageEventMock[eventName] = callback;
+                }
+            }
+        }) as any;
+
+        window.console = {
+            warn: jest.fn(),
+            error: jest.fn()
+        } as any;
 
     });
 
@@ -36,49 +40,58 @@ describe('jss.spec', () => {
 
         navimi_hot = new hot();
 
-        navimi_hot.init(css, jss, templates, initRouteMock);
+        navimi_hot.init(cssMock, jssMock, templatesMock, initRouteMock);
 
         done();
 
     });
 
-    it('Open HOT', (done) => {
+    it('Open HOT', () => {
 
         navimi_hot.openHotWs(3333);
 
-        done();
+        expect(window.WebSocket).toBeCalledWith('ws://localhost:3333');
 
     });
 
-    it('Test messsage', (done) => {
+    it('Test messsage', () => {
 
         const hotPayload: hotPayload = {
             message: "TESTE"
         };
 
-        webSocketMock['message']({ data: JSON.stringify(hotPayload)});
-
-        //todo: spy on
-
-        done();
+        webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
+        
+        expect(console.warn).toHaveBeenCalledWith(hotPayload.message);
 
     });
 
-    it('Test css update', (done) => {
+    it('Test img update', () => {
+
+        const hotPayload: hotPayload = {
+            filePath: "./images/test.gif",
+            data: null
+        };
+
+        webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
+
+        expect(initRouteMock).toHaveBeenCalled();
+
+    });
+
+    it('Test css update', () => {
 
         const hotPayload: hotPayload = {
             filePath: "./css/test.css",
             data: "css content..."
         };
 
-        webSocketMock['message']({ data: JSON.stringify(hotPayload)});
+        webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
 
-        expect(css.reloadCss).toHaveBeenCalledWith(hotPayload.filePath, hotPayload.data);
+        expect(cssMock.digestHot).toHaveBeenCalledWith(hotPayload);
 
-        done();
+    });
 
-    });    
-    
     it('Test template update', (done) => {
 
         const hotPayload: hotPayload = {
@@ -86,14 +99,16 @@ describe('jss.spec', () => {
             data: "html content..."
         };
 
-        webSocketMock['message']({ data: JSON.stringify(hotPayload)});
+        webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
 
-        expect(templates.reloadTemplate).toHaveBeenCalledWith(hotPayload.filePath, hotPayload.data, initRouteMock);
+        expect(templatesMock.digestHot).toHaveBeenCalledWith(hotPayload);
 
-        done();
+        setTimeout(() => {
+            expect(initRouteMock).toHaveBeenCalledTimes(2);
+            done();
+        }, 10);
+    });
 
-    });   
-    
     it('Test js update', (done) => {
 
         const hotPayload: hotPayload = {
@@ -101,26 +116,22 @@ describe('jss.spec', () => {
             data: "js content..."
         };
 
-        webSocketMock['message']({ data: JSON.stringify(hotPayload)});
+        webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
 
-        expect(jss.reloadJs).toHaveBeenCalledWith(hotPayload.filePath, hotPayload.data, initRouteMock);
+        expect(jssMock.digestHot).toHaveBeenCalledWith(hotPayload);
 
-        done();
+        setTimeout(() => {
+            expect(initRouteMock).toHaveBeenCalledTimes(3);
+            done();
+        }, 10);
 
     });
 
-    it('Test img update', (done) => {
+    it('Test wrong payload', () => {
 
-        var hotPayload: hotPayload = {
-            filePath: "./images/test.gif",
-            data: null
-        };
+        webSocketMessageEventMock['message']({ data: undefined });
 
-        webSocketMock['message']({ data: JSON.stringify(hotPayload)});
-
-        //todo: spy on
-
-        done();
+        expect(console.error).toHaveBeenCalled();
 
     });
 

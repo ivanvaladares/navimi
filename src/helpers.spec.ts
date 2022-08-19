@@ -1,41 +1,10 @@
 describe('helpers.spec', () => {
     const { helpers } = require('./helpers');
 
-    let dom: any;
     let navimi_helpers: INavimi_Helpers;
 
     beforeAll(() => {
         navimi_helpers = new helpers() as INavimi_Helpers;
-    });
-
-    it('isSameFile 1', () => {
-
-        const path1 = "/test/unit-tests/helpers.test.js";
-        const path2 = "/test/unit-tests/helpers.test.js";
-
-        const result = navimi_helpers.isSameFile(path1, path2);
-
-        expect(result).toBeTruthy();
-    });
-
-    it('isSameFile 2', () => {
-
-        const path1 = "/test/unit-tests/helpers.test.js?v=1";
-        const path2 = "/test/unit-tests/helpers.test.js";
-
-        const result = navimi_helpers.isSameFile(path1, path2);
-
-        expect(result).toBeTruthy();
-    });
-
-    it('isSameFile 3', () => {
-
-        const path1 = "/test/unit-tests/other.js?v=1";
-        const path2 = "/test/unit-tests/helpers.test.js";
-
-        const result = navimi_helpers.isSameFile(path1, path2);
-
-        expect(result).toBeFalsy();
     });
 
     it('timeout', (done) => {

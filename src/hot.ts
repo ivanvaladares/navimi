@@ -48,24 +48,22 @@ class __Navimi_Hot implements INavimi_Hot {
     };
 
     private _digestHot = (payload: hotPayload): void => {
-
         try {
             const filePath = payload.filePath.replace(/\\/g, "/");
             const fileType = filePath.split(".").pop()?.toLocaleLowerCase();
-            const data = payload?.data;
 
             switch (fileType) {
                 case "css":
-                    this._navimiCSSs.reloadCss(filePath, data);
+                    this._navimiCSSs.digestHot(payload);
                     break;
 
                 case "html":
                 case "htm":
-                    this._navimiTemplates.reloadTemplate(filePath, data, this._initRouteFunc);
+                    this._navimiTemplates.digestHot(payload).then(() => this._initRouteFunc());
                     break;
 
                 case "js":
-                    this._navimiJSs.reloadJs(filePath, data, this._initRouteFunc);
+                    this._navimiJSs.digestHot(payload).then(() => this._initRouteFunc());
                     break;
 
                 case "gif":

@@ -3,7 +3,6 @@ describe('Test components -', () => {
     const { helpers } = require('./helpers');
     const { components } = require('./components');
 
-    let dom: any;
     let navimi_components: INavimi_Components;
 
     beforeAll(() => {
@@ -105,7 +104,6 @@ describe('Test components -', () => {
         }, 10);
 
     });
-
 
     test('Test event handling', (done) => {
 
@@ -250,7 +248,6 @@ describe('Test components -', () => {
 
     });
 
-    
     test('Test shouldUpdate 2', (done) => {
 
         const component = window.document.querySelector("counter-component");
