@@ -89,3 +89,7 @@ class __Navimi_Dom implements INavimi_Dom {
     };
 
 }
+
+//removeIf(dist)
+module.exports.dom = __Navimi_Dom;
+//endRemoveIf(dist)

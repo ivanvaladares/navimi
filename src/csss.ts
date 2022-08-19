@@ -59,6 +59,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
 
 }
+
 //removeIf(dist)
-module.exports.css = __Navimi_CSSs;
+module.exports.csss = __Navimi_CSSs;
 //endRemoveIf(dist)
