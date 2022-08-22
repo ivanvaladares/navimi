@@ -34,8 +34,6 @@ describe('navimi.spec', () => {
         //@ts-ignore
         window.__Navimi_Fetch = initMock;
         //@ts-ignore
-        window.__Navimi_Dom = initMock;
-        //@ts-ignore
         window.__Navimi_CSSs = initMock;
         //@ts-ignore
         window.__Navimi_JSs = initMock;
@@ -74,7 +72,6 @@ describe('navimi.spec', () => {
             navimiFetch: { init: () => { } },
             navimiJSs: { init: () => { } },
             navimiCSSs: { init: () => { } },
-            navimiDom: { init: () => { } },
             navimiTemplates: { init: () => { } },
             navimiState: { init: () => { } },
             navimiHot: { init: () => { } },

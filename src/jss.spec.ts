@@ -1,5 +1,4 @@
 describe('jss.spec', () => {
-    const { dom } = require('./dom');
     const { csss } = require('./csss');
     const { templates } = require('./templates');
     const { state } = require('./state');
@@ -24,22 +23,15 @@ describe('jss.spec', () => {
         navimi_jss = new jss() as INavimi_JSs;
 
         const navimi_csss = new csss() as INavimi_CSSs;
-        const navimi_dom = new dom() as INavimi_Dom;
         const navimi_templates = new templates() as INavimi_Templates;
         const navimi_state = new state() as INavimi_State;
         const navimi_components = new components() as INavimi_Components;
         const navimi_helpers = new helpers() as INavimi_Helpers;
 
         navimi_csss.init(
-            navimi_dom,
             navimi_fetch_mock
         );
 
-        navimi_dom.init(
-            navimi_csss,
-            navimi_jss
-        );
-        
         navimi_templates.init(navimi_fetch_mock);
 
         navimi_state.init(navimi_helpers);
@@ -47,8 +39,9 @@ describe('jss.spec', () => {
         navimi_components.init(navimi_helpers);
 
         navimi_jss.init(
-            navimi_dom,
+            navimi_helpers,
             navimi_fetch_mock,
+            navimi_csss,
             navimi_templates,
             navimi_state,
             navimi_components,

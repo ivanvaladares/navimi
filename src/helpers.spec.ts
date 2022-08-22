@@ -27,16 +27,16 @@ describe('helpers.spec', () => {
     it('debounce', (done) => {
 
         let result = "";
-        const debouncedFunc = navimi_helpers.debounce(() => {
-            result += "debounced";
-        }, 10);
+        const debouncedFunc = navimi_helpers.debounce((arg: string) => {
+            result += arg;
+        }, 10) as unknown as (arg: string) => void;
 
-        debouncedFunc();
-        debouncedFunc();
-        debouncedFunc();
+        debouncedFunc('debounced');
+        debouncedFunc('debounced');
+        debouncedFunc('debounced');
 
         setTimeout(() => {
-            expect(result).toEqual("debounced");
+            expect(result).toEqual('debounced');
             done();
         }, 50);
 
@@ -45,14 +45,14 @@ describe('helpers.spec', () => {
     it('throttle', (done) => {
 
         let result = "";
-        const throttledFunc = navimi_helpers.throttle(() => {
-            result += "throttled";
-        }, 10, this);
+        const throttledFunc = navimi_helpers.throttle((arg: string) => {
+            result += arg;
+        }, 10, this) as unknown as (arg: string) => void;
 
-        throttledFunc();
-        throttledFunc();
+        throttledFunc('throttled');
+        throttledFunc('throttled');
 
-        expect(result).toEqual("throttled");
+        expect(result).toEqual('throttled');
 
         setTimeout(() => {
             expect(result).toEqual("throttledthrottled");

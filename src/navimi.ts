@@ -4,7 +4,6 @@ class Navimi {
             core?: (routes: INavimi_KeyList<INavimi_Route>, services?: INavimi_Services, options?: INavimi_Options) => any) {
 
         const navimiFetch = services?.navimiFetch ?? new __Navimi_Fetch()
-        const navimiDom = services?.navimiDom ?? new __Navimi_Dom();
         const navimiCSSs = services?.navimiCSSs ?? new __Navimi_CSSs();
         const navimiJSs = services?.navimiJSs ?? new __Navimi_JSs();
         const navimiTemplates = services?.navimiTemplates ?? new __Navimi_Templates();
@@ -18,18 +17,13 @@ class Navimi {
         navimiFetch.init(options);
 
         navimiCSSs.init(
-            navimiDom,
             navimiFetch
         );
 
-        navimiDom.init(
-            navimiCSSs,
-            navimiJSs
-        );
-
         navimiJSs.init(
-            navimiDom,
+            navimiHelpers,
             navimiFetch,
+            navimiCSSs,
             navimiTemplates,
             navimiState,
             navimiComponents,
@@ -46,7 +40,6 @@ class Navimi {
             navimiFetch,
             navimiJSs,
             navimiCSSs,
-            navimiDom,
             navimiTemplates,
             navimiMiddlewares,
             navimiState,

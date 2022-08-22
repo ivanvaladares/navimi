@@ -1,54 +1,79 @@
 class __Navimi_CSSs implements INavimi_CSSs {
 
-    private _navimiDom: INavimi_Dom;
     private _navimiFetch: INavimi_Fetch;
     private _loadedCsss: INavimi_KeyList<string> = {};
 
-    public init(navimiDom: INavimi_Dom, navimiFetch: INavimi_Fetch): void {
-        this._navimiDom = navimiDom;
+    public init(navimiFetch: INavimi_Fetch): void {
         this._navimiFetch = navimiFetch;
     }
+
+    private _replaceCss = (cssCode: string, url: string): void => {
+        const oldTag = document.querySelector(`[cssUrl='${url}']`);
+        if (!oldTag) {
+            return;
+        }
+        oldTag.innerHTML = cssCode;
+    };
 
     public isCssLoaded = (url: string): boolean => {
         return this._loadedCsss[url] !== undefined;
     };
 
-    public getCss = (url: string): string => {
-        return this._loadedCsss[url];
+    public fetchCss = (abortController: AbortController, url: string): Promise<void> => {
+        if (!url || this._loadedCsss[url]) {
+            return Promise.resolve();
+        }
+
+        return this._navimiFetch.fetchFile(url, {
+            headers: {
+                Accept: "text/css"
+            },
+            signal: abortController ? abortController.signal : undefined
+        }).then(cssCode => {
+            this._loadedCsss[url] = cssCode;
+        })
+
     };
 
-    public fetchCss = (abortController: AbortController, url: string): Promise<string> => {
-        return new Promise(async (resolve, reject) => {
-            if (!url || this._loadedCsss[url]) {
-                return resolve(this._loadedCsss[url]);
+    public insertCss = (url: string, type: string, prepend?: boolean): void => {
+        if (type === "routeCss") {
+            const oldRouteTag = document.querySelector(`[cssType='${type}']`);
+            if (oldRouteTag) {
+                if (oldRouteTag.getAttribute('cssUrl') === url) {
+                    return;
+                }
+                oldRouteTag.remove();
             }
-            try {
-                const cssCode = await this._navimiFetch.fetchFile(url, {
-                    headers: {
-                        Accept: "text/css"
-                    },
-                    signal: abortController ? abortController.signal : undefined
-                });
+        }
 
-                this._loadedCsss[url] = cssCode;
-                resolve(cssCode);
+        //avoid reinserting the same css
+        if (document.querySelector(`[cssUrl='${url}']`)) {
+            return;
+        }
 
-            } catch (ex) {
-                reject(ex);
-            }
-        });
+        const cssCode = this._loadedCsss[url];
+        if (!cssCode) {
+            return;
+        }
+        const style: HTMLStyleElement = document.createElement("style");
+        style.innerHTML = cssCode;
+        url && style.setAttribute("cssUrl", url);
+        url && style.setAttribute("cssType", type);
+        const head = document.getElementsByTagName("head")[0];
+        const target = (head || document.body);
+        prepend ? target.prepend(style) : target.appendChild(style);
     };
 
     //removeIf(minify)
-    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
+    public digestHot = ({ filePath, data }: hotPayload): Promise<void> => {
 
         if (!this.isCssLoaded(filePath)) {
             return;
         }
-        
+
         this._loadedCsss[filePath] = data;
 
-        this._navimiDom.replaceCss(data, filePath);
+        this._replaceCss(data, filePath);
 
         console.log(`${filePath} updated.`);
 

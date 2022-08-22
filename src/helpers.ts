@@ -15,14 +15,14 @@ class __Navimi_Helpers implements INavimi_Helpers {
         }
 
         const queryPos = path.indexOf("?");
-        path = queryPos >= 0 ? path.substr(0, queryPos) : path;
+        path = queryPos >= 0 ? path.substring(0, queryPos) : path;
 
         return path.split("/").filter(p => p.length > 0);
     };
 
     private parsePath = (urlPath: string, urlPattern: string): INavimi_KeyList<any> => {
         const queryPos = urlPath.indexOf("?");
-        const query = queryPos > 0 ? urlPath.substr(queryPos + 1, urlPath.length) : "";
+        const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : "";
         const path = this.splitPath(urlPath);
         const pattern = this.splitPath(urlPattern);
 
@@ -55,25 +55,26 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     public debounce = (task: Function, wait: number): () => void => {
         let timeout: ReturnType<typeof setTimeout>;
 
-        return function () {
+        return function (...args) {
             const func = (): void => {
                 timeout = null;
-                task.apply(this, arguments);
+                task.apply(this, args);
             };
             clearTimeout(timeout);
             timeout = setTimeout(func, wait);
         };
     };
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     public throttle = (task: Function, wait: number, context: any): () => void => {
         let timeout: ReturnType<typeof setTimeout>;
         let lastTime: number;
 
-        return function () {
-            const args = arguments;
+        return function (...args) {
             const now = Date.now();
 
             if (lastTime && now < lastTime + wait) {
@@ -97,9 +98,23 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return [location.pathname, location.search, hash].join("");
     };
 
+    public setTitle = (title: string): void => {
+        document.title = title;
+    };
+
+    public setNavimiLinks = (): void => {
+        document.querySelectorAll("[navimi-link]").forEach(el => {
+            el.removeAttribute("navimi-link");
+            el.addEventListener('click', (e: any) => {
+                e.preventDefault();
+                (window as any).navigateTo(e.target.pathname);
+            });
+        });
+    };
+
     public removeHash = (url: string): string => {
         const hashPos = url.indexOf("#");
-        return hashPos > 0 ? url.substr(0, hashPos) : url;
+        return hashPos > 0 ? url.substring(0, hashPos) : url;
     };
 
     public stringify = (obj: any) => {

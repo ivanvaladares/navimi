@@ -1,6 +1,6 @@
 class __Navimi_Components implements INavimi_Components {
 
-    private _components: INavimi_KeyList<any> = {};
+    private _components: INavimi_KeyList<InstanceType<any>> = {};
     private _navimiHelpers: INavimi_Helpers;
 
     private _removeComponent = (node: INavimi_Component): void => {
@@ -31,7 +31,7 @@ class __Navimi_Components implements INavimi_Components {
     private _readAttributes = (node: INavimi_Component): INavimi_KeyList<any> => {
         const prevAttributes = node.props;
         node.props = {};
-        for (let attr of [].slice.call(node.attributes)) {
+        for (const attr of [].slice.call(node.attributes)) {
             const name = attr.name;
             //@ts-ignore
             if (typeof node[name] !== "function") {
@@ -79,7 +79,7 @@ class __Navimi_Components implements INavimi_Components {
         this._readAttributes(node);
 
         // connects the component class to the tag 
-        // todo: pass down navimi services to the component'd constructor
+        // todo: pass down navimi services to the component's constructor
         Object.setPrototypeOf(node, new componentClass(node.props));
 
         // todo: check if this time (10) can become an option in case someone needs higher frame rates
@@ -106,7 +106,7 @@ class __Navimi_Components implements INavimi_Components {
         let parent = node.parentNode as INavimi_Component;
 
         while (parent) {
-            if (/\-/.test(parent.localName) && this._components[parent.localName]) {
+            if (/-/.test(parent.localName) && this._components[parent.localName]) {
                 register(parent);
                 return;
             }
@@ -116,7 +116,7 @@ class __Navimi_Components implements INavimi_Components {
 
     private _registerChildEvents = (parentNode: INavimi_Component, childNode: INavimi_Component): void => {
         if (childNode.attributes) {
-            for (let attr of [].slice.call(childNode.attributes)) {
+            for (const attr of [].slice.call(childNode.attributes)) {
                 const name = attr.name;
                 //@ts-ignore
                 if (typeof childNode[name] === "function") {
@@ -163,7 +163,7 @@ class __Navimi_Components implements INavimi_Components {
 
         for (let index = 0; index < templateNodes.length; index++) {
 
-            let templateNode = templateNodes[index];
+            const templateNode = templateNodes[index];
 
             // new node, create it
             if (!documentNodes[index]) {
@@ -215,7 +215,7 @@ class __Navimi_Components implements INavimi_Components {
                 if (this._components[templateNode.localName]) {
                     // stop here! do not work on others component's childrens
                     continue;
-                };
+                }
 
                 // clear child nodes
                 if (documentNodes[index].childNodes.length > 0 && templateNode.childNodes.length < 1) {
@@ -323,7 +323,7 @@ class __Navimi_Components implements INavimi_Components {
     }
 
     public registerComponent = (componentName: string, componentClass: InstanceType<any>): void => {
-        if (!this._components[componentName] && /\-/.test(componentName)) {
+        if (!this._components[componentName] && /-/.test(componentName)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
             this._components[componentName] =
                 this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);

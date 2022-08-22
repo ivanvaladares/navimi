@@ -14,21 +14,22 @@ class __Navimi_Fetch implements INavimi_Fetch {
     public fetchFile = (url: string, options?: RequestInit): Promise<string> => {
         return new Promise((resolve, reject) => {
             delete this.loadErrors[url];
-
             const requestUrl = url + (this._bustCache ? '?v=' + this._bustCache : '');
+            const error = `Could not load the file! - ${url}`;
+
+            //todo: add retry
 
             fetch(requestUrl, options)
-                .then(async (data: Response) => {
+                .then((data: Response) => {
                     if (!data || !data.ok) {
-                        const error = `Could not load the file! - ${url}`;
                         this.loadErrors[url] = error;
                         return reject(error);
                     }
-                    resolve(await data.text());
+                    data.text().then(resolve);
                 })
-                .catch(ex => {
-                    this.loadErrors[url] = ex.message;
-                    reject(ex);
+                .catch(() => {
+                    this.loadErrors[url] = error;
+                    reject(error);
                 });
 
         });

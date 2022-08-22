@@ -12,7 +12,7 @@ class __Navimi_Templates implements INavimi_Templates {
 
         this._regIni = new RegExp("<t ([^>]+)>");
         this._regEnd = new RegExp("</t>");
-        this._regId = new RegExp("id=(\"[^\"]+\"|\'[^\']+\')");
+        this._regId = new RegExp("id=(\"[^\"]+\"|'[^']+')");
     }
 
     private loadTemplate = (templateCode: string, url?: string): void => {
@@ -32,14 +32,14 @@ class __Navimi_Templates implements INavimi_Templates {
 
             const regIdRes = this._regId.exec(iniTemplate[1]);
             const idTemplate = regIdRes.length > 0 && regIdRes[1].slice(1, -1);
-            tempCode = tempCode.substr(iniTemplate.index + iniTemplate[0].length);
+            tempCode = tempCode.substring(iniTemplate.index + iniTemplate[0].length);
             const endTemplate = this._regEnd.exec(tempCode);
 
             if (!idTemplate || !endTemplate || endTemplate.length === 0) {
                 break;
             }
 
-            this._templatesCache[idTemplate] = tempCode.substr(0, endTemplate.index);
+            this._templatesCache[idTemplate] = tempCode.substring(0, endTemplate.index);
         }
     };
 
@@ -55,30 +55,22 @@ class __Navimi_Templates implements INavimi_Templates {
 
     public fetchTemplate = (abortController: AbortController, url: string | string[]): Promise<void | void[]> => {
         const init = (url: string): Promise<void> => {
-            return new Promise(async (resolve, reject) => {
-                if (!url || this._loadedTemplates[url]) {
-                    return resolve();
-                }
-                try {
-                    const templateCode = await this._navimiFetch.fetchFile(url, {
-                        headers: {
-                            Accept: "text/html"
-                        },
-                        signal: abortController ? abortController.signal : undefined
-                    });
+            if (!url || this._loadedTemplates[url]) {
+                return Promise.resolve();
+            }
 
-                    this.loadTemplate(templateCode, url);
-                    this._loadedTemplates[url] = true;
-                    resolve();
-
-                } catch (ex) {
-                    reject(ex);
-                }
+            return this._navimiFetch.fetchFile(url, {
+                headers: {
+                    Accept: "text/html"
+                },
+                signal: abortController ? abortController.signal : undefined
+            }).then(templateCode => {
+                this.loadTemplate(templateCode, url);
+                this._loadedTemplates[url] = true;
             });
         };
 
         const urls: string[] = Array.isArray(url) ? url : [url];
-
         return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
     };
 

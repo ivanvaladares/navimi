@@ -4,8 +4,10 @@ class __Navimi_Hot implements INavimi_Hot {
     private _navimiCSSs: INavimi_CSSs;
     private _navimiJSs: INavimi_JSs;
     private _navimiTemplates: INavimi_Templates;
+    // eslint-disable-next-line @typescript-eslint/ban-types
     private _initRouteFunc: Function;
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     public init(navimiCSSs: INavimi_CSSs, navimiJSs: INavimi_JSs, navimiTemplates: INavimi_Templates, initRoute: Function): void {
         this._navimiCSSs = navimiCSSs;
         this._navimiJSs = navimiJSs;

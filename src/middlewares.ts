@@ -10,7 +10,7 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
 
     public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: INavimi_KeyList<any>) => void): Promise<any> => {
         let prevIndex = -1;
-        const runner = async (resolve: (value?: unknown) => void, reject: (reason?: any) => void, index: number = 0): Promise<void> => {
+        const runner = async (resolve: (value?: unknown) => void, reject: (reason?: any) => void, index = 0): Promise<void> => {
             //removeIf(minify)
             if (index === prevIndex) {
                 console.warn('next() called multiple times');
