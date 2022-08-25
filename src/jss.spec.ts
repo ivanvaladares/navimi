@@ -177,7 +177,7 @@ describe('jss.spec', () => {
                     console.warn('ComponentClass.onUnmount()');
                 }
         
-                render(children) {
+                render() {
                     return '<span>OK</span>'
                 }
 
@@ -315,8 +315,6 @@ describe('jss.spec', () => {
     
     test('test HOT with service', (done) => {
 
-        jest.setTimeout(10000);
-
         const url = "/js/service1.js";
 
         const data = `
@@ -343,6 +341,60 @@ describe('jss.spec', () => {
                 expect(route.service2.testService2("OK")).toBe("OK");
                 //@ts-ignore
                 expect(navimi_jss._dependencyJSsMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
+                done();
+            });
+
+        });
+
+    });
+    
+    test('test HOT with component', (done) => {
+
+        const url = "/js/component1.js";
+
+        const data = `
+        (() => {
+
+            return class ComponentClass {        
+                
+                constructor() {
+                    console.warn("ComponentClass constructor");                    
+                }
+        
+                init() {
+                    console.warn('ComponentClass.init()');
+                }
+        
+                onUnmount() {
+                    console.warn('ComponentClass.onUnmount()');
+                }
+        
+                render() {
+                    return '<span>OI</span>'
+                }
+
+                destroy() {
+                    debugger;
+                    console.warn('ComponentClass.destroy()');
+                }
+        
+            };
+        
+        })();`;
+
+
+        navimi_jss.digestHot({filePath: url, data}).then(() => {
+            const oldRoute = navimi_jss.getInstance("/js/routeWithService.js");
+            expect(oldRoute).toBeUndefined();
+
+            navimi_jss.fetchJS(null, ["/js/routeWithService.js"], "route").then(route => {
+                expect(route.service1.newFunction()).toBe("OK");
+
+                const componentClass = navimi_jss.getInstance(url);
+                const component = new componentClass();
+
+                expect(component.render()).toBe('<span>OI</span>');
+
                 done();
             });
 

@@ -379,12 +379,14 @@ class __Navimi_JSs implements INavimi_JSs {
         });
         
         //discover the js type
-        // "module"
-        // "library"
+        // "module" *
+        // "library" *
         // "route"
-        // "javascript"
+        // "javascript" *
         // "service"
         // "component"
+
+        //* falta testar
         
         //call destroy and unload for all js that are referencing this js
         //load the js from 'data' param
