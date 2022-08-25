@@ -115,16 +115,21 @@ class __Navimi_JSs implements INavimi_JSs {
         }
     };
 
-    private _fetch = (abortController: AbortController, url: string, type: jsType): Promise<void> => {
-        return this._navimiFetch.fetchFile(url, {
-            headers: {
-                Accept: "application/javascript"
-            },
-            signal: abortController ? abortController.signal : undefined
-        }).then(jsCode => {
-            this._jsType[url] = type;
-            this._insertJS(url, jsCode, type);
-        });
+    private _fetch = async (abortController: AbortController, url: string, type: jsType): Promise<void> => {
+        let jsCode = "";
+        if (this._loadedJSs[url]) {
+            jsCode = this._loadedJSs[url];
+        } else {
+            jsCode = await this._navimiFetch.fetchFile(url, {
+                headers: {
+                    Accept: "application/javascript"
+                },
+                signal: abortController ? abortController.signal : undefined
+            });
+        }
+
+        this._jsType[url] = type;
+        this._insertJS(url, jsCode.replace(/^\s+|\s+$/g, ''), type);
     };
 
     private _insertJS = (url: string, jsCode: string, type: jsType): void => {
@@ -204,7 +209,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
             //gather all services
             let services: INavimi_KeyList<InstanceType<any>> = {};
-            this._routesJSsServices[jsUrl].map((sn: string) => {
+            this._routesJSsServices[jsUrl]?.map((sn: string) => {
                 services = {
                     ...services,
                     [sn]: this._jsInstances[this._options.services[sn]]
@@ -331,7 +336,7 @@ class __Navimi_JSs implements INavimi_JSs {
         return Promise.all(promises);
     };
 
-    public initJS = async (jsUrl: string, params: INavimi_KeyList<any>): Promise<void> => {
+    public initRoute = async (jsUrl: string, params: INavimi_KeyList<any>): Promise<void> => {
 
         const jsInstance = this.getInstance(jsUrl);
 
@@ -341,78 +346,49 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     //removeIf(minify)
-    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
+    public digestHot = async ({filePath, data}: hotPayload): Promise<void> => {
+
+        const destroyed: string[] = [];
+
+        const destroyDependencies = (url: string): void => {
+
+            for (const jsUrl in this._dependencyJSsMap[url]) {
+
+                if (destroyed.indexOf(jsUrl) === -1) {
+                    destroyDependencies(jsUrl);
+                }
+            }
+
+            destroyed.indexOf(url) === -1 && destroyed.push(url);
+            const instance = this.getInstance(url);
+            instance && instance.destroy && instance.destroy();
+            delete this._navimiLoader[this._promiseNS + url];
+            delete this._jsInstances[url];
+        }
 
         if (!this.isJsLoaded(filePath)) {
             return;
         }
 
-        return Promise.resolve();
+        destroyDependencies(filePath);
 
+        return new Promise<InstanceType<any>>((resolve) => {        
+            this._navimiLoader[this._promiseNS + filePath] = resolve;
+            
+            this._insertJS(filePath, data.replace(/^\s+|\s+$/g, ''), this._jsType[filePath]);
+        });
+        
         //discover the js type
         // "module"
         // "library"
-
         // "route"
         // "javascript"
         // "service"
         // "component"
-
-        //call destroy and unload for all js that are referencing this js
-
-        //remove the js from the loaded js list
-        //load the js again
-        //callback
         
-
-        // private _routesJSs: INavimi_KeyList<InstanceType<any>> = {};
-        // private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
-        // private _routesJSsServices: INavimi_KeyList<string[]> = {};
-        // private _routesJSsComponents: INavimi_KeyList<string[]> = {};
-
-
-        // for (const routeUrl in routeList) {
-        //     const { jsUrl } = routeList[routeUrl];
-
-        //     if (isSameFile(jsUrl, filePath)) {
-
-        //         console.log(`${filePath} updated.`);
-
-        //         delete this._routesJSs[jsUrl];
-
-        //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
-        //             if (jsUrl === currentJS) {
-        //                 //reload route if current JS is updated
-        //                 callback();
-        //             }
-        //         };
-
-        //         this._insertJS(jsUrl, jsCode, "route");
-
-        //         return;
-        //     }
-        // }
-
-        // for (const jsUrl in this._dependencyJSsMap) {
-        //     if (isSameFile(jsUrl, filePath)) {
-        //         console.log(`${filePath} updated.`);
-
-        //         this._navimiLoader[this._promiseNS + jsUrl] = () => {
-        //             Object.keys(this._dependencyJSsMap[jsUrl]).map(s => {
-        //                 //clear all dependent JSs that depends of this JS
-        //                 delete this._routesJSs[s];
-
-        //                 if (s === currentJS) {
-        //                     //reload route if current JS is updated
-        //                     callback();
-        //                 }
-        //             });
-        //         };
-
-        //         //todo: check for modules, services and components
-        //         this._insertJS(filePath, jsCode, "javascript");
-        //     }
-        // }
+        //call destroy and unload for all js that are referencing this js
+        //load the js from 'data' param
+        //callback
         
     };
     //endRemoveIf(minify)

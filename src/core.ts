@@ -232,7 +232,7 @@ class __Navimi_Core {
             }
 
             if (jsUrl) {
-                await this._navimiJSs.initJS(jsUrl, this._routesParams[jsUrl]);
+                await this._navimiJSs.initRoute(jsUrl, this._routesParams[jsUrl]);
             } else {
                 const template = this._navimiTemplates.getTemplate(templatesUrl) as string;
                 const body = document.querySelector("body");

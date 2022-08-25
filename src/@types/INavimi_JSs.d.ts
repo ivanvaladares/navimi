@@ -11,6 +11,6 @@ interface INavimi_JSs {
     getInstance: (url: string) => InstanceType<any>;
     fetchJS: (abortController: AbortController, urls: string[], type: jsType) => Promise<InstanceType<any> | InstanceType<any>[]>;
     loadDependencies: (abortController: AbortController, jsUrl: string, services: string[], components: string[]) => Promise<any[]>;
-    initJS: (jsUrl: string, params: INavimi_KeyList<any>) => Promise<void>;
+    initRoute: (jsUrl: string, params: INavimi_KeyList<any>) => Promise<void>;
     digestHot: (payload: hotPayload) => Promise<void>;
 }
