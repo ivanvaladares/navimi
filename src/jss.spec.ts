@@ -20,18 +20,19 @@ describe('jss.spec', () => {
         getErrors: (url: string) => undefined
     } as INavimi_Fetch;
 
+
+    const navimi_css_mock = {
+        fetchCss: jest.fn(() => Promise.resolve()),
+        insertCss: jest.fn()
+    } as unknown as INavimi_CSSs;
+
     beforeAll(() => {
         navimi_jss = new jss() as INavimi_JSs;
 
-        const navimi_csss = new csss() as INavimi_CSSs;
         const navimi_templates = new templates() as INavimi_Templates;
         const navimi_state = new state() as INavimi_State;
         const navimi_components = new components() as INavimi_Components;
         const navimi_helpers = new helpers() as INavimi_Helpers;
-
-        navimi_csss.init(
-            navimi_fetch_mock
-        );
 
         navimi_templates.init(navimi_fetch_mock);
 
@@ -42,7 +43,7 @@ describe('jss.spec', () => {
         navimi_jss.init(
             navimi_helpers,
             navimi_fetch_mock,
-            navimi_csss,
+            navimi_css_mock,
             navimi_templates,
             navimi_state,
             navimi_components,
@@ -182,7 +183,6 @@ describe('jss.spec', () => {
                 }
 
                 destroy() {
-                    debugger;
                     console.warn('ComponentClass.destroy()');
                 }
         
@@ -216,11 +216,11 @@ describe('jss.spec', () => {
             expect(route.service1.testService1("OK")).toBe("OK");
             expect(route.service2.testService2("OK")).toBe("OK");
             //@ts-ignore
-            expect(navimi_jss._dependencyJSsMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
+            expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
             //@ts-ignore
-            expect(navimi_jss._dependencyJSsMap["/js/service2.js"]["/js/routeWithService.js"]).toBeDefined();
+            expect(navimi_jss._jsDepMap["/js/service2.js"]["/js/routeWithService.js"]).toBeDefined();
             //@ts-ignore
-            expect(navimi_jss._dependencyJSsMap["/js/component1.js"]["/js/routeWithService.js"]).toBeDefined();
+            expect(navimi_jss._jsDepMap["/js/component1.js"]["/js/routeWithService.js"]).toBeDefined();
             done();
         });
 
@@ -245,9 +245,12 @@ describe('jss.spec', () => {
             const ret = window.funcLib1("1", "2");
             expect(ret).toStrictEqual(["1", "2"]);
 
-            const styles = document.getElementsByTagName("style");
-            expect(styles.length).toBe(1);
-            expect(styles[0].innerHTML.indexOf(".myRedCssClass") > 0).toBe(true);
+            expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, "/css/lib1.css");
+            expect(navimi_css_mock.insertCss).toHaveBeenCalledWith("/css/lib1.css", 'library', true);
+
+            // const styles = document.getElementsByTagName("style");
+            // expect(styles.length).toBe(1);
+            // expect(styles[0].innerHTML.indexOf(".myRedCssClass") > 0).toBe(true);
             done();
         });
 
@@ -267,7 +270,7 @@ describe('jss.spec', () => {
         route.nfx.fetchJS("/js/routeJs.js").then((js: any) => {
             expect(js.test("OK")).toBe("OK");
             //@ts-ignore
-            expect(navimi_jss._dependencyJSsMap["/js/routeJs.js"]["/js/routeWithService.js"]).toBeDefined();
+            expect(navimi_jss._jsDepMap["/js/routeJs.js"]["/js/routeWithService.js"]).toBeDefined();
             done();
         });
 
@@ -312,6 +315,57 @@ describe('jss.spec', () => {
 
     });
 
+    test('test HOT with javascript loaded from route', (done) => {
+
+        const url = "/js/routeWithJs.js";
+
+        fetch_data_mock[url] = `
+            (() => {
+                return class main {
+
+                    constructor(navimiFunctions) {
+                        this.nfx = navimiFunctions;
+                        this.loadedJs = null;
+                    }
+
+                    init = async () => {
+                        //loads javascript from route. This js has just one function defined (check "/js/routeJs.js") at this moment
+                        this.loadedJs = await this.nfx.fetchJS("/js/routeJs.js");
+                    };
+                };
+            })();`;
+
+        navimi_jss.fetchJS(null, [url], "route").then(async route => {
+            await route.init();
+            expect(route.loadedJs.test).toBeDefined();
+            expect(route.loadedJs.newFunc).toBeUndefined();
+
+            const newJs = `
+            (() => {
+                test = (param) => {
+                    return param;
+                };
+                newFunc = () => {
+                    return "OK";
+                }
+                return { test, newFunc };
+            })();`
+
+            navimi_jss.digestHot({filePath: "/js/routeJs.js", data: newJs}).then(() => {
+    
+                navimi_jss.fetchJS(null, ["/js/routeWithJs.js"], "route").then(async route => {
+                    await route.init();
+                    expect(route.loadedJs.test).toBeDefined();
+                    expect(route.loadedJs.newFunc()).toBe("OK");
+                    done();
+                });
+    
+            });
+
+        });
+
+    });
+
     
     test('test HOT with service', (done) => {
 
@@ -340,7 +394,7 @@ describe('jss.spec', () => {
                 expect(route.service1.newFunction()).toBe("OK");
                 expect(route.service2.testService2("OK")).toBe("OK");
                 //@ts-ignore
-                expect(navimi_jss._dependencyJSsMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
+                expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
                 done();
             });
 
@@ -374,7 +428,6 @@ describe('jss.spec', () => {
                 }
 
                 destroy() {
-                    debugger;
                     console.warn('ComponentClass.destroy()');
                 }
         
@@ -398,6 +451,36 @@ describe('jss.spec', () => {
                 done();
             });
 
+        });
+
+    });
+
+    test('test HOT with library', (done) => {
+
+        const url = "/js/lib1.js";
+        const data = `
+            function funcLib1() {
+                return "new return";
+            }
+            function funcLib2() {
+                return "new func";
+            }
+        ;`;
+
+        navimi_jss.digestHot({filePath: url, data}).then(() => {
+
+            //@ts-ignore
+            const funcLib1 = window.funcLib1();
+            expect(funcLib1).toBe("new return");
+
+            //@ts-ignore
+            const funcLib2 = window.funcLib2();
+            expect(funcLib2).toBe("new func");
+
+            //@ts-ignore
+            expect(Object.keys(navimi_jss._jsInstances).length).toBe(0);
+
+            done();
         });
 
     });

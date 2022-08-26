@@ -7,7 +7,7 @@ class __Navimi_JSs implements INavimi_JSs {
     private _loadedJSs: INavimi_KeyList<string> = {};
     private _jsType: INavimi_KeyList<jsType> = {};
     private _jsInstances: INavimi_KeyList<InstanceType<any>> = {};
-    private _dependencyJSsMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
+    private _jsDepMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
     private _routesJSsServices: INavimi_KeyList<string[]> = {};
     private _routesJSsComponents: INavimi_KeyList<string[]> = {};
 
@@ -103,7 +103,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 const type = obj.type.toLowerCase();
                 if (type === "css") {
                     return this._navimiCSSs.fetchCss(undefined, obj.url).then(() => {
-                        this._navimiCSSs.insertCss(obj.url, 'library', true);
+                        return this._navimiCSSs.insertCss(obj.url, 'library', true);
                     });
                 } else {
                     return this.fetchJS(undefined, [obj.url], type === "module" ? "module" : "library");
@@ -180,8 +180,8 @@ class __Navimi_JSs implements INavimi_JSs {
                 fetchJS: (url: string | string[]) => {
                     const urls = Array.isArray(url) ? url : [url];
                     urls.map(u => {
-                        this._dependencyJSsMap[u] = {
-                            ...this._dependencyJSsMap[u] || {},
+                        this._jsDepMap[u] = {
+                            ...this._jsDepMap[u] || {},
                             [jsUrl]: true
                         };
                     });
@@ -200,8 +200,8 @@ class __Navimi_JSs implements INavimi_JSs {
 
             //wait for all dependencies to be loaded
             const dependencies = [];
-            for (const deps in this._dependencyJSsMap) {
-                if (this._dependencyJSsMap[deps][jsUrl]) {
+            for (const deps in this._jsDepMap) {
+                if (this._jsDepMap[deps][jsUrl]) {
                     dependencies.push(deps);
                 }
             }
@@ -296,8 +296,8 @@ class __Navimi_JSs implements INavimi_JSs {
                         this._routesJSsComponents[jsUrl].indexOf(name) === -1 && 
                         this._routesJSsComponents[jsUrl].push(name);
 
-                    this._dependencyJSsMap[url] = {
-                        ...this._dependencyJSsMap[url] || {},
+                    this._jsDepMap[url] = {
+                        ...this._jsDepMap[url] || {},
                         [jsUrl]: true
                     };
                 }
@@ -352,7 +352,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
         const destroyDependencies = (url: string): void => {
 
-            for (const jsUrl in this._dependencyJSsMap[url]) {
+            for (const jsUrl in this._jsDepMap[url]) {
 
                 if (destroyed.indexOf(jsUrl) === -1) {
                     destroyDependencies(jsUrl);
@@ -370,27 +370,25 @@ class __Navimi_JSs implements INavimi_JSs {
             return;
         }
 
-        destroyDependencies(filePath);
+        const type = this._jsType[filePath];
 
-        return new Promise<InstanceType<any>>((resolve) => {        
+        //destroy all instances
+        if (type === "library" || type === "module") {
+            for (const jsUrl in this._jsDepMap) {
+                destroyDependencies(jsUrl);
+            }
+            for (const jsUrl in this._jsInstances) {
+                destroyDependencies(jsUrl);
+            }
+        } else {
+            destroyDependencies(filePath);
+        }
+
+        return new Promise<InstanceType<any>>((resolve) => {
             this._navimiLoader[this._promiseNS + filePath] = resolve;
             
-            this._insertJS(filePath, data.replace(/^\s+|\s+$/g, ''), this._jsType[filePath]);
+            this._insertJS(filePath, data.replace(/^\s+|\s+$/g, ''), type);
         });
-        
-        //discover the js type
-        // "module" *
-        // "library" *
-        // "route"
-        // "javascript" *
-        // "service"
-        // "component"
-
-        //* falta testar
-        
-        //call destroy and unload for all js that are referencing this js
-        //load the js from 'data' param
-        //callback
         
     };
     //endRemoveIf(minify)
