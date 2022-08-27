@@ -1,4 +1,4 @@
-describe('jss.spec', () => {
+describe('hot.spec', () => {
     const { hot } = require('./hot');
 
     let navimi_hot: INavimi_Hot;

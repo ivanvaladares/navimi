@@ -1,5 +1,5 @@
 //@ts-nocheck
-describe('Test components -', () => {
+describe('components.spec', () => {
     const { helpers } = require('./helpers');
     const { components } = require('./components');
 

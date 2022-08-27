@@ -1,5 +1,4 @@
 interface INavimi_Helpers {
-    timeout: (ms: number) => Promise<void>;
     // eslint-disable-next-line @typescript-eslint/ban-types
     debounce: (task: Function, wait: number) => () => void;
     // eslint-disable-next-line @typescript-eslint/ban-types

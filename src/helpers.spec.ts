@@ -7,23 +7,6 @@ describe('helpers.spec', () => {
         navimi_helpers = new helpers() as INavimi_Helpers;
     });
 
-    it('timeout', (done) => {
-
-        const ini = new Date().getTime();
-        const expected = 15;
-
-        navimi_helpers.timeout(expected).then(() => {
-            const end = new Date().getTime();
-            const result = end - ini;
-            if (result < expected) {
-                done("Timeout not working - " + result + "ms");
-                return;
-            }
-            done();
-        });
-
-    });
-
     it('debounce', (done) => {
 
         let result = "";

@@ -1,4 +1,4 @@
-describe('Test fetch -', () => {
+describe('fetch.spec', () => {
     const { fetch } = require('./fetch');
 
     let navimi_fetch: INavimi_Fetch;

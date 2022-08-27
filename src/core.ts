@@ -257,3 +257,7 @@ class __Navimi_Core {
     };
 
 }
+
+//removeIf(dist)
+module.exports.core = __Navimi_Core;
+//endRemoveIf(dist)

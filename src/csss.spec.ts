@@ -1,4 +1,4 @@
-describe('templates.spec', () => {
+describe('css.spec', () => {
     const { csss } = require('./csss');
 
     let navimi_css: INavimi_CSSs;

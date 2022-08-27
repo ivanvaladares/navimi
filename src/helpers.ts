@@ -51,10 +51,6 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return params;
     };
 
-    public timeout = (ms: number): Promise<void> => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    };
-
     // eslint-disable-next-line @typescript-eslint/ban-types
     public debounce = (task: Function, wait: number): () => void => {
         let timeout: ReturnType<typeof setTimeout>;
