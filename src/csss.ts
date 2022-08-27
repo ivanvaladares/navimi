@@ -68,7 +68,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
     public digestHot = ({ filePath, data }: hotPayload): Promise<void> => {
 
         if (!this.isCssLoaded(filePath)) {
-            return;
+            return Promise.reject();
         }
 
         this._loadedCsss[filePath] = data;

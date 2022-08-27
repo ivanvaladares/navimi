@@ -78,7 +78,7 @@ class __Navimi_Templates implements INavimi_Templates {
     public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
         
         if (!this.isTemplateLoaded(filePath)) {
-            return;
+            return Promise.reject();
         }
         
         this.loadTemplate(data, filePath);

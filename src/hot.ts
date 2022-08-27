@@ -26,7 +26,7 @@ class __Navimi_Hot implements INavimi_Hot {
             const port = hotOption === true ? 8080 : hotOption;
             this._wsHotClient = null;
             this._wsHotClient = new WebSocket(`ws://localhost:${port}`);
-            this._wsHotClient.addEventListener('message', (e: any) => {
+            this._wsHotClient.addEventListener('message', async (e: any) => {
                 try {
                     const payload: hotPayload = JSON.parse(e.data || "");
                     if (payload.message) {
@@ -34,7 +34,7 @@ class __Navimi_Hot implements INavimi_Hot {
                         return;
                     }
                     if (payload.filePath) {
-                        this._digestHot(payload);
+                        await this._digestHot(payload);
                     }
                 } catch (ex) {
                     console.error("Could not parse HOT message:", ex);
@@ -49,23 +49,28 @@ class __Navimi_Hot implements INavimi_Hot {
         }
     };
 
-    private _digestHot = (payload: hotPayload): void => {
+    private _digestHot = async (payload: hotPayload): Promise<void> => {
         try {
-            const filePath = payload.filePath.replace(/\\/g, "/");
-            const fileType = filePath.split(".").pop()?.toLocaleLowerCase();
+            payload.filePath = payload.filePath.replace(/\\/g, "/");
+            const fileType = payload.filePath.split(".").pop()?.toLocaleLowerCase();
 
             switch (fileType) {
                 case "css":
-                    this._navimiCSSs.digestHot(payload);
+                    await this._navimiCSSs.digestHot(payload)
+                    .catch(e => {/*ignore*/});
                     break;
 
                 case "html":
                 case "htm":
-                    this._navimiTemplates.digestHot(payload).then(() => this._initRouteFunc());
+                    await this._navimiTemplates.digestHot(payload)
+                        .then(() => this._initRouteFunc())
+                        .catch(e => {/*ignore*/});
                     break;
 
                 case "js":
-                    this._navimiJSs.digestHot(payload).then(() => this._initRouteFunc());
+                    this._navimiJSs.digestHot(payload)
+                    .then(() => this._initRouteFunc())
+                    .catch(e => {/*ignore*/});
                     break;
 
                 case "gif":

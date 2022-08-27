@@ -367,7 +367,7 @@ class __Navimi_JSs implements INavimi_JSs {
         }
 
         if (!this.isJsLoaded(filePath)) {
-            return;
+            return Promise.reject();
         }
 
         const type = this._jsType[filePath];
@@ -388,12 +388,13 @@ class __Navimi_JSs implements INavimi_JSs {
             this._navimiLoader[this._promiseNS + filePath] = resolve;
             
             this._insertJS(filePath, data.replace(/^\s+|\s+$/g, ''), type);
+
+            console.log(`${filePath} updated.`);
         });
         
     };
     //endRemoveIf(minify)
 }
-
 
 //removeIf(dist)
 module.exports.jss = __Navimi_JSs

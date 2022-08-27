@@ -58,10 +58,10 @@ class __Navimi_Core {
         }
     }
 
-    private _init(): void {
+    private _init(): Promise<any> {
         if (this._options.globalCssUrl || this._options.globalTemplatesUrl) {
 
-            Promise.all([
+            return Promise.all([
                 this._navimiCSSs.fetchCss(undefined, this._options.globalCssUrl),
                 this._navimiTemplates.fetchTemplate(undefined, this._options.globalTemplatesUrl),
             ]).catch(this._reportError);

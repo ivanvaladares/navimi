@@ -1,9 +1,4 @@
 describe('jss.spec', () => {
-    const { csss } = require('./csss');
-    const { templates } = require('./templates');
-    const { state } = require('./state');
-    const { components } = require('./components');
-    const { helpers } = require('./helpers');
     const { jss } = require('./jss');
 
     let navimi_jss: INavimi_JSs;
@@ -20,33 +15,42 @@ describe('jss.spec', () => {
         getErrors: (url: string) => undefined
     } as INavimi_Fetch;
 
+    const navimi_components_mock = {
+        registerComponent: jest.fn()
+    } as unknown as INavimi_Components;
+
+    const navimi_helpers_mock = {
+        setTitle: jest.fn(),
+        setNavimiLinks: jest.fn()
+    } as unknown as INavimi_Helpers;
 
     const navimi_css_mock = {
         fetchCss: jest.fn(() => Promise.resolve()),
         insertCss: jest.fn()
     } as unknown as INavimi_CSSs;
 
+    const navimi_templates_mock = {
+        getTemplate: jest.fn(),
+        fetchTemplate: jest.fn(() => Promise.resolve())
+    } as unknown as INavimi_Templates;
+
+    const navimi_state_mock = {
+        setState: jest.fn(),
+        getState: jest.fn(),
+        unwatchState: jest.fn(),
+        watchState: jest.fn()
+    } as unknown as INavimi_State;
+
     beforeAll(() => {
         navimi_jss = new jss() as INavimi_JSs;
 
-        const navimi_templates = new templates() as INavimi_Templates;
-        const navimi_state = new state() as INavimi_State;
-        const navimi_components = new components() as INavimi_Components;
-        const navimi_helpers = new helpers() as INavimi_Helpers;
-
-        navimi_templates.init(navimi_fetch_mock);
-
-        navimi_state.init(navimi_helpers);
-
-        navimi_components.init(navimi_helpers);
-
         navimi_jss.init(
-            navimi_helpers,
+            navimi_helpers_mock,
             navimi_fetch_mock,
             navimi_css_mock,
-            navimi_templates,
-            navimi_state,
-            navimi_components,
+            navimi_templates_mock,
+            navimi_state_mock,
+            navimi_components_mock,
             {
                 services: {
                     "service1": "/js/service1.js",
@@ -61,7 +65,7 @@ describe('jss.spec', () => {
 
     test('isJsLoaded', () => {
 
-        expect(navimi_jss.isJsLoaded("")).toBe(false);
+        expect(navimi_jss.isJsLoaded("")).toBeFalsy();
 
     });
 
@@ -78,7 +82,7 @@ describe('jss.spec', () => {
             })();`;
 
         navimi_jss.fetchJS(null, ["/js/test.js"], "javascript").then(() => {
-            expect(navimi_jss.isJsLoaded("/js/test.js")).toBe(true);
+            expect(navimi_jss.isJsLoaded("/js/test.js")).toBeTruthy();
             done();
         });
 
@@ -215,6 +219,8 @@ describe('jss.spec', () => {
         navimi_jss.fetchJS(null, ["/js/routeWithService.js"], "route").then(route => {
             expect(route.service1.testService1("OK")).toBe("OK");
             expect(route.service2.testService2("OK")).toBe("OK");
+            const componentClass = navimi_jss.getInstance("/js/component1.js");
+            expect(navimi_components_mock.registerComponent).toHaveBeenCalledWith("component1", componentClass);
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
             //@ts-ignore
@@ -248,9 +254,6 @@ describe('jss.spec', () => {
             expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, "/css/lib1.css");
             expect(navimi_css_mock.insertCss).toHaveBeenCalledWith("/css/lib1.css", 'library', true);
 
-            // const styles = document.getElementsByTagName("style");
-            // expect(styles.length).toBe(1);
-            // expect(styles[0].innerHTML.indexOf(".myRedCssClass") > 0).toBe(true);
             done();
         });
 
@@ -274,6 +277,79 @@ describe('jss.spec', () => {
             done();
         });
 
+    });
+
+    test('route fetchTemplate', async () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+        await route.nfx.fetchTemplate("/html/template.html");
+
+        expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, "/html/template.html");
+
+    });
+
+    test('route getTemplate', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+        route.nfx.getTemplate("templateId");
+
+        expect(navimi_templates_mock.getTemplate).toHaveBeenCalledWith("templateId");
+        
+    });
+
+    test('route get/set state ', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+
+        const state = { key1: { key2: "value" } };
+        route.nfx.setState(state);
+        route.nfx.getState("key1.key2");
+
+        expect(navimi_state_mock.setState).toHaveBeenCalledWith(state);
+        expect(navimi_state_mock.getState).toHaveBeenCalledWith("key1.key2");
+        
+    });
+
+    test('route watchState', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+
+        const callback = jest.fn();
+        route.nfx.watchState("key1.key2", callback);
+
+        expect(navimi_state_mock.watchState).toHaveBeenCalledWith("/js/routeWithService.js", "key1.key2", callback);
+        
+    });
+
+    test('route unwatchState', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+
+        route.nfx.unwatchState("key1.key2");
+
+        expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith("/js/routeWithService.js", "key1.key2");
+        
+    });
+
+
+    test('route setTitle', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+
+        route.nfx.setTitle("My Title");
+
+        expect(navimi_helpers_mock.setTitle).toHaveBeenCalledWith("My Title");
+        
+    });
+
+    test('route setNavimiLinks', () => {
+
+        const route = navimi_jss.getInstance("/js/routeWithService.js");
+
+        route.nfx.setNavimiLinks();
+
+        expect(navimi_helpers_mock.setNavimiLinks).toHaveBeenCalledWith();
+        
     });
 
     test('test HOT with route with no dependencies', (done) => {
