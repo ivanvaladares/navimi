@@ -127,20 +127,19 @@ class __Navimi_State implements INavimi_State {
     };
 
     public clear = (key?: string | string[]): void => {
-        const keys = Array.isArray(key) ? key : [key];
-        console.log("clear", keys);
+        const keys = Array.isArray(key) ? key : [key ? key : ''];
+
         keys.map(id => {
             const state = id ?
             id.split('.')
                     .reduce((v, k) => (v && v[k]) || undefined, this.state) : 
                 this.state;
 
-            console.log(id)
-
             if (state instanceof Object) {
                 Object.keys(state).map(sk => {
-                    if (state[sk] instanceof Object) {
-                        this.clear(id + "." + sk);
+                    if (state[sk] instanceof Object && 
+                        Object.keys(state[sk]).length > 0) {
+                        this.clear((id ? id + '.' : '') + sk);
                     }
                     delete state[sk];
                 });

@@ -136,15 +136,55 @@ describe("state.spec", () => {
 
     });
 
-    // test('Clear nested state test', (done) => {
+    test('Clear nested state test', () => {
 
-    //     state.clear("client");
+        navimi_state.setState({
+            toClear: {
+                subKey1: {
+                    street: "test street",
+                    number: "123",
+                    subKey2: {
+                        street: "street test",
+                        number: "321"
+                    },
+                    test: [1,2,3],
+                    func: () => { console.log( "func" ) },
+                    cl: class {}
+                }
+            }
+        });
 
-    //     let currentState = state.getState();
+        navimi_state.clear("toClear");
 
-    //     const x = currentState;
+        let currentState = navimi_state.getState();
 
-    // });
+        expect(currentState).toEqual({
+            client: {
+                name: 'test',
+                age: 20,
+                email: "test@test.com",
+                phone: '123456789',
+                address: {
+                    street: "test street",
+                    number: 456
+                }
+            },
+            silent: "silent change!",
+            teste: "changed!",
+            toClear: {}
+        });
+
+    });
+
+    test('Clear all state', () => {
+
+        navimi_state.clear();
+
+        let currentState = navimi_state.getState();
+
+        expect(currentState).toEqual({});
+
+    });
 
 
 });
