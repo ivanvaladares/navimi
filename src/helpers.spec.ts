@@ -63,6 +63,33 @@ describe('helpers.spec', () => {
 
     });
 
+    it('setTitle', () => {
+        navimi_helpers.setTitle("my title!");
+
+        expect(document.title).toEqual("my title!");
+    });
+
+    it('setNavimiLinks', () => {
+
+        //@ts-ignore
+        window.navigateTo = jest.fn();
+
+        const newlink = document.createElement('a');
+        newlink.innerHTML = 'Google';
+        newlink.setAttribute('navimi-link', '');
+        newlink.setAttribute('link-test', '');
+        newlink.setAttribute('href', '/about');
+        document.body.appendChild(newlink);
+
+        navimi_helpers.setNavimiLinks();
+
+        newlink.click();
+
+        //@ts-ignore
+        expect(window.navigateTo).toHaveBeenCalled();
+
+    });
+
     it('removeHash', () => {
 
         const result = navimi_helpers.removeHash('/whatever/url/you/want?param=1&param2=2#hash');
