@@ -57,20 +57,20 @@ class __Navimi_Hot implements INavimi_Hot {
             switch (fileType) {
                 case "css":
                     await this._navimiCSSs.digestHot(payload)
-                    .catch(e => {/*ignore*/});
+                    .catch(() => {/*ignore*/});
                     break;
 
                 case "html":
                 case "htm":
                     await this._navimiTemplates.digestHot(payload)
                         .then(() => this._initRouteFunc())
-                        .catch(e => {/*ignore*/});
+                        .catch(() => {/*ignore*/});
                     break;
 
                 case "js":
                     this._navimiJSs.digestHot(payload)
                     .then(() => this._initRouteFunc())
-                    .catch(e => {/*ignore*/});
+                    .catch(() => {/*ignore*/});
                     break;
 
                 case "gif":

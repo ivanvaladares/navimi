@@ -144,7 +144,7 @@ class __Navimi_Components implements INavimi_Components {
         traverse(parentNode);
     };
 
-    private mergeHtml = (template: DocumentFragment, node: DocumentFragment) => {
+    private _mergeHtml = (template: DocumentFragment, node: DocumentFragment) => {
 
         const getNodeType = (node: any) => {
             if (node.nodeType === 3) return "text";
@@ -226,14 +226,14 @@ class __Navimi_Components implements INavimi_Components {
                 // prepare empty node for next round
                 if (documentNodes[index].childNodes.length < 1 && templateNode.childNodes.length > 0) {
                     const fragment = document.createDocumentFragment();
-                    this.mergeHtml(templateNode, fragment);
+                    this._mergeHtml(templateNode, fragment);
                     documentNodes[index].appendChild(fragment);
                     continue;
                 }
 
                 // dive deeper into the tree
                 if (templateNode.childNodes.length > 0) {
-                    this.mergeHtml(templateNode, documentNodes[index]);
+                    this._mergeHtml(templateNode, documentNodes[index]);
                 }
             }
 
@@ -326,7 +326,7 @@ class __Navimi_Components implements INavimi_Components {
         if (!this._components[componentName] && /-/.test(componentName)) {
             Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
             this._components[componentName] =
-                this._createComponentClass(componentClass, this._registerChildComponents, this.mergeHtml);
+                this._createComponentClass(componentClass, this._registerChildComponents, this._mergeHtml);
         }
     };
 
