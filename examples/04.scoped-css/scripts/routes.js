@@ -48,7 +48,7 @@ new Navimi({
                     document.querySelector("#div-content").innerHTML = "loading..."
                 }
                 //adding common services to all routes
-                ctx.routeItem.dependsOn = ["myfx", "linksFx"];
+                ctx.routeItem.services = ["myfx", "linksFx"];
                 next();
             }
         ],

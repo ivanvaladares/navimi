@@ -48,7 +48,7 @@ new Navimi({
         },        
         middlewares: [
             (ctx, next) => {
-                ctx.routeItem.dependsOn = ["myfx"];
+                ctx.routeItem.services = ["myfx"];
                 next();
             },
             (ctx, next) => {

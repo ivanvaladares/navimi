@@ -1,6 +1,8 @@
 # Navimi - Simplicity focused SPA library
 
-> Navimi is a minimalist JavaScript library to create SPAs. The goal here is to provide a way to build a SPA without any tool, transpilation or bundling.
+> Navimi is a minimalist JavaScript library to create SPAs without a build process. <br>
+> You will not be forced to take an imperative or reactive approach. Go the way you like it. <br>
+> There is also no need to learn TypeScript, Babel, Webpack... You can use them if you want but you don't need.
 
 ## Features
 
@@ -19,11 +21,12 @@
 - **Scoped CSS**
   - Global and route scoped css with auto add and removal to avoid conflicts.
 
-- **Lazy load scripts, templates, css and libraries**
+- **Auto Lazy load scripts, templates, css and libraries**
   - Only load what and when you want.
 
 - **Hot reload**
-  - Makes it easier to create pages without having to refresh after every single modification.
+  - Makes it easier to create pages without having to refresh after every single modification. <br>
+  <small>(This funcionality is only enabled in the unminified version)</small>
 
 <br>
 
@@ -45,7 +48,6 @@ https://navimi.web.app
 | Edge 15          | Oct 2017 |
 | Safari 11.1      | Sep 2017 |
 | Opera 42         | Dec 2016 |
-
 
 <br>
 
@@ -112,20 +114,21 @@ about.html
 | jsUrl        | string                 | The path to the route script                                    |
 | cssUrl       | string                 | The path to the route css                                       |
 | templatesUrl | string                 | The path to the templates file of this route                    |
-| dependsOn    | string[]               | An array of services names for this route                       |
+| services     | string[]               | An array of services names for this route                       |
 | metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
 
 \* required
 <br />
 
 ### Options
-| Property            | Type                     | Description                                                    |
+| Property            | Type                     | Description                                                     |
 |---------------------|--------------------------|-----------------------------------------------------------------|
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
+| bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
 | onAfterRoute        | Function                 | A function invoked after the routing is done                    |
 | onBeforeRoute       | Function                 | A function invoked before middlewares and routing               |
 | onError             | Function                 | A function to capture erros from routes                         |
@@ -136,7 +139,7 @@ about.html
 
 | Name                | Type                                                                                                                         |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------|
-| Next                | () => Promise<void> \| void;                                                                                                 |
+| Next                | (url?: string, params?: { [key: string]: any }) => Promise<void> \| void;                                                    |
 | Context             | { url: string, routeItem: Route, params: { [key: string]: any } };                                                           |
 | Middleware          | (context: Context, navigateTo: (url: string, params?: { [key: string]: any }) => void, next: Next) => Promise<void> \| void; |
 
@@ -180,7 +183,7 @@ Check the examples folder for more details.
 
         init(context) {
             // 2
-            // here you should render your page components
+            // here you should render your page
             // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         };
@@ -201,6 +204,7 @@ Check the examples folder for more details.
     };
 })();
 ```
+
 
 ### Page navigation
 

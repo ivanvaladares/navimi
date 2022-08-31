@@ -3,6 +3,7 @@ new Navimi({
         title: "Home",
         jsUrl: "/scripts/page.js",
         templatesUrl: "/templates/home.html",
+        components: ["click-component", "child-component"],
         metadata: {
             templateName: "home-template"
         }
@@ -50,7 +51,11 @@ new Navimi({
         services: {
             "myfx": "/scripts/service1.js",
             "linksFx": "/scripts/service2.js"
-        },        
+        },
+        components: {
+            "click-component": "/scripts/components/click-component.js",
+            "child-component": "/scripts/components/child-component.js",
+        },
         middlewares: [
             (ctx, next) => {
                 //show loading
@@ -58,7 +63,7 @@ new Navimi({
                     document.querySelector("#div-content").innerHTML = "loading..."
                 }
                 //adding common service to all routes
-                ctx.routeItem.dependsOn = ["myfx", "linksFx"];
+                ctx.routeItem.services = ["myfx", "linksFx"];
                 next();
             }
         ],

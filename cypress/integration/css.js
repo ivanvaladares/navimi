@@ -1,6 +1,6 @@
-describe('State', () => {
+describe('css', () => {
 
-    it('successfully set, react and maintain state', () => {
+    it('test css injection', () => {
   
       cy.visit('http://localhost:3000');
       cy.get('h1').should('contain', 'Home...');
