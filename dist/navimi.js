@@ -570,16 +570,6 @@ class __Navimi_JSs {
                     }
                 }, 10);
             });
-                        return this.fetchJS(undefined, urls, "javascript");
-                    },
-                    fetchTemplate: (url) => {
-                        return this._navimiTemplates.fetchTemplate(undefined, url);
-                    },
-                    setState: this._navimiState.setState,
-                    getState: this._navimiState.getState,
-                    setNavimiLinks: this._navimiHelpers.setNavimiLinks,
-                    unwatchState: (key) => this._navimiState.unwatchState(jsUrl, key),
-                    watchState: (key, callback) => this._navimiState.watchState(jsUrl, key, callback),
         };
         this._addLibrary = async (library) => {
             const arr = Array.isArray(library) ? library : [library];
@@ -595,10 +585,6 @@ class __Navimi_JSs {
                     else {
                         return lib;
                     }
-                    // let the js resolve the promise itself when it loads (in _instantiateJS)
-                    this._navimiLoader[this._promiseNS + url] = resolve;
-                    this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
-                    this._fetch(abortController, url, type).catch(reject);
                 });
                 await Promise.all(libraries.map(obj => {
                     const type = obj.type.toLowerCase();
