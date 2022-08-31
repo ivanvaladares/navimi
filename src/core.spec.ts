@@ -34,7 +34,7 @@ describe('core.spec', () => {
     } as unknown as INavimi_CSSs;
 
     const navimi_templates_mock = {
-        getTemplate: jest.fn(),
+        getTemplate: () => '<div>ok</div>',
         fetchTemplate: jest.fn(() => Promise.resolve()),
         isTemplateLoaded: () => true
     } as unknown as INavimi_Templates;
@@ -70,8 +70,7 @@ describe('core.spec', () => {
         navimiHot: navimi_hot_mock,
         navimiHelpers: navimi_helpers,
         navimiComponents: navimi_components_mock
-    };
-
+    } as INavimi_Services;
 
     test('test no routes', () => {
 
@@ -83,20 +82,20 @@ describe('core.spec', () => {
 
     });
 
-    // test('test HOT on port 8888', (done) => {
+    test('test HOT on port 8888', (done) => {
 
-    //     const c = new core({}, services, {
-    //         hot: 8888
-    //     });
+        const c = new core({}, services, {
+            hot: 8888
+        });
 
-    //     setTimeout(() => {
-    //         expect(navimi_hot_mock.init).toHaveBeenCalled();
-    //         expect(navimi_hot_mock.openHotWs).toHaveBeenCalledWith(8888);
-    //         done();
+        setTimeout(() => {
+            expect(navimi_hot_mock.init).toHaveBeenCalled();
+            expect(navimi_hot_mock.openHotWs).toHaveBeenCalledWith(8888);
+            done();
 
-    //     }, 1100);
+        }, 1100);
 
-    // });
+    });
 
     test('loads globalCssUrl and globalTemplatesUrl', () => {
 
@@ -110,24 +109,61 @@ describe('core.spec', () => {
 
     });
 
-    test('test route with title, js, css and templates', (done) => {        
-        
+    test('test nocode route with title, css and templates', (done) => {
+
         jest.resetAllMocks();
 
+        window.document.write('<html><head></head><body></body></html>');
+
+        const routeMock = {
+            title: 'Home',
+            cssUrl: 'home.css',
+            templatesUrl: 'home.html'
+        };
+
         const c = new core({
-            '/': {
-                title: 'Home',
-                jsUrl: 'home.js',
-                cssUrl: 'home.css',
-                templatesUrl: 'home.html'
-            }
+            '/': routeMock
         }, services, {
             globalTemplatesUrl: 'templates.html',
             globalCssUrl: 'style.css'
         });
 
         setTimeout(() => {
-            //expect(navimi_jss_mock.loadDependencies).toHaveBeenCalledWith(undefined, 'home.js', undefined, undefined);
+            expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, 'style.css');
+            expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, 'templates.html');
+
+            expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, 'home.css');
+            expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, 'home.html');
+            expect(navimi_css_mock.insertCss).toHaveBeenCalledWith('style.css', 'globalCss');
+            expect(navimi_css_mock.insertCss).toHaveBeenCalledWith('home.css', 'routeCss');
+
+            expect(window.document.body.innerHTML).toBe('<div>ok</div>');
+
+            done();
+
+        }, 100);
+    });
+
+    test('test route with title, js, css and templates', (done) => {
+
+        jest.resetAllMocks();
+
+        const routeMock = {
+            title: 'Home',
+            jsUrl: 'home.js',
+            cssUrl: 'home.css',
+            templatesUrl: 'home.html'
+        };
+
+        const c = new core({
+            '/': routeMock
+        }, services, {
+            globalTemplatesUrl: 'templates.html',
+            globalCssUrl: 'style.css'
+        });
+
+        setTimeout(() => {
+            expect(navimi_jss_mock.loadDependencies).toHaveBeenCalledWith(undefined, 'home.js', undefined, undefined);
             expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, 'style.css');
             expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, 'templates.html');
 
@@ -136,20 +172,93 @@ describe('core.spec', () => {
             expect(navimi_jss_mock.fetchJS).toHaveBeenCalledWith(undefined, ['home.js'], 'route');
             expect(navimi_css_mock.insertCss).toHaveBeenCalledWith('style.css', 'globalCss');
             expect(navimi_jss_mock.initRoute).toHaveBeenCalledWith('home.js', {
-                "params": {},
-                "routeItem": {
-                    "cssUrl": "home.css",
-                    "jsUrl": "home.js",
-                    "templatesUrl": "home.html",
-                    "title": "Home",
-                },
-                "url": "/",
+                params: {},
+                routeItem: routeMock,
+                url: '/',
             });
-            expect(navimi_css_mock.insertCss).toHaveBeenCalledWith('home.css', 'routeCss');	
+            expect(navimi_css_mock.insertCss).toHaveBeenCalledWith('home.css', 'routeCss');
 
             done();
 
         }, 100);
+    });
+
+    test('test onBeforeRoute and onAfterRoute', (done) => {
+
+        jest.resetAllMocks();
+
+        window.document.write('<html><head></head><body></body></html>');
+
+        const onBeforeRoute = jest.fn();
+        const onAfterRoute = jest.fn();
+
+        const c = new core({
+            '/': {
+                title: 'Home',
+                cssUrl: 'home.css',
+                templatesUrl: 'home.html'
+            }
+        }, services, {
+            onBeforeRoute,
+            onAfterRoute
+        });
+
+        setTimeout(() => {
+
+            expect(window.document.body.innerHTML).toBe('<div>ok</div>');
+
+            expect(onBeforeRoute).toHaveBeenCalled();
+            expect(onAfterRoute).toHaveBeenCalled();
+
+            done();
+
+        }, 100);
+    });
+
+    test('test navigateTo', (done) => {
+
+        jest.resetAllMocks();
+
+        window.document.write('<html><head></head><body></body></html>');
+
+        const onBeforeRoute = jest.fn();
+        const onAfterRoute = jest.fn();
+
+        const c = new core({
+            '/': {
+                title: 'Home',
+                cssUrl: 'home.css',
+                templatesUrl: 'home.html',
+                jsUrl: 'home.js'
+            },
+            '/about': {
+                title: 'About',
+                cssUrl: 'about.css',
+                templatesUrl: 'about.html',
+                jsUrl: 'about.js'
+            }
+        }, services, {
+            onBeforeRoute,
+            onAfterRoute
+        });
+
+        setTimeout(() => {
+
+            expect(window.document.title).toBe('Home');
+
+            //@ts-ignore
+            window.navigateTo('/about');
+
+            setTimeout(() => {
+
+                expect(window.document.title).toBe('About');
+
+                done();
+
+            }, 100);
+
+        }, 100);
+
     });
 
 });

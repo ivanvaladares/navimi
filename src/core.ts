@@ -149,7 +149,7 @@ class __Navimi_Core {
                 ...(navParams ? navParams : {}),
             };
 
-            if (this._currentJS && !force) {
+            if (!force) {
                 if (this._options.onBeforeRoute) {
                     const shouldContinue = await this._options.onBeforeRoute(routeParams, this._navigateTo);
                     if (shouldContinue === false) {
@@ -157,22 +157,24 @@ class __Navimi_Core {
                     }
                 }
 
-                const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
+                if (this._currentJS) {
+                    const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
 
-                if (currentJsInstance) {
-                    const beforeLeave = currentJsInstance.beforeLeave;
-
-                    if (beforeLeave) {
-                        const shouldContinue = beforeLeave(routeParams);
-                        if (shouldContinue === false) {
-                            if (!pushState) {
-                                history.forward();
+                    if (currentJsInstance) {
+                        const beforeLeave = currentJsInstance.beforeLeave;
+    
+                        if (beforeLeave) {
+                            const shouldContinue = beforeLeave(routeParams);
+                            if (shouldContinue === false) {
+                                if (!pushState) {
+                                    history.forward();
+                                }
+                                return;
                             }
-                            return;
                         }
+    
+                        currentJsInstance.destroy && currentJsInstance.destroy();
                     }
-
-                    currentJsInstance.destroy && currentJsInstance.destroy();
                 }
             }
 
@@ -239,7 +241,6 @@ class __Navimi_Core {
                 if (template && body) {
                     body.innerHTML = template;
                 }
-                return;
             }
 
             if (callId === this._callId) {
