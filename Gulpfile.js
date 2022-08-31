@@ -18,10 +18,10 @@ const paths = {
 };
 
 const banner = ['/**',
-  ' * Navimi v<%= pkg.version %> ',	
-  ' * Developed by <%= pkg.author.name %> ',	
-  ' * <%= pkg.author.email %> ',	
-  ' * <%= pkg.homepage %> ',
+  ` * Navimi v${pkg.version} `,	
+  ` * Developed by ${pkg.author.name} `,	
+  ` * ${pkg.author.email} `,	
+  ` * ${pkg.homepage} `,
   ' */ ',	
   ''].join('\n');
 
@@ -38,7 +38,7 @@ function TSScripts() {
     return gulp.src(paths.tsSource)
         .pipe(tsProject())
         .pipe(removeCode({ dist: true, minify: false }))
-        .pipe(header(banner, { pkg : pkg } ))
+        .pipe(header(banner))
         .pipe(gulp.dest(paths.dirOutput));
 }
 
@@ -51,7 +51,7 @@ function minify() {
                 dead_code: true
             }
         }))
-        .pipe(header(banner, { pkg : pkg } ))
+        .pipe(header(banner))
         .pipe(rename({ suffix: '-min' }))
         .pipe(gulp.dest(paths.dirOutput));
 }

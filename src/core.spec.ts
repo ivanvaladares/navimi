@@ -56,10 +56,6 @@ describe('core.spec', () => {
         watchState: jest.fn()
     } as unknown as INavimi_State;
 
-    const navimi_components_mock = {
-        registerComponent: jest.fn()
-    } as unknown as INavimi_Components;
-
     const services = {
         navimiFetch: navimi_fetch_mock,
         navimiJSs: navimi_jss_mock,
@@ -68,8 +64,7 @@ describe('core.spec', () => {
         navimiMiddlewares: navimi_middleware_mock,
         navimiState: navimi_state_mock,
         navimiHot: navimi_hot_mock,
-        navimiHelpers: navimi_helpers,
-        navimiComponents: navimi_components_mock
+        navimiHelpers: navimi_helpers
     } as INavimi_Services;
 
     test('test no routes', () => {
@@ -163,7 +158,7 @@ describe('core.spec', () => {
         });
 
         setTimeout(() => {
-            expect(navimi_jss_mock.loadDependencies).toHaveBeenCalledWith(undefined, 'home.js', undefined, undefined);
+            expect(navimi_jss_mock.loadDependencies).toHaveBeenCalledWith(undefined, 'home.js', undefined);
             expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, 'style.css');
             expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, 'templates.html');
 

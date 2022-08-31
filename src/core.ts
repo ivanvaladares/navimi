@@ -196,7 +196,7 @@ class __Navimi_Core {
 
             this._currentUrl = url;
 
-            const { title, jsUrl, cssUrl, templatesUrl, services, components } = routeItem || {};
+            const { title, jsUrl, cssUrl, templatesUrl, services } = routeItem || {};
 
             if (!jsUrl && !templatesUrl) {
                 throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
@@ -217,7 +217,7 @@ class __Navimi_Core {
 
             // load all (css, templates and js) from the route in parallel
             await Promise.all([
-                this._navimiJSs.loadDependencies(this._abortController, jsUrl || url, services, components),
+                this._navimiJSs.loadDependencies(this._abortController, jsUrl || url, services),
                 this._navimiCSSs.fetchCss(this._abortController, cssUrl),
                 this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl),
                 (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], "route"))

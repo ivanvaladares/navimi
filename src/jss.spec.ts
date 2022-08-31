@@ -15,10 +15,6 @@ describe('jss.spec', () => {
         getErrors: (url: string) => undefined
     } as INavimi_Fetch;
 
-    const navimi_components_mock = {
-        registerComponent: jest.fn()
-    } as unknown as INavimi_Components;
-
     const navimi_helpers_mock = {
         setTitle: jest.fn(),
         setNavimiLinks: jest.fn()
@@ -50,14 +46,10 @@ describe('jss.spec', () => {
             navimi_css_mock,
             navimi_templates_mock,
             navimi_state_mock,
-            navimi_components_mock,
             {
                 services: {
                     "service1": "/js/service1.js",
                     "service2": "/js/service2.js"
-                },
-                components: {
-                    "component1": "/js/component1.js"
                 }
             }
         );
@@ -165,35 +157,6 @@ describe('jss.spec', () => {
             
         })();`;
 
-        fetch_data_mock["/js/component1.js"] = `
-        (() => {
-
-            return class ComponentClass {        
-                
-                constructor() {
-                    console.warn("ComponentClass constructor");                    
-                }
-        
-                init() {
-                    console.warn('ComponentClass.init()');
-                }
-        
-                onUnmount() {
-                    console.warn('ComponentClass.onUnmount()');
-                }
-        
-                render() {
-                    return '<span>OK</span>'
-                }
-
-                destroy() {
-                    console.warn('ComponentClass.destroy()');
-                }
-        
-            };
-        
-        })();`;
-
         fetch_data_mock["/js/routeWithService.js"] = `
         (() => {
             return class main {
@@ -215,18 +178,14 @@ describe('jss.spec', () => {
             };
         })();`;
 
-        navimi_jss.loadDependencies(null, "/js/routeWithService.js", ["service1", "service2"], ["component1"]);
+        navimi_jss.loadDependencies(null, "/js/routeWithService.js", ["service1", "service2"]);
         navimi_jss.fetchJS(null, ["/js/routeWithService.js"], "route").then(route => {
             expect(route.service1.testService1("OK")).toBe("OK");
             expect(route.service2.testService2("OK")).toBe("OK");
-            const componentClass = navimi_jss.getInstance("/js/component1.js");
-            expect(navimi_components_mock.registerComponent).toHaveBeenCalledWith("component1", componentClass);
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/service2.js"]["/js/routeWithService.js"]).toBeDefined();
-            //@ts-ignore
-            expect(navimi_jss._jsDepMap["/js/component1.js"]["/js/routeWithService.js"]).toBeDefined();
             done();
         });
 
@@ -471,59 +430,6 @@ describe('jss.spec', () => {
                 expect(route.service2.testService2("OK")).toBe("OK");
                 //@ts-ignore
                 expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
-                done();
-            });
-
-        });
-
-    });
-    
-    test('test HOT with component', (done) => {
-
-        const url = "/js/component1.js";
-
-        const data = `
-        (() => {
-
-            return class ComponentClass {        
-                
-                constructor() {
-                    console.warn("ComponentClass constructor");                    
-                }
-        
-                init() {
-                    console.warn('ComponentClass.init()');
-                }
-        
-                onUnmount() {
-                    console.warn('ComponentClass.onUnmount()');
-                }
-        
-                render() {
-                    return '<span>OI</span>'
-                }
-
-                destroy() {
-                    console.warn('ComponentClass.destroy()');
-                }
-        
-            };
-        
-        })();`;
-
-
-        navimi_jss.digestHot({filePath: url, data}).then(() => {
-            const oldRoute = navimi_jss.getInstance("/js/routeWithService.js");
-            expect(oldRoute).toBeUndefined();
-
-            navimi_jss.fetchJS(null, ["/js/routeWithService.js"], "route").then(route => {
-                expect(route.service1.newFunction()).toBe("OK");
-
-                const componentClass = navimi_jss.getInstance(url);
-                const component = new componentClass();
-
-                expect(component.render()).toBe('<span>OI</span>');
-
                 done();
             });
 

@@ -6,9 +6,6 @@
 
 ## Features
 
-- **Web Components**
-  - Allows you to create reusable custom elements with encapsulated functionality.
-
 - **Routing with path and queryString parsing**
   - Uses the widely adopted syntax for routes (/users/:id)
 
@@ -118,7 +115,6 @@ about.html
 | cssUrl       | string                 | The path to the route css                                       |
 | templatesUrl | string                 | The path to the templates file of this route                    |
 | services     | string[]               | An array of services names for this route                       |
-| components   | string[]               | An array of components names for this route                     |
 | metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
 
 \* required
@@ -130,7 +126,6 @@ about.html
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
-| components          | { [key: string]: string }| A collection of all components {[component name]: script path}  |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
 | bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
@@ -188,7 +183,7 @@ Check the examples folder for more details.
 
         init(context) {
             // 2
-            // here you should render your page components
+            // here you should render your page
             // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
         };
@@ -209,8 +204,6 @@ Check the examples folder for more details.
     };
 })();
 ```
-
-todo: write web components section
 
 
 ### Page navigation

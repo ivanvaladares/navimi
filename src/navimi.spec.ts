@@ -47,8 +47,6 @@ describe('navimi.spec', () => {
         window.__Navimi_Hot = initMock;
         //@ts-ignore
         window.__Navimi_Helpers = initMock;
-        //@ts-ignore
-        window.__Navimi_Components = initMock;
         
         let coreReturn = {} as any;
         //@ts-ignore
@@ -76,8 +74,7 @@ describe('navimi.spec', () => {
             navimiState: { init: () => { } },
             navimiHot: { init: () => { } },
             navimiMiddlewares: {},
-            navimiHelpers: {},
-            navimiComponents: { init: () => { } },
+            navimiHelpers: {}
         } as unknown as INavimi_Services;
 
         new Navimi(routes, options, services, 

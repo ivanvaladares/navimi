@@ -9,7 +9,6 @@ class __Navimi_JSs implements INavimi_JSs {
     private _jsInstances: INavimi_KeyList<InstanceType<any>> = {};
     private _jsDepMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
     private _routesJSsServices: INavimi_KeyList<string[]> = {};
-    private _routesJSsComponents: INavimi_KeyList<string[]> = {};
 
     private _navimiLoader: any;
     private _options: INavimi_Options;
@@ -19,7 +18,6 @@ class __Navimi_JSs implements INavimi_JSs {
     private _navimiCSSs: INavimi_CSSs;
     private _navimiTemplates: INavimi_Templates;
     private _navimiState: INavimi_State;
-    private _navimiComponents: INavimi_Components;
 
     public init(
         navimiHelpers: INavimi_Helpers,
@@ -27,7 +25,6 @@ class __Navimi_JSs implements INavimi_JSs {
         navimiCSSs: INavimi_CSSs,
         navimiTemplates: INavimi_Templates,
         navimiState: INavimi_State,
-        navimiComponents: INavimi_Components,
         options: INavimi_Options
     ) {
 
@@ -36,8 +33,6 @@ class __Navimi_JSs implements INavimi_JSs {
         this._navimiCSSs = navimiCSSs;
         this._navimiTemplates = navimiTemplates;
         this._navimiState = navimiState;
-        this._navimiComponents = navimiComponents;
-
         this._options = options;
 
         // @ts-ignore
@@ -161,7 +156,7 @@ class __Navimi_JSs implements INavimi_JSs {
         type: jsType,
         JsClass: InstanceType<any>): Promise<void> => {
 
-        // for services, components and javascript
+        // for services and javascripts
         if (type !== "route") {
             // keep this instance to reuse later
             this._jsInstances[jsUrl] = JsClass;
@@ -274,13 +269,13 @@ class __Navimi_JSs implements INavimi_JSs {
         return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
     };
 
-    public loadDependencies = (abortController: AbortController, jsUrl: string, services: string[], components: string[]): Promise<any[]> => {
+    public loadDependencies = (abortController: AbortController, jsUrl: string, services: string[]): Promise<any[]> => {
 
         if (!jsUrl) {
             return;
         }
 
-        const checkUrls = (depArray: string[], type: "services" | "components"): string[] => {
+        const checkUrls = (depArray: string[], type: "services"): string[] => {
             const notFound: string[] = [];
             const urls = (depArray || []).map(name => {
                 //@ts-ignore
@@ -291,10 +286,6 @@ class __Navimi_JSs implements INavimi_JSs {
                     type === "services" &&
                         this._routesJSsServices[jsUrl].indexOf(name) === -1 && 
                         this._routesJSsServices[jsUrl].push(name);
-
-                    type === "components" &&
-                        this._routesJSsComponents[jsUrl].indexOf(name) === -1 && 
-                        this._routesJSsComponents[jsUrl].push(name);
 
                     this._jsDepMap[url] = {
                         ...this._jsDepMap[url] || {},
@@ -312,26 +303,11 @@ class __Navimi_JSs implements INavimi_JSs {
         }
 
         this._routesJSsServices[jsUrl] = this._routesJSsServices[jsUrl] || [];
-        this._routesJSsComponents[jsUrl] = this._routesJSsComponents[jsUrl] || [];
 
         const servicesUrls = checkUrls(services, "services");
-        const componentsUrls = checkUrls(components, "components");
 
         const promises = servicesUrls.filter(url => url !== undefined)
-            .map(url => this.fetchJS(abortController, [url], "service"))
-            .concat(componentsUrls.filter(url => url !== undefined)
-            .map(url =>
-                this
-                    .fetchJS(abortController, [url], "component")
-                    .then((componentClass: InstanceType<any>) => {
-                        //register components as soon as they are loaded
-                        Object.keys(this._options.components).map((name: string) => {
-                            if (this._options.components[name] === url) {
-                                this._navimiComponents.registerComponent(name, componentClass);
-                            }
-                        });
-                    })
-            ));
+            .map(url => this.fetchJS(abortController, [url], "service"));
         
         return Promise.all(promises);
     };

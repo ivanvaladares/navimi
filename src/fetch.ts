@@ -17,7 +17,7 @@ class __Navimi_Fetch implements INavimi_Fetch {
             const requestUrl = url + (this._bustCache ? '?v=' + this._bustCache : '');
             const error = `Could not load the file! - ${url}`;
 
-            //todo: add retry
+            //todo: add retry with options
 
             fetch(requestUrl, options)
                 .then((data: Response) => {

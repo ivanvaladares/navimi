@@ -130,7 +130,4 @@ describe('templates.spec', () => {
 
     });
 
-    //todo: test fetchTemplate with an array of urls
-    //todo: test abortController
-
 });
