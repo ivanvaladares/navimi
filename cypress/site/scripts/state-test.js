@@ -6,7 +6,7 @@
             this.myfx = myfx;
         }
 
-        init = async () => {
+        onEnter = async () => {
             this.myfx.renderTemplate(this.nfx, "state-template");
 
             //get clicks from store

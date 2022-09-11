@@ -7,7 +7,7 @@
             this.linksFx = linksFx;
         }
 
-        init = async (context) => {
+        onEnter = async (context) => {
             this.myfx.renderWrapper(this.nfx);
             this.linksFx.setActiveMenu(context.url);
 

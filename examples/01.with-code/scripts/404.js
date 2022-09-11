@@ -1,7 +1,7 @@
 (() => {
     return class main {
 
-        init = () => {
+        onEnter = () => {
             document.querySelector("body").innerHTML = `
                 <div>
                     <h2>Page not found!!!</h2>

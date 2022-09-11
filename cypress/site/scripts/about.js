@@ -6,7 +6,7 @@
             this.myfx = myfx;
         }
 
-        init = () => {
+        onEnter = () => {
             this.myfx.renderTemplate(this.nfx, "about-template");
         };
     

@@ -6,7 +6,7 @@
             this.myfx = myfx;
         }
 
-        init = async () => {
+        onEnter = async () => {
 
             await this.nfx.addLibrary([
                 "/libs/dayjs.min.js",

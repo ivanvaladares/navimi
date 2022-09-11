@@ -5,7 +5,7 @@
             this.nfx = navimiFunctions;
         }
 
-        init = () => {
+        onEnter = () => {
             document.querySelector("body").innerHTML = 
                 this.nfx.getTemplate("about-template");
         };

@@ -62,12 +62,12 @@ class __Navimi_Core {
                             return;
                         }
                     }
-                    if (this._currentJS) {
-                        const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
-                        if (currentJsInstance) {
-                            const beforeLeave = currentJsInstance.beforeLeave;
-                            if (beforeLeave) {
-                                const shouldContinue = beforeLeave(routeParams);
+                    if (this._currentJSUrl) {
+                        const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
+                        if (currentRoute) {
+                            const onBeforeLeave = currentRoute.onBeforeLeave;
+                            if (onBeforeLeave) {
+                                const shouldContinue = onBeforeLeave(routeParams);
                                 if (shouldContinue === false) {
                                     if (!pushState) {
                                         history.forward();
@@ -75,7 +75,7 @@ class __Navimi_Core {
                                     return;
                                 }
                             }
-                            currentJsInstance.destroy && currentJsInstance.destroy();
+                            currentRoute.onLeave && currentRoute.onLeave();
                         }
                     }
                 }
@@ -98,7 +98,7 @@ class __Navimi_Core {
                     throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
                 }
                 if (jsUrl) {
-                    this._currentJS = jsUrl;
+                    this._currentJSUrl = jsUrl;
                     this._routesParams[jsUrl] = routeParams;
                 }
                 if (pushState) {
@@ -146,7 +146,7 @@ class __Navimi_Core {
         };
         this._callId = 0;
         this._abortController = window["AbortController"] ? new AbortController() : undefined;
-        this._currentJS;
+        this._currentJSUrl;
         this._currentUrl;
         this._routesParams = {};
         this._routesList = routes || {};
@@ -636,38 +636,73 @@ class __Navimi_JSs {
                 this._resolvePromise(true, url); // resolve the promise - script is loaded
             }
         };
-        this._instantiateJS = async (jsUrl, type, JsClass) => {
+        this._buildRoute = (jsUrl, JsClass) => {
             var _a;
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
+            const jss = this;
+            //gather all services
+            let services = {};
+            (_a = this._routesJSsServices[jsUrl]) === null || _a === void 0 ? void 0 : _a.map((sn) => {
+                services = Object.assign(Object.assign({}, services), { [sn]: this._jsInstances[this._options.services[sn]] });
+            });
+            const routeClass = class extends (JsClass) {
+                constructor() {
+                    const routerFunctions = {
+                        addLibrary: jss._addLibrary,
+                        setTitle: jss._navimiHelpers.setTitle,
+                        navigateTo: window.navigateTo,
+                        getTemplate: jss._navimiTemplates.getTemplate,
+                        fetchJS: (url) => {
+                            const urls = Array.isArray(url) ? url : [url];
+                            urls.map(u => {
+                                jss._jsDepMap[u] = Object.assign(Object.assign({}, jss._jsDepMap[u] || {}), { [jsUrl]: true });
+                            });
+                            return jss.fetchJS(undefined, urls, "javascript");
+                        },
+                        fetchTemplate: (url) => {
+                            return jss._navimiTemplates.fetchTemplate(undefined, url);
+                        },
+                        setState: jss._navimiState.setState,
+                        getState: jss._navimiState.getState,
+                        setNavimiLinks: jss._navimiHelpers.setNavimiLinks,
+                        unwatchState: (key) => jss._navimiState.unwatchState(this, key),
+                        watchState: (key, callback) => jss._navimiState.watchState(this, key, callback),
+                    };
+                    super(Object.freeze(routerFunctions), Object.freeze(services));
+                }
+                onEnter(params) {
+                    if (super.onEnter) {
+                        super.onEnter(params);
+                    }
+                }
+                onBeforeLeave(params) {
+                    if (super.onBeforeLeave) {
+                        return super.onBeforeLeave(params);
+                    }
+                    return true;
+                }
+                onLeave() {
+                    if (super.onLeave) {
+                        super.onLeave();
+                    }
+                }
+                destroy() {
+                    jss._navimiState.unwatchState(this);
+                    if (super.destroy) {
+                        super.destroy();
+                    }
+                }
+            };
+            return new routeClass();
+        };
+        this._instantiateJS = async (jsUrl, type, JsClass) => {
             // for services and javascripts
             if (type !== "route") {
                 // keep this instance to reuse later
                 this._jsInstances[jsUrl] = JsClass;
-                this._resolvePromise(Object.freeze(JsClass), jsUrl);
-                return;
+                return this._resolvePromise(JsClass, jsUrl);
             }
             try {
-                this._navimiState.unwatchState(jsUrl);
-                const routerFunctions = {
-                    addLibrary: this._addLibrary,
-                    setTitle: this._navimiHelpers.setTitle,
-                    navigateTo: window.navigateTo,
-                    getTemplate: this._navimiTemplates.getTemplate,
-                    fetchJS: (url) => {
-                        const urls = Array.isArray(url) ? url : [url];
-                        urls.map(u => {
-                            this._jsDepMap[u] = Object.assign(Object.assign({}, this._jsDepMap[u] || {}), { [jsUrl]: true });
-                        });
-                        return this.fetchJS(undefined, urls, "javascript");
-                    },
-                    fetchTemplate: (url) => {
-                        return this._navimiTemplates.fetchTemplate(undefined, url);
-                    },
-                    setState: this._navimiState.setState,
-                    getState: this._navimiState.getState,
-                    setNavimiLinks: this._navimiHelpers.setNavimiLinks,
-                    unwatchState: (key) => this._navimiState.unwatchState(jsUrl, key),
-                    watchState: (key, callback) => this._navimiState.watchState(jsUrl, key, callback),
-                };
                 //wait for all dependencies to be loaded
                 const dependencies = [];
                 for (const deps in this._jsDepMap) {
@@ -676,12 +711,7 @@ class __Navimi_JSs {
                     }
                 }
                 await Promise.all(dependencies.map(this._awaitJS));
-                //gather all services
-                let services = {};
-                (_a = this._routesJSsServices[jsUrl]) === null || _a === void 0 ? void 0 : _a.map((sn) => {
-                    services = Object.assign(Object.assign({}, services), { [sn]: this._jsInstances[this._options.services[sn]] });
-                });
-                const jsInstance = new JsClass(Object.freeze(routerFunctions), services);
+                const jsInstance = this._buildRoute(jsUrl, JsClass);
                 //keep this instance to reuse later
                 this._jsInstances[jsUrl] = jsInstance;
                 this._resolvePromise(jsInstance, jsUrl);
@@ -758,8 +788,8 @@ class __Navimi_JSs {
         };
         this.initRoute = async (jsUrl, params) => {
             const jsInstance = this.getInstance(jsUrl);
-            jsInstance && jsInstance.init &&
-                await jsInstance.init(params);
+            jsInstance && jsInstance.onEnter &&
+                await jsInstance.onEnter(params);
         };
         //removeIf(minify)
         this.digestHot = async ({ filePath, data }) => {
@@ -893,30 +923,30 @@ class Navimi {
 }
 class __Navimi_State {
     constructor() {
-        this.state = {};
-        this.stateWatchers = {};
-        this.prevState = {};
-        this.stateDiff = {};
+        this._state = {};
+        this._stateWatchers = {};
+        this._prevState = {};
+        this._stateDiff = {};
         this._navimiHelpers = {};
-        this.getStateDiff = (keys) => {
+        this._getStateDiff = (keys) => {
             //start with longer keys to go deep first
             keys.sort((a, b) => b.length - a.length).map(key => {
-                if (!this.stateDiff[key]) {
-                    const sOld = this._navimiHelpers.stringify(this.getState(key, this.prevState) || "");
-                    const sNew = this._navimiHelpers.stringify(this.getState(key, this.state) || "");
+                if (!this._stateDiff[key]) {
+                    const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || "");
+                    const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || "");
                     if (sOld !== sNew) {
-                        this.stateDiff[key] = true;
+                        this._stateDiff[key] = true;
                         //set upper keys as changed so we don't test them again
                         keys.map(upperKey => {
                             if (key !== upperKey && key.indexOf(upperKey) === 0) {
-                                this.stateDiff[upperKey] = true;
+                                this._stateDiff[upperKey] = true;
                             }
                         });
                     }
                 }
             });
         };
-        this.mergeState = (state, newState) => {
+        this._mergeState = (state, newState) => {
             if (newState instanceof Error) {
                 newState = Object.assign(Object.assign({}, newState), { message: newState.message, stack: newState.stack });
             }
@@ -925,7 +955,7 @@ class __Navimi_State {
                 for (const key in newState) {
                     if (isObject(newState[key])) {
                         !state[key] && Object.assign(state, { [key]: {} });
-                        this.mergeState(state[key], newState[key]);
+                        this._mergeState(state[key], newState[key]);
                     }
                     else {
                         Object.assign(state, { [key]: newState[key] });
@@ -933,60 +963,68 @@ class __Navimi_State {
                 }
             }
         };
-        this.setState = (newState) => {
-            const observedKeys = Object.keys(this.stateWatchers);
-            if (observedKeys.length > 0) {
-                this.prevState = this._navimiHelpers.cloneObject(this.state);
+        this._getCallerUid = (caller) => {
+            if (caller.___navimiUid === undefined) {
+                caller.___navimiUid = `uid:${++this._uidCounter}`;
             }
-            this.mergeState(this.state, newState);
+            return caller.___navimiUid;
+        };
+        this.setState = (newState) => {
+            const observedKeys = Object.keys(this._stateWatchers);
             if (observedKeys.length > 0) {
-                this.getStateDiff(observedKeys);
-                this.invokeStateWatchers();
+                this._prevState = this._navimiHelpers.cloneObject(this._state);
+            }
+            this._mergeState(this._state, newState);
+            if (observedKeys.length > 0) {
+                this._getStateDiff(observedKeys);
+                this._invokeStateWatchers();
             }
         };
         this.getState = (key, _state) => {
             const state = key ?
                 key.split('.')
-                    .reduce((v, k) => (v && v[k]) || undefined, _state || this.state) :
-                _state || this.state;
+                    .reduce((v, k) => (v && v[k]) || undefined, _state || this._state) :
+                _state || this._state;
             return state ? Object.freeze(this._navimiHelpers.cloneObject(state)) : undefined;
         };
-        this.watchState = (jsUrl, key, callback) => {
+        this.watchState = (caller, key, callback) => {
             if (!key || !callback) {
                 return;
             }
-            if (!this.stateWatchers[key]) {
-                this.stateWatchers[key] = {};
+            const uid = this._getCallerUid(caller);
+            if (!this._stateWatchers[key]) {
+                this._stateWatchers[key] = {};
             }
-            this.stateWatchers[key] = Object.assign(Object.assign({}, this.stateWatchers[key]), { [jsUrl]: [
-                    ...(this.stateWatchers[key][jsUrl] || []),
+            this._stateWatchers[key] = Object.assign(Object.assign({}, this._stateWatchers[key]), { [uid]: [
+                    ...(this._stateWatchers[key][uid] || []),
                     callback
                 ] });
         };
-        this.unwatchState = (jsUrl, key) => {
+        this.unwatchState = (caller, key) => {
+            const uid = this._getCallerUid(caller);
             const remove = (key) => {
-                this.stateWatchers[key][jsUrl] = undefined;
-                delete this.stateWatchers[key][jsUrl];
-                Object.keys(this.stateWatchers[key]).length === 0 &&
-                    delete this.stateWatchers[key];
+                this._stateWatchers[key][uid] = undefined;
+                delete this._stateWatchers[key][uid];
+                Object.keys(this._stateWatchers[key]).length === 0 &&
+                    delete this._stateWatchers[key];
             };
             if (key) {
                 const keys = Array.isArray(key) ? key : [key];
                 keys.map(id => {
-                    !this.stateWatchers[id] && (this.stateWatchers[id] = {});
+                    !this._stateWatchers[id] && (this._stateWatchers[id] = {});
                     remove(id);
                 });
                 return;
             }
-            Object.keys(this.stateWatchers).map(remove);
+            Object.keys(this._stateWatchers).map(remove);
         };
         this.clear = (key) => {
             const keys = Array.isArray(key) ? key : [key ? key : ''];
             keys.map(id => {
                 const state = id ?
                     id.split('.')
-                        .reduce((v, k) => (v && v[k]) || undefined, this.state) :
-                    this.state;
+                        .reduce((v, k) => (v && v[k]) || undefined, this._state) :
+                    this._state;
                 if (state instanceof Object) {
                     Object.keys(state).map(sk => {
                         if (state[sk] instanceof Object &&
@@ -1001,17 +1039,18 @@ class __Navimi_State {
     }
     init(navimiHelpers) {
         this._navimiHelpers = navimiHelpers;
+        this._uidCounter = 0;
         // debounce this so we fire in batches
-        this.invokeStateWatchers = navimiHelpers.debounce(() => {
-            const keys = Object.keys(this.stateWatchers);
-            const diff = Object.keys(this.stateDiff);
-            this.stateDiff = {};
+        this._invokeStateWatchers = navimiHelpers.debounce(() => {
+            const keys = Object.keys(this._stateWatchers);
+            const diff = Object.keys(this._stateDiff);
+            this._stateDiff = {};
             // fire deep keys first
             keys.filter(key => diff.indexOf(key) >= 0).sort((a, b) => b.length - a.length).map(key => {
-                Object.keys(this.stateWatchers[key]).map((jsUrl) => {
+                Object.keys(this._stateWatchers[key]).map((jsUrl) => {
                     const state = this.getState(key);
-                    this.stateWatchers[key][jsUrl] &&
-                        this.stateWatchers[key][jsUrl].map((cb) => cb &&
+                    this._stateWatchers[key][jsUrl] &&
+                        this._stateWatchers[key][jsUrl].map((cb) => cb &&
                             cb(state));
                 });
             });
