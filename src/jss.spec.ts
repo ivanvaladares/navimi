@@ -67,9 +67,9 @@ describe('jss.spec', () => {
         fetch_data_mock["/js/test.js"] = `
             (() => {
                 return class main {
-                    test = () => {
+                    test() {
                         return "OK";
-                    };
+                    }
                 };
             })();`;
 
@@ -104,19 +104,23 @@ describe('jss.spec', () => {
                         this.context = null;
                     }
 
-                    init = (context) => {
+                    onEnter(context) {
                         this.context = context;
-                    };
+                    }
 
-                    destroy = () => {
-                        return "OK";
-                    };
+                    onLeave() {
+                        this.context = null;
+                    }
+
                 };
             })();`;
 
         navimi_jss.fetchJS(null, [url], "route").then(route => {
+            route.onEnter();
             expect(route.nfx).toBeDefined();
-            expect(route.destroy()).toBe("OK");
+            expect(route.context).not.toBeNull();
+            route.onLeave();
+            expect(route.context).toBeNull();
             done();
         });
 
@@ -168,13 +172,9 @@ describe('jss.spec', () => {
                     this.context = null;
                 }
 
-                init = (context) => {
+                onEnter(context) {
                     this.context = context;
-                };
-
-                destroy = () => {
-                    return "OK";
-                };
+                }
             };
         })();`;
 
@@ -324,17 +324,13 @@ describe('jss.spec', () => {
                     this.context = null;
                 }
 
-                init = (context) => {
+                onEnter(context) {
                     this.context = context;
-                };
-
-                newFunction = () => {
-                    return "OK";
                 }
 
-                destroy = () => {
+                newFunction() {
                     return "OK";
-                };
+                }
             };
         })();`;
 
@@ -363,15 +359,15 @@ describe('jss.spec', () => {
                         this.loadedJs = null;
                     }
 
-                    init = async () => {
+                    async onEnter() {
                         //loads javascript from route. This js has just one function defined (check "/js/routeJs.js") at this moment
                         this.loadedJs = await this.nfx.fetchJS("/js/routeJs.js");
-                    };
+                    }
                 };
             })();`;
 
         navimi_jss.fetchJS(null, [url], "route").then(async route => {
-            await route.init();
+            await route.onEnter();
             expect(route.loadedJs.test).toBeDefined();
             expect(route.loadedJs.newFunc).toBeUndefined();
 
@@ -389,7 +385,7 @@ describe('jss.spec', () => {
             navimi_jss.digestHot({filePath: "/js/routeJs.js", data: newJs}).then(() => {
     
                 navimi_jss.fetchJS(null, ["/js/routeWithJs.js"], "route").then(async route => {
-                    await route.init();
+                    await route.onEnter();
                     expect(route.loadedJs.test).toBeDefined();
                     expect(route.loadedJs.newFunc()).toBe("OK");
                     done();

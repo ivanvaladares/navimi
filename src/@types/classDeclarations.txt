@@ -47,7 +47,7 @@ declare class NavimiRoute {
      * Invoked before options.onAfterRoute \
      * @param {Context} context - The route context ({ url, Route, params }) \
      */
-    init: (context: Context) => Promise<void> | void;
+    onEnter: (context: Context) => Promise<void> | void;
 
     /**
      * 
@@ -57,13 +57,19 @@ declare class NavimiRoute {
      * Invoked before options.onAfterRoute \
      * @param context - The route context ({ url, Route, params })
      */
-    beforeLeave?: (context: Context) => void;
+    onBeforeLeave?: (context: Context) => void;
+
+    /**
+     * (Optional) \ 
+     * Invoked after options.onBeforeRoute and options.middlewares \
+     */
+    onLeave?: () => void;
 
     /**
      * (Optional) \ 
      * Destroy timers and event handlers if you need \
      * Invoked after options.onBeforeRoute and options.middlewares \
-     * Invoked before options.onAfterRoute \
+     * This method will be called when the file changed and will Hot reload 
      */
     destroy?: () => void;
 }
