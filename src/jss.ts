@@ -168,6 +168,7 @@ class __Navimi_JSs implements INavimi_JSs {
         const routeClass = class extends (JsClass) {
 
             constructor() {
+
                 const routerFunctions: INavimi_RouterFunctions = {
                     addLibrary: jss._addLibrary,
                     setTitle: jss._navimiHelpers.setTitle,
@@ -189,9 +190,9 @@ class __Navimi_JSs implements INavimi_JSs {
                     setState: jss._navimiState.setState,
                     getState: jss._navimiState.getState,
                     setNavimiLinks: jss._navimiHelpers.setNavimiLinks,
-                    unwatchState: (key: string) => jss._navimiState.unwatchState(jsUrl, key),
+                    unwatchState: (key: string) => jss._navimiState.unwatchState(this, key),
                     watchState: (key: string, callback: (state: INavimi_KeyList<any>) => void) =>
-                        jss._navimiState.watchState(jsUrl, key, callback),
+                        jss._navimiState.watchState(this, key, callback),
                 };
 
                 super(Object.freeze(routerFunctions), Object.freeze(services));
@@ -217,7 +218,7 @@ class __Navimi_JSs implements INavimi_JSs {
             }
 
             destroy(): void {
-                jss._navimiState.unwatchState(jsUrl);
+                jss._navimiState.unwatchState(this);
                 if (super.destroy) {
                     super.destroy();
                 }

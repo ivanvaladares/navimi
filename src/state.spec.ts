@@ -4,6 +4,8 @@ describe("state.spec", () => {
 
     let navimi_state: INavimi_State;
 
+    const caller = {}
+
     beforeAll(() => {
         navimi_state = new state() as INavimi_State;
         const navimi_helpers = new helpers();
@@ -30,7 +32,7 @@ describe("state.spec", () => {
 
     test('Watch test', (done) => {
 
-        navimi_state.watchState("testUrl", "teste", (state: any) => {
+        navimi_state.watchState(caller, "teste", (state: any) => {
             expect(state).toBe("changed!");
             done();
         });
@@ -44,11 +46,11 @@ describe("state.spec", () => {
     test('Unwatch test', (done) => {
         let error: string;
 
-        navimi_state.watchState("testUrl", "silent", () => {
+        navimi_state.watchState(caller, "silent", () => {
             error = "The state listener should not be called";
         });
 
-        navimi_state.unwatchState("testUrl", "silent");
+        navimi_state.unwatchState(caller, "silent");
 
         navimi_state.setState({
             silent: "silent change!"
@@ -121,7 +123,7 @@ describe("state.spec", () => {
 
     test('Watch nested key test', (done) => {
 
-        navimi_state.watchState("testUrl", "client.address.number", (state: any) => {
+        navimi_state.watchState(caller, "client.address.number", (state: any) => {
             expect(state).toEqual(456);
             done();
         });
@@ -173,6 +175,15 @@ describe("state.spec", () => {
             teste: "changed!",
             toClear: {}
         });
+
+    });
+
+    test('Unwatch all test', () => {
+
+        navimi_state.unwatchState(caller);
+
+        //@ts-ignore
+        expect(navimi_state._stateWatchers).toEqual({});
 
     });
 

@@ -276,7 +276,7 @@ describe('jss.spec', () => {
         const callback = jest.fn();
         route.nfx.watchState("key1.key2", callback);
 
-        expect(navimi_state_mock.watchState).toHaveBeenCalledWith("/js/routeWithService.js", "key1.key2", callback);
+        expect(navimi_state_mock.watchState).toHaveBeenCalledWith(route, "key1.key2", callback);
         
     });
 
@@ -286,7 +286,7 @@ describe('jss.spec', () => {
 
         route.nfx.unwatchState("key1.key2");
 
-        expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith("/js/routeWithService.js", "key1.key2");
+        expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith(route, "key1.key2");
         
     });
 
