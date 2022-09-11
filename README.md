@@ -178,28 +178,31 @@ Check the examples folder for more details.
             // 1 - optional
             // variables initialization
             // invoked after options.onBeforeRoute and options.middlewares
-            // invoked before options.onAfterRoute
         }
 
-        init(context) {
+        onEnter(context) {
             // 2
-            // here you should render your page
-            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
+            // invoked after options.onBeforeRoute and options.middlewares
         };
 
-        beforeLeave(context) {
+        onBeforeLeave(context) {
             // 3 - optional
             // return false if you wish to maintain the user on the current page
-            // invoked after options.onBeforeRoute and options.middlewares
             // invoked before options.onAfterRoute
+            // invoked after options.onBeforeRoute and options.middlewares
+        }
+
+        onLeave() {
+            // 4 - optional
+            // invoked before options.onAfterRoute
+            // invoked after options.onBeforeRoute and options.middlewares
         }
 
         destroy() {
-            // 4 - optional
+            // 5 - optional
             // destroy timers and event handlers if you need
-            // invoked after options.onBeforeRoute and options.middlewares
-            // invoked before options.onAfterRoute
+            // this method will be called when the file changed and will Hot reload 
         }
     };
 })();
@@ -208,9 +211,9 @@ Check the examples folder for more details.
 
 ### Page navigation
 
-Navimi will automatically hook click event to links with 'navimi-link' attributte rendered during the 'init()'. 
+Navimi will automatically hook click event to links with 'navimi-link' attributte rendered during the 'onEnter()'. 
 
-If you render any links after the 'init()', you should call functions.setNavimiLinks() or
+If you render any links after the 'onEnter()', you should call functions.setNavimiLinks() or
 hook those links to functions.navigateTo yourself.
 
 You can also call functions.navigateTo whenever you need to navigate.

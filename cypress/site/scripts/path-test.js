@@ -6,7 +6,7 @@
             this.myfx = myfx;
         }
 
-        init = async (context) => {
+        onEnter = async (context) => {
 
             const template = this.myfx.getTemplate(this.nfx, "path-template");
 

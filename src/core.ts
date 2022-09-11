@@ -2,7 +2,7 @@ class __Navimi_Core {
 
     private _callId: number;
     private _abortController: AbortController;
-    private _currentJS: string;
+    private _currentJSUrl: string;
     private _currentUrl: string;
     private _routesParams: INavimi_KeyList<any>;
     private _routesList: INavimi_KeyList<INavimi_Route>;
@@ -22,7 +22,7 @@ class __Navimi_Core {
 
         this._callId = 0;
         this._abortController = window["AbortController"] ? new AbortController() : undefined;
-        this._currentJS;
+        this._currentJSUrl;
         this._currentUrl;
         this._routesParams = {};
         this._routesList = routes || {};
@@ -157,14 +157,14 @@ class __Navimi_Core {
                     }
                 }
 
-                if (this._currentJS) {
-                    const currentJsInstance = this._navimiJSs.getInstance(this._currentJS);
+                if (this._currentJSUrl) {
+                    const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
 
-                    if (currentJsInstance) {
-                        const beforeLeave = currentJsInstance.beforeLeave;
+                    if (currentRoute) {
+                        const onBeforeLeave = currentRoute.onBeforeLeave;
     
-                        if (beforeLeave) {
-                            const shouldContinue = beforeLeave(routeParams);
+                        if (onBeforeLeave) {
+                            const shouldContinue = onBeforeLeave(routeParams);
                             if (shouldContinue === false) {
                                 if (!pushState) {
                                     history.forward();
@@ -173,7 +173,7 @@ class __Navimi_Core {
                             }
                         }
     
-                        currentJsInstance.destroy && currentJsInstance.destroy();
+                        currentRoute.onLeave && currentRoute.onLeave();
                     }
                 }
             }
@@ -203,7 +203,7 @@ class __Navimi_Core {
             }
 
             if (jsUrl) {
-                this._currentJS = jsUrl;
+                this._currentJSUrl = jsUrl;
                 this._routesParams[jsUrl] = routeParams;
             }
 

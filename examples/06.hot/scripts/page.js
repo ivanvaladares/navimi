@@ -10,7 +10,7 @@
             this.nfx.watchState("test.clicks", this.showCounter);
         }
 
-        init = (context) => {
+        onEnter = (context) => {
             this.myfx.renderWrapper(this.nfx);
             this.myfx.renderRoutePage(this.nfx, context);
             this.linksFx.setActiveMenu(context.url);
@@ -37,7 +37,7 @@
             });
         }
 
-        destroy = () => {
+        onLeave = () => {
             const button = document.querySelector(".counter_btn");
             button && button.removeEventListener('click', this.setNewState);
         }
