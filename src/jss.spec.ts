@@ -163,11 +163,12 @@ describe('jss.spec', () => {
 
         fetch_data_mock["/js/routeWithService.js"] = `
         (() => {
-            return class main {
+            return ['service1', 'service2', class main {
 
-                constructor(navimiFunctions, { service1, service2 }) {
+                constructor(navimiFunctions, { service1: a, service2 }) {
+                    debugger
                     this.nfx = navimiFunctions;
-                    this.service1 = service1;
+                    this.service1 = a;
                     this.service2 = service2;
                     this.context = null;
                 }
@@ -175,7 +176,7 @@ describe('jss.spec', () => {
                 onEnter(context) {
                     this.context = context;
                 }
-            };
+            }];
         })();`;
 
         navimi_jss.loadDependencies(null, "/js/routeWithService.js", ["service1", "service2"]);

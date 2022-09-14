@@ -129,8 +129,8 @@ class __Navimi_JSs implements INavimi_JSs {
 
     private _insertJS = (url: string, jsCode: string, type: jsType): void => {
         const jsHtmlBody = (type === "module" || type === "library") ? jsCode :
-            `(function(){window.${this._navimiLoaderNS}.${this._callBackNS}("${url}", "${type}", (function(){return ${jsCode}   
-                })())}())`;
+            `((n, u, t) => { n(u, t, (() => { return ${jsCode} 
+})())})(${this._navimiLoaderNS}.${this._callBackNS}, "${url}", "${type}")`;
 
         this._loadedJSs[url] = jsCode;
 
@@ -151,12 +151,26 @@ class __Navimi_JSs implements INavimi_JSs {
         }
     };
 
-    private _buildRoute = (jsUrl: string, JsClass: InstanceType<any>): InstanceType<any> => {
+    private _buildRoute = async (jsUrl: string, JsCode: InstanceType<any>): Promise<InstanceType<any>> => {
 
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const jss = this;
 
-        //gather all services
+        if (Array.isArray(JsCode)) {
+            //get last element of array
+            JsCode = JsCode[JsCode.length - 1];
+        }
+
+        //wait for all dependencies to be loaded
+        const dependencies = [];
+        for (const deps in this._jsDepMap) {
+            if (this._jsDepMap[deps][jsUrl]) {
+                dependencies.push(deps);
+            }
+        }
+        await Promise.all(dependencies.map(this._awaitJS));
+
+        //gather required services
         let services: INavimi_KeyList<InstanceType<any>> = {};
         this._routesJSsServices[jsUrl]?.map((sn: string) => {
             services = {
@@ -164,8 +178,8 @@ class __Navimi_JSs implements INavimi_JSs {
                 [sn]: this._jsInstances[this._options.services[sn]]
             };
         });
-
-        const routeClass = class extends (JsClass) {
+        
+        const routeClass = class extends (JsCode) {
 
             constructor() {
 
@@ -233,27 +247,18 @@ class __Navimi_JSs implements INavimi_JSs {
     private _instantiateJS = async (
         jsUrl: string,
         type: jsType,
-        JsClass: InstanceType<any>): Promise<void> => {
+        JsCode: InstanceType<any>): Promise<void> => {
 
         // for services and javascripts
         if (type !== "route") {
             // keep this instance to reuse later
-            this._jsInstances[jsUrl] = JsClass;
-            return this._resolvePromise(JsClass, jsUrl);
+            this._jsInstances[jsUrl] = JsCode;
+            return this._resolvePromise(JsCode, jsUrl);
         }
 
         try {
 
-            //wait for all dependencies to be loaded
-            const dependencies = [];
-            for (const deps in this._jsDepMap) {
-                if (this._jsDepMap[deps][jsUrl]) {
-                    dependencies.push(deps);
-                }
-            }
-            await Promise.all(dependencies.map(this._awaitJS));
-
-            const jsInstance = this._buildRoute(jsUrl, JsClass);
+            const jsInstance = await this._buildRoute(jsUrl, JsCode);
 
             //keep this instance to reuse later
             this._jsInstances[jsUrl] = jsInstance;
