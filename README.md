@@ -172,42 +172,53 @@ Check the examples folder for more details.
 ### Route Script life-cycle
 
 ```js
-(() => {
-    return class className {
-        constructor(functions, {yourService1, yourService2 ... }) {
-            // 1 - optional
-            // variables initialization
-            // invoked after options.onBeforeRoute and options.middlewares
-        }
+  class routeClassName {
+    constructor(functions) {
+        // 1 - optional
+        // variables initialization
+        // invoked after options.onBeforeRoute and options.middlewares
+    }
 
-        onEnter(context) {
-            // 2
-            // invoked before options.onAfterRoute
-            // invoked after options.onBeforeRoute and options.middlewares
-        };
-
-        onBeforeLeave(context) {
-            // 3 - optional
-            // return false if you wish to maintain the user on the current page
-            // invoked before options.onAfterRoute
-            // invoked after options.onBeforeRoute and options.middlewares
-        }
-
-        onLeave() {
-            // 4 - optional
-            // invoked before options.onAfterRoute
-            // invoked after options.onBeforeRoute and options.middlewares
-        }
-
-        destroy() {
-            // 5 - optional
-            // destroy timers and event handlers if you need
-            // this method will be called when the file changed and will Hot reload 
-        }
+    onEnter(context) {
+        // 2
+        // invoked before options.onAfterRoute
+        // invoked after options.onBeforeRoute and options.middlewares
     };
-})();
+
+    onBeforeLeave(context) {
+        // 3 - optional
+        // return false if you wish to maintain the user on the current page
+        // invoked before options.onAfterRoute
+        // invoked after options.onBeforeRoute and options.middlewares
+    }
+
+    onLeave() {
+        // 4 - optional
+        // invoked before options.onAfterRoute
+        // invoked after options.onBeforeRoute and options.middlewares
+    }
+
+    destroy() {
+        // 5 - optional
+        // destroy timers and event handlers if you need
+        // this method will be called when the file changed and will Hot reload 
+    }
+  };
 ```
 
+
+<br />
+
+### Route Script in-line service injection
+
+```js
+  ['yourService1','yourService2', class routeClassName {
+    constructor(functions, {yourService1, yourService2 ... }) {...
+    ...
+  }];
+```
+
+You can also get your services by declaring them on the route.
 
 ### Page navigation
 
