@@ -40,6 +40,38 @@ describe('jss.spec', () => {
     beforeAll(() => {
         navimi_jss = new jss() as INavimi_JSs;
 
+        fetch_data_mock["/js/service1.js"] = `
+        (() => {
+            const testService1 = (param) => {
+                return param;
+            }
+            return { testService1 };
+        })();`;
+
+        fetch_data_mock["/js/service2.js"] = `
+        (() => {
+            const testService2 = (param) => {
+                return param;
+            }
+            return { testService2 };
+        })();`;
+
+        fetch_data_mock["/js/service3.js"] = `
+        (() => {
+            const testService3 = (param) => {
+                return param;
+            }
+            return { testService3 };
+        })();`;
+
+        fetch_data_mock["/js/service4.js"] = `
+        (() => {
+            const testService4 = (param) => {
+                return param;
+            }
+            return { testService4 };
+        })();`;
+
         navimi_jss.init(
             navimi_helpers_mock,
             navimi_fetch_mock,
@@ -49,7 +81,9 @@ describe('jss.spec', () => {
             {
                 services: {
                     "service1": "/js/service1.js",
-                    "service2": "/js/service2.js"
+                    "service2": "/js/service2.js",
+                    "service3": "/js/service3.js",
+                    "service4": "/js/service4.js"
                 }
             }
         );
@@ -136,47 +170,22 @@ describe('jss.spec', () => {
 
     });
 
-
     test('loadDependencies', (done) => {
 
-        fetch_data_mock["/js/service1.js"] = `
-        (() => {
-
-            const testService1 = (param) => {
-                return param;
-            }
-
-            return { testService1 };
-            
-        })();`;
-
-        fetch_data_mock["/js/service2.js"] = `
-        (() => {
-
-            const testService2 = (param) => {
-                return param;
-            }
-
-            return { testService2 };
-            
-        })();`;
-
         fetch_data_mock["/js/routeWithService.js"] = `
-        (() => {
-            return class main {
+        class main {
+            constructor(navimiFunctions, { service1: a, service2 }) {
+                this.nfx = navimiFunctions;
+                this.service1 = a;
+                this.service2 = service2;
+                this.context = null;
+            }
 
-                constructor(navimiFunctions, { service1, service2 }) {
-                    this.nfx = navimiFunctions;
-                    this.service1 = service1;
-                    this.service2 = service2;
-                    this.context = null;
-                }
-
-                onEnter(context) {
-                    this.context = context;
-                }
-            };
-        })();`;
+            onEnter(context) {
+                this.context = context;
+            }
+        };
+        `;
 
         navimi_jss.loadDependencies(null, "/js/routeWithService.js", ["service1", "service2"]);
         navimi_jss.fetchJS(null, ["/js/routeWithService.js"], "route").then(route => {
@@ -186,6 +195,45 @@ describe('jss.spec', () => {
             expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithService.js"]).toBeDefined();
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/service2.js"]["/js/routeWithService.js"]).toBeDefined();
+            done();
+        });
+
+    });
+
+    
+    test('loadDependencies in-line', (done) => {
+
+        fetch_data_mock["/js/routeWithServiceInline.js"] = `
+            ['service1', 'service2', 'service3', 'service4', class main {
+
+                constructor(navimiFunctions, { service1: a, service2, service3, service4 }) {
+                    this.nfx = navimiFunctions;                    
+                    this.service1 = a;
+                    this.service2 = service2;
+                    this.service3 = service3;
+                    this.service4 = service4;
+                    this.context = null;
+                }
+
+                onEnter(context) {
+                    this.context = context;
+                }
+            }];
+        `;
+
+        navimi_jss.fetchJS(null, ["/js/routeWithServiceInline.js"], "route").then(route => {
+            expect(route.service1.testService1("OK")).toBe("OK");
+            expect(route.service2.testService2("OK")).toBe("OK");
+            expect(route.service3.testService3("OK")).toBe("OK");
+            expect(route.service4.testService4("OK")).toBe("OK");
+            //@ts-ignore
+            expect(navimi_jss._jsDepMap["/js/service1.js"]["/js/routeWithServiceInline.js"]).toBeDefined();
+            //@ts-ignore
+            expect(navimi_jss._jsDepMap["/js/service2.js"]["/js/routeWithServiceInline.js"]).toBeDefined();
+            //@ts-ignore
+            expect(navimi_jss._jsDepMap["/js/service3.js"]["/js/routeWithServiceInline.js"]).toBeDefined();
+            //@ts-ignore
+            expect(navimi_jss._jsDepMap["/js/service4.js"]["/js/routeWithServiceInline.js"]).toBeDefined();
             done();
         });
 
