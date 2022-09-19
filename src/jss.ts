@@ -12,6 +12,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
     private _navimiLoader: any;
     private _options: INavimi_Options;
+    private _uidCounter = 0;
 
     private _navimiHelpers: INavimi_Helpers;
     private _navimiFetch: INavimi_Fetch;
@@ -37,6 +38,7 @@ class __Navimi_JSs implements INavimi_JSs {
         this._navimiState = navimiState;        
         this._navimiComponents = navimiComponents;
         this._options = options;
+        this._uidCounter = 0;
 
         // @ts-ignore
         this._navimiLoader = window[this._navimiLoaderNS] = {
@@ -189,6 +191,8 @@ class __Navimi_JSs implements INavimi_JSs {
                 [serviceName]: this._jsInstances[this._options.services[serviceName]]
             };
         });
+
+        const uid = ++this._uidCounter;
         
         const route = class extends (routeClass) {
 
@@ -215,9 +219,9 @@ class __Navimi_JSs implements INavimi_JSs {
                     setState: jss._navimiState.setState,
                     getState: jss._navimiState.getState,
                     setNavimiLinks: jss._navimiHelpers.setNavimiLinks,
-                    unwatchState: (key: string) => jss._navimiState.unwatchState(this, key),
+                    unwatchState: (key: string) => jss._navimiState.unwatchState(uid, key),
                     watchState: (key: string, callback: (state: INavimi_KeyList<any>) => void) =>
-                        jss._navimiState.watchState(this, key, callback),
+                        jss._navimiState.watchState(uid, key, callback),
                 };
 
                 super(Object.freeze(functions), Object.freeze(services));
@@ -243,7 +247,7 @@ class __Navimi_JSs implements INavimi_JSs {
             }
 
             destroy(): void {
-                jss._navimiState.unwatchState(this);
+                jss._navimiState.unwatchState(uid);
                 if (super.destroy) {
                     super.destroy();
                 }
@@ -299,6 +303,8 @@ class __Navimi_JSs implements INavimi_JSs {
         });
 
         Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+
+        const uid = ++this._uidCounter;
         
         const component = class extends (componentClass) {
 
@@ -325,9 +331,9 @@ class __Navimi_JSs implements INavimi_JSs {
                     setState: jss._navimiState.setState,
                     getState: jss._navimiState.getState,
                     setNavimiLinks: jss._navimiHelpers.setNavimiLinks,
-                    unwatchState: (key: string) => jss._navimiState.unwatchState(this, key),
+                    unwatchState: (key: string) => jss._navimiState.unwatchState(uid, key),
                     watchState: (key: string, callback: (state: INavimi_KeyList<any>) => void) =>
-                        jss._navimiState.watchState(this, key, callback),
+                        jss._navimiState.watchState(uid, key, callback),
                 };
                                 
                 super(props, Object.freeze(functions), Object.freeze(services));
@@ -362,7 +368,7 @@ class __Navimi_JSs implements INavimi_JSs {
             }
 
             onUnmount(): void {
-                jss._navimiState.unwatchState(this);
+                jss._navimiState.unwatchState(uid);
                 if (super.onUnmount) {
                     super.onUnmount();
                 }

@@ -251,12 +251,7 @@ class __Navimi_Components implements INavimi_Components {
 
     };
 
-    public init(navimiHelpers: INavimi_Helpers, navimiJSs: INavimi_JSs): void {
-
-        this._components = {};
-        this._navimiHelpers = navimiHelpers;
-        this._navimiJSs = navimiJSs;
-
+    private watch() {
         new MutationObserver((mutations: MutationRecord[]) => {
             for (const mutation of mutations) {
                 if (mutation.type === "attributes") {
@@ -278,6 +273,15 @@ class __Navimi_Components implements INavimi_Components {
                 }
             }
         }).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    }
+
+    public init(navimiHelpers: INavimi_Helpers, navimiJSs: INavimi_JSs): void {
+
+        this._components = this._components || {};
+        this._navimiHelpers = navimiHelpers;
+        this._navimiJSs = navimiJSs;
+
+        this.watch();
     }
 
     public registerComponent = (
