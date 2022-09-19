@@ -11,6 +11,7 @@ class Navimi {
         const navimiState = services?.navimiState ?? new __Navimi_State();
         const navimiHot = services?.navimiHot ?? new __Navimi_Hot();
         const navimiHelpers = services?.navimiHelpers ?? new __Navimi_Helpers();
+        const navimiComponents = services?.navimiComponents ?? new __Navimi_Components();
 
         // setup DI
         navimiFetch.init(options);
@@ -19,12 +20,15 @@ class Navimi {
             navimiFetch
         );
 
+        navimiComponents.init(navimiHelpers, navimiJSs);
+
         navimiJSs.init(
             navimiHelpers,
             navimiFetch,
             navimiCSSs,
             navimiTemplates,
             navimiState,
+            navimiComponents,
             options
         );
 
@@ -40,7 +44,8 @@ class Navimi {
             navimiMiddlewares,
             navimiState,
             navimiHot,
-            navimiHelpers
+            navimiHelpers,
+            navimiComponents
         };
 
         return core ? core(routes, _services, options) :

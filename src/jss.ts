@@ -8,7 +8,7 @@ class __Navimi_JSs implements INavimi_JSs {
     private _jsType: INavimi_KeyList<jsType> = {};
     private _jsInstances: INavimi_KeyList<InstanceType<any>> = {};
     private _jsDepMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
-    private _routesJSsServices: INavimi_KeyList<string[]> = {};
+    private _servicesList: INavimi_KeyList<string[]> = {};
 
     private _navimiLoader: any;
     private _options: INavimi_Options;
@@ -17,14 +17,16 @@ class __Navimi_JSs implements INavimi_JSs {
     private _navimiFetch: INavimi_Fetch;
     private _navimiCSSs: INavimi_CSSs;
     private _navimiTemplates: INavimi_Templates;
-    private _navimiState: INavimi_State;
+    private _navimiState: INavimi_State;    
+    private _navimiComponents: INavimi_Components;
 
     public init(
         navimiHelpers: INavimi_Helpers,
         navimiFetch: INavimi_Fetch,
         navimiCSSs: INavimi_CSSs,
         navimiTemplates: INavimi_Templates,
-        navimiState: INavimi_State,
+        navimiState: INavimi_State,       
+        navimiComponents: INavimi_Components,
         options: INavimi_Options
     ) {
 
@@ -32,7 +34,8 @@ class __Navimi_JSs implements INavimi_JSs {
         this._navimiFetch = navimiFetch;
         this._navimiCSSs = navimiCSSs;
         this._navimiTemplates = navimiTemplates;
-        this._navimiState = navimiState;
+        this._navimiState = navimiState;        
+        this._navimiComponents = navimiComponents;
         this._options = options;
 
         // @ts-ignore
@@ -165,7 +168,7 @@ class __Navimi_JSs implements INavimi_JSs {
             //add all other elements are expected to be services names
             const services = JsClass.filter(s => typeof s === "string");
             if (services.length > 0) {
-                this.loadDependencies(undefined, jsUrl, services);
+                this.loadServices(undefined, jsUrl, services);
             }
         }
 
@@ -180,7 +183,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
         //gather required services
         let services: INavimi_KeyList<InstanceType<any>> = {};
-        this._routesJSsServices[jsUrl]?.map((serviceName: string) => {
+        this._servicesList[jsUrl]?.map((serviceName: string) => {
             services = {
                 ...services,
                 [serviceName]: this._jsInstances[this._options.services[serviceName]]
@@ -191,7 +194,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
             constructor() {
 
-                const routerFunctions: INavimi_RouterFunctions = {
+                const functions: INavimi_Functions = {
                     addLibrary: jss._addLibrary,
                     setTitle: jss._navimiHelpers.setTitle,
                     navigateTo: (window as any).navigateTo,
@@ -217,7 +220,7 @@ class __Navimi_JSs implements INavimi_JSs {
                         jss._navimiState.watchState(this, key, callback),
                 };
 
-                super(Object.freeze(routerFunctions), Object.freeze(services));
+                super(Object.freeze(functions), Object.freeze(services));
             }
 
             onEnter(params: INavimi_KeyList<string>): void {
@@ -252,25 +255,148 @@ class __Navimi_JSs implements INavimi_JSs {
 
     };
 
+    private _buildComponentClass = async (jsUrl: string, JsClass: InstanceType<any>): Promise<InstanceType<any>> => {
+
+        const componentName = Object.keys(this._options.components)
+            .find((name: string) => this._options.components[name] === jsUrl);
+
+        if (!componentName || !/-/.test(componentName)) {
+            return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const jss = this;
+
+        let componentClass = JsClass;
+
+        if (Array.isArray(JsClass)) {
+            //get last element of array
+            componentClass = JsClass.pop();
+
+            //add all other elements are expected to be services names
+            const services = JsClass.filter(s => typeof s === "string");
+            if (services.length > 0) {
+                this.loadServices(undefined, jsUrl, services);
+            }
+        }
+
+        //wait for all dependencies to load
+        const dependencies = [];
+        for (const deps in this._jsDepMap) {
+            if (this._jsDepMap[deps][jsUrl]) {
+                dependencies.push(deps);
+            }
+        }
+        await Promise.all(dependencies.map(this._awaitJS));
+
+        //gather required services
+        let services: INavimi_KeyList<InstanceType<any>> = {};
+        this._servicesList[jsUrl]?.map((serviceName: string) => {
+            services = {
+                ...services,
+                [serviceName]: this._jsInstances[this._options.services[serviceName]]
+            };
+        });
+
+        Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+        
+        const component = class extends (componentClass) {
+
+            constructor(props: any) {
+
+                const functions: INavimi_Functions = {
+                    addLibrary: jss._addLibrary,
+                    setTitle: jss._navimiHelpers.setTitle,
+                    navigateTo: (window as any).navigateTo,
+                    getTemplate: jss._navimiTemplates.getTemplate,
+                    fetchJS: (url: string | string[]) => {
+                        const urls = Array.isArray(url) ? url : [url];
+                        urls.map(u => {
+                            jss._jsDepMap[u] = {
+                                ...jss._jsDepMap[u] || {},
+                                [jsUrl]: true
+                            };
+                        });
+                        return jss.fetchJS(undefined, urls, "javascript");
+                    },
+                    fetchTemplate: (url: string | string[]) => {
+                        return jss._navimiTemplates.fetchTemplate(undefined, url);
+                    },
+                    setState: jss._navimiState.setState,
+                    getState: jss._navimiState.getState,
+                    setNavimiLinks: jss._navimiHelpers.setNavimiLinks,
+                    unwatchState: (key: string) => jss._navimiState.unwatchState(this, key),
+                    watchState: (key: string, callback: (state: INavimi_KeyList<any>) => void) =>
+                        jss._navimiState.watchState(this, key, callback),
+                };
+                                
+                super(props, Object.freeze(functions), Object.freeze(services));
+            }
+
+            async init() {
+                super.init && await super.init();
+                await this.render();
+                super.onMount && await super.onMount();
+            }
+
+            async render() {
+
+                this.__rendered = true;
+
+                const html = super.render && await super.render(this.__initalInnerHTML);
+
+                if (html && html !== this.__previousTemplate) {
+
+                    this.__previousTemplate = html;
+
+                    const domParser = new DOMParser();
+
+                    const template = domParser.parseFromString(html, "text/html");
+
+                    jss._navimiComponents.mergeHtml(template.querySelector("body"), this as unknown as DocumentFragment);
+
+                    jss._navimiComponents.registerChildComponents(this as unknown as INavimi_Component);
+                }
+
+                super.onRender && super.onRender();
+            }
+
+            onUnmount(): void {
+                jss._navimiState.unwatchState(this);
+                if (super.onUnmount) {
+                    super.onUnmount();
+                }
+            }
+
+        };
+
+        this._navimiComponents.registerComponent(componentName, component);
+
+        return component;
+
+    };
+
     private _instantiateJS = async (
         jsUrl: string,
         type: jsType,
         JsCode: InstanceType<any>): Promise<void> => {
+    
+        try {
 
-        // for services and javascripts
-        if (type !== "route") {
-            // keep this instance to reuse later
+            if (type === "route" || type === "component") {
+                const instance = type === "route" ? 
+                    await this._buildRoute(jsUrl, JsCode):
+                    await this._buildComponentClass(jsUrl, JsCode);
+
+                //keep this instance to reuse later
+                this._jsInstances[jsUrl] = instance;
+
+                return this._resolvePromise(instance, jsUrl);
+            }
+
+            // for services and javascripts
             this._jsInstances[jsUrl] = JsCode;
             return this._resolvePromise(JsCode, jsUrl);
-        }
-
-        try {
-            const route = await this._buildRoute(jsUrl, JsCode);
-
-            //keep this instance to reuse later
-            this._jsInstances[jsUrl] = route;
-
-            this._resolvePromise(route, jsUrl);
 
         } catch (error) {
             this._rejectPromise(error, jsUrl);
@@ -282,6 +408,36 @@ class __Navimi_JSs implements INavimi_JSs {
         return this._navimiLoader[this._promiseNS + jsUrl] !== undefined &&
             !this._navimiFetch.getErrors(jsUrl);
     };
+
+    private _checkDepsUrls = (jsUrl: string, depArray: string[], type: "services" | "components"): string[] => {
+        const notFound: string[] = [];
+        if (!this._servicesList[jsUrl]) {
+            this._servicesList[jsUrl] = [];
+        }
+        const urls = (depArray || []).map(name => {
+            //@ts-ignore
+            const url: string = this._options[type] && this._options[type][name];
+            if (url === undefined) {
+                notFound.push(name);
+            } else {
+                type === "services" &&
+                    this._servicesList[jsUrl].indexOf(name) === -1 &&
+                    this._servicesList[jsUrl].push(name);
+
+                this._jsDepMap[url] = {
+                    ...this._jsDepMap[url] || {},
+                    [jsUrl]: true
+                };
+            }
+            return url;
+        });
+
+        if (notFound.length > 0) {
+            throw new Error(type + " not defined: " + notFound.join(", "));
+        }
+
+        return urls;
+    }
 
     public isJsLoaded = (url: string): boolean => {
         return this._loadedJSs[url] !== undefined;
@@ -324,45 +480,30 @@ class __Navimi_JSs implements INavimi_JSs {
         return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
     };
 
-    public loadDependencies = (abortController: AbortController, jsUrl: string, services: string[]): Promise<any[]> => {
+    public loadServices = (abortController: AbortController, jsUrl: string, services: string[]): Promise<any[]> => {
 
         if (!jsUrl) {
             return;
         }
 
-        const checkUrls = (depArray: string[], type: "services"): string[] => {
-            const notFound: string[] = [];
-            const urls = (depArray || []).map(name => {
-                //@ts-ignore
-                const url: string = this._options[type] && this._options[type][name];
-                if (url === undefined) {
-                    notFound.push(name);
-                } else {
-                    type === "services" &&
-                        this._routesJSsServices[jsUrl].indexOf(name) === -1 &&
-                        this._routesJSsServices[jsUrl].push(name);
-
-                    this._jsDepMap[url] = {
-                        ...this._jsDepMap[url] || {},
-                        [jsUrl]: true
-                    };
-                }
-                return url;
-            });
-
-            if (notFound.length > 0) {
-                throw new Error(type + " not defined: " + notFound.join(", "));
-            }
-
-            return urls;
-        }
-
-        this._routesJSsServices[jsUrl] = this._routesJSsServices[jsUrl] || [];
-
-        const servicesUrls = checkUrls(services, "services");
+        const servicesUrls = this._checkDepsUrls(jsUrl, services, "services");
 
         const promises = servicesUrls.filter(url => url !== undefined)
             .map(url => this.fetchJS(abortController, [url], "service"));
+
+        return Promise.all(promises);
+    };
+
+    public loadComponents = (abortController: AbortController, jsUrl: string, components: string[]): Promise<any[]> => {
+
+        if (!jsUrl) {
+            return;
+        }
+
+        const componentsUrls = this._checkDepsUrls(jsUrl, components, "components");
+
+        const promises = componentsUrls.filter(url => url !== undefined)
+            .map(url => this.fetchJS(abortController, [url], "component"));
 
         return Promise.all(promises);
     };

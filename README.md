@@ -6,6 +6,9 @@
 
 ## Features
 
+- **Components**
+  - Allows you to create reusable custom elements with encapsulated functionality.
+
 - **Routing with path and queryString parsing**
   - Uses the widely adopted syntax for routes (/users/:id)
 
@@ -13,7 +16,7 @@
   - Watch changes to any level of the state using a simple dot notation.
 
 - **Services injection**
-  - Create your own services and have them auto inject to your routes scripts making it easier to create and test them.
+  - Create your own services and have injected to your routes and components making it easier to create and test them.
 
 - **Routes middleware**
   - The middleware gives you a chance to intercept the request pipeline.
@@ -108,13 +111,14 @@ about.html
 - (routes: { [url: string]: Route }, options?: Options)
 
 ### Route
-| Property     | Type                   | Description                                                    |
+| Property     | Type                   | Description                                                     |
 |--------------|------------------------|-----------------------------------------------------------------|
 | title*       | string                 | The title that will be displayed on the browser                 |
 | jsUrl        | string                 | The path to the route script                                    |
 | cssUrl       | string                 | The path to the route css                                       |
 | templatesUrl | string                 | The path to the templates file of this route                    |
 | services     | string[]               | An array of services names for this route                       |
+| components   | string[]               | An array of components names for this route                     |
 | metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
 
 \* required
@@ -126,6 +130,7 @@ about.html
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
+| components          | { [key: string]: string }| A collection of all components {[component name]: script path}  |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
 | bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
@@ -218,7 +223,8 @@ Check the examples folder for more details.
   }];
 ```
 
-You can also get your services by declaring them on the route.
+You can also get your services by declaring them on the route. By not declaring services at the routes level will
+cause services to dowload after the script.
 
 ### Page navigation
 

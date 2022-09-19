@@ -22,7 +22,8 @@ describe('core.spec', () => {
 
     const navimi_jss_mock = {
         getInstance: jest.fn(),
-        loadDependencies: jest.fn(() => Promise.resolve()),
+        loadServices: jest.fn(() => Promise.resolve()),
+        loadComponents: jest.fn(() => Promise.resolve()),
         fetchJS: jest.fn(() => Promise.resolve()),
         initRoute: jest.fn(() => Promise.resolve()),
     } as unknown as INavimi_JSs;
@@ -158,7 +159,7 @@ describe('core.spec', () => {
         });
 
         setTimeout(() => {
-            expect(navimi_jss_mock.loadDependencies).toHaveBeenCalledWith(undefined, 'home.js', undefined);
+            expect(navimi_jss_mock.loadServices).toHaveBeenCalledWith(undefined, 'home.js', undefined);
             expect(navimi_css_mock.fetchCss).toHaveBeenCalledWith(undefined, 'style.css');
             expect(navimi_templates_mock.fetchTemplate).toHaveBeenCalledWith(undefined, 'templates.html');
 
