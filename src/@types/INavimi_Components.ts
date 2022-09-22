@@ -1,14 +1,14 @@
 interface INavimi_Components {
-    init: (navimiHelpers: INavimi_Helpers, navimiJSs: INavimi_JSs) => void;
-    registerComponent: (componentName: string, componentClass: InstanceType<any>) => void;
-    registerChildComponents: (parentNode: INavimi_Component) => void;
-    mergeHtml: (template: HTMLBodyElement, node: DocumentFragment) => void;
+    init: (navimiHelpers: INavimi_Helpers, navimiState: INavimi_State) => void;
+    registerComponent: (
+        componentName: string, 
+        componentClass: InstanceType<any>,
+        functions: (callerUid: string) => INavimi_Functions,
+        services: INavimi_KeyList<InstanceType<any>>) => InstanceType<any>;
 }
 
 interface INavimi_Component extends Element {
-    __rendered: boolean;
-    __initalInnerHTML: string;
-    __previousTemplate: string;
+    __removed: boolean;
 
     props: INavimi_KeyList<any>;
     parentComponent?: INavimi_Component;
@@ -17,9 +17,6 @@ interface INavimi_Component extends Element {
     init: () => Promise<void> | void;
     render: () => Promise<string> | string;
     update: () => Promise<void> | void;
-    
     shouldUpdate?: (prevAttributes: INavimi_KeyList<any>, nextAttributes: INavimi_KeyList<any>) => boolean;
-    onRender?: () => void;
-    onMount?: () => void;
-    onUnmount?: () => void;
+    ___onUnmount?: () => void;
 }

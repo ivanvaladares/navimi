@@ -14,13 +14,13 @@ class Navimi {
         const navimiComponents = services?.navimiComponents ?? new __Navimi_Components();
 
         // setup DI
+        navimiComponents.init(navimiHelpers, navimiState);
+
         navimiFetch.init(options);
 
         navimiCSSs.init(
             navimiFetch
         );
-
-        navimiComponents.init(navimiHelpers, navimiJSs);
 
         navimiJSs.init(
             navimiHelpers,

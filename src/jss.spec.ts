@@ -31,7 +31,7 @@ describe('jss.spec', () => {
     } as unknown as INavimi_Templates;
 
     const navimi_components_mock = {
-        registerComponent: jest.fn()
+        registerComponent: jest.fn().mockReturnValue({}),
     } as unknown as INavimi_Components;
 
     const navimi_state_mock = {
@@ -292,11 +292,7 @@ describe('jss.spec', () => {
         `;
 
         navimi_jss.loadComponents(null, "/js/routeWithComponents.js", ["component-1", "component-2"]);
-        navimi_jss.fetchJS(null, ["/js/routeWithComponents.js"], "route").then(route => {
-            const component1 = navimi_jss.getInstance("/js/component1.js");
-            const component2 = navimi_jss.getInstance("/js/component2.js");
-            expect(navimi_components_mock.registerComponent).toHaveBeenCalledWith("component-1", component1);
-            expect(navimi_components_mock.registerComponent).toHaveBeenCalledWith("component-2", component2);
+        navimi_jss.fetchJS(null, ["/js/routeWithComponents.js"], "route").then(() => {
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/component1.js"]["/js/routeWithComponents.js"]).toBeDefined();
             //@ts-ignore
@@ -317,9 +313,7 @@ describe('jss.spec', () => {
         `;
 
         navimi_jss.loadComponents(null, "/js/routeWithComponentsWithServices.js", ["component-3"]);
-        navimi_jss.fetchJS(null, ["/js/routeWithComponentsWithServices.js"], "route").then(route => {
-            const component = navimi_jss.getInstance("/js/component3.js");
-            expect(navimi_components_mock.registerComponent).toHaveBeenCalledWith("component-3", component);
+        navimi_jss.fetchJS(null, ["/js/routeWithComponentsWithServices.js"], "route").then(() => {
             //@ts-ignore
             expect(navimi_jss._jsDepMap["/js/component3.js"]["/js/routeWithComponentsWithServices.js"]).toBeDefined();
             //@ts-ignore
@@ -420,7 +414,7 @@ describe('jss.spec', () => {
         const callback = jest.fn();
         route.nfx.watchState("key1.key2", callback);
 
-        expect(navimi_state_mock.watchState).toHaveBeenCalledWith(route, "key1.key2", callback);
+        expect(navimi_state_mock.watchState).toHaveBeenCalledWith("route:2", "key1.key2", callback);
         
     });
 
@@ -430,10 +424,9 @@ describe('jss.spec', () => {
 
         route.nfx.unwatchState("key1.key2");
 
-        expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith(route, "key1.key2");
+        expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith("route:2", "key1.key2");
         
     });
-
 
     test('route setTitle', () => {
 

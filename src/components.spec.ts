@@ -7,21 +7,26 @@ describe('components.spec', () => {
 
     beforeAll(() => {
         const navimi_helpers = new helpers();
+        const navimi_state_mock = {
+            setState: jest.fn(),
+            getState: jest.fn(),
+            unwatchState: jest.fn(),
+            watchState: jest.fn()
+        } as unknown as INavimi_State;
+
         navimi_components = new components() as INavimi_Components;
-        navimi_components.init(navimi_helpers);
+        navimi_components.init(navimi_helpers, navimi_state_mock);
     });
 
     test('Test anonymous class', (done) => {
 
         navimi_components.registerComponent('anon-class', class {
 
-            init() {
-                //@ts-ignore
+            onMount() {
                 this.wasRemoved = false;
             }
 
             onUnmount() {
-                //@ts-ignore
                 this.wasRemoved = true;
             }
 

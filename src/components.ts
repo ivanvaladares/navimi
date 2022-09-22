@@ -1,16 +1,45 @@
 class __Navimi_Components implements INavimi_Components {
 
-    private _components: INavimi_KeyList<any> = {};
     private _navimiHelpers: INavimi_Helpers;
-    private _navimiJSs: INavimi_JSs;
+    private _navimiState: INavimi_State;
+    private _components: INavimi_KeyList<any> = {};
+    private _uidCounter = 0;
+
+    public init(navimiHelpers: INavimi_Helpers, navimiState: INavimi_State): void {
+        
+        this._navimiHelpers = navimiHelpers;
+        this._navimiState = navimiState;
+
+        new window.MutationObserver((mutations: MutationRecord[]) => {
+            mutations.forEach(mutation => {
+                if (mutation.type === "attributes") {
+                    const node = mutation.target as INavimi_Component;
+                    if (this._components[node.localName]) {
+                        const prevAttributes = this._readAttributes(node);
+                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
+                            node.update();
+                        }
+                    }
+                } else {
+                    [].slice.call(mutation.addedNodes).map((addedNode: INavimi_Component) => {
+                        this._traverseComponentsTree(addedNode, this._registerTag);
+                    });
+                    [].slice.call(mutation.removedNodes).map((removedNode: INavimi_Component) => {
+                        // todo: create a queue to remove components and give priority to adding components
+                        this._traverseComponentsTree(removedNode, this._removeComponent);
+                    });
+                }
+            });
+        }).observe(document, { childList: true, subtree: true, attributes: true });
+    }
 
     private _removeComponent = (node: INavimi_Component): void => {
-        if (node.localName && node.__rendered && this._components[node.localName]) {
-            node.__rendered = false;
+        if (node.localName && !node.__removed && this._components[node.localName]) {
+            node.__removed = true;
             this._removeChildComponents(node);
             this._disconnectComponent(node);
             node.remove();
-            node.onUnmount && node.onUnmount();
+            node.___onUnmount && node.___onUnmount();
         }
     }
 
@@ -32,7 +61,7 @@ class __Navimi_Components implements INavimi_Components {
     private _readAttributes = (node: INavimi_Component): INavimi_KeyList<any> => {
         const prevAttributes = node.props;
         node.props = {};
-        for (const attr of [].slice.call(node.attributes)) {
+        [].slice.call(node.attributes).map((attr: any) => {
             const name = attr.name;
             //@ts-ignore
             if (typeof node[name] !== "function") {
@@ -41,25 +70,23 @@ class __Navimi_Components implements INavimi_Components {
                     [name]: attr.value
                 };
             }
-        }
+        });
         return prevAttributes;
     };
 
-    private _traverseTree = (node: INavimi_Component, callback: (node: INavimi_Component) => void): void => {
+    private _traverseComponentsTree = (node: INavimi_Component, callback: (node: INavimi_Component) => void): void => {
         if (node.localName) {
             if (this._components[node.localName]) {
                 callback(node);
             } else {
-                let childNode: INavimi_Component;
-                //@ts-ignore
-                for (childNode of node.children) {
-                    this._traverseTree(childNode, callback);
-                }
+                [].slice.call(node.childNodes).map((childNode: INavimi_Component) => {
+                    this._traverseComponentsTree(childNode, callback);
+                });
             }
         }
     };
 
-    private _registerTag = async (node: INavimi_Component, parentNode?: INavimi_Component): Promise<void> => {
+    private _registerTag = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
         if (node.props || !this._components[node.localName]) {
             return;
         }
@@ -68,24 +95,15 @@ class __Navimi_Components implements INavimi_Components {
 
         // initializes the component props
         node.props = {};
-        node.__rendered = false;
-        node.__previousTemplate = undefined;
-        node.__initalInnerHTML = node.innerHTML;
-        node.innerHTML = "";
         node.parentComponent = undefined;
         node.childComponents = [];
 
         this._findParentComponent(node, parentNode);
-
         this._readAttributes(node);
 
-        // connects the component class to the tag 
-        Object.setPrototypeOf(node, new componentClass(node.props));
+        const component = new componentClass(node);
 
-        // todo: check if this time (10) can become an option in case someone needs higher frame rates
-        node.update = this._navimiHelpers.throttle(node.render, 10, node);
-
-        await node.init();
+        component.init();
     };
 
     private _findParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
@@ -114,37 +132,33 @@ class __Navimi_Components implements INavimi_Components {
         }
     }
 
-    private _registerChildEvents = (parentNode: INavimi_Component, childNode: INavimi_Component): void => {
+    private _bindChildEvents = (parentNode: INavimi_Component, childNode: INavimi_Component): void => {
         if (childNode.attributes) {
-            for (const attr of [].slice.call(childNode.attributes)) {
+            [].slice.call(childNode.attributes).map((attr: any) => {
                 const name = attr.name;
                 //@ts-ignore
                 if (typeof childNode[name] === "function") {
                     //@ts-ignore
                     childNode[name] = childNode[name].bind(parentNode);
                 }
-            }
+            });
         }
     };
 
-    public registerChildComponents = (parentNode: INavimi_Component): void => {
+    private _registerChildNodes = (parentNode: INavimi_Component): void => {
         const traverse = (node: INavimi_Component): void => {
-            let childNode: INavimi_Component;
-            //@ts-ignore
-            for (childNode of node.childNodes) {
-                if (this._components[childNode.localName]) {
-                    this._registerTag(childNode, parentNode);
-                } else {
+            [].slice.call(node.childNodes).map((childNode: INavimi_Component) => {
+                if (!this._components[childNode.localName]) {
                     // bind child tags events to the parent
-                    this._registerChildEvents(parentNode, childNode);
+                    this._bindChildEvents(parentNode, childNode);
                     traverse(childNode);
                 }
-            }
+            });
         };
         traverse(parentNode);
     };
 
-    public mergeHtml = (template: HTMLBodyElement, node: DocumentFragment) => {
+    private _mergeHtml = (template: HTMLBodyElement, node: DocumentFragment) => {
 
         const getNodeType = (node: any) => {
             if (node.nodeType === 3) return "text";
@@ -174,7 +188,7 @@ class __Navimi_Components implements INavimi_Components {
             // add/remove nodes to match the template
             if (getNodeType(templateNode) !== getNodeType(documentNodes[index])) {
                 if (diffCount > 0) {
-                    this._traverseTree(documentNodes[index], this._removeComponent);
+                    this._traverseComponentsTree(documentNodes[index], this._removeComponent);
                     if (documentNodes[index].parentNode) {
                         documentNodes[index].parentNode.removeChild(documentNodes[index]);
                     }
@@ -226,14 +240,14 @@ class __Navimi_Components implements INavimi_Components {
                 // prepare empty node for next round
                 if (documentNodes[index].childNodes.length < 1 && templateNode.childNodes.length > 0) {
                     const fragment = document.createDocumentFragment();
-                    this.mergeHtml(templateNode, fragment);
+                    this._mergeHtml(templateNode, fragment);
                     documentNodes[index].appendChild(fragment);
                     continue;
                 }
 
                 // dive deeper into the tree
                 if (templateNode.childNodes.length > 0) {
-                    this.mergeHtml(templateNode, documentNodes[index]);
+                    this._mergeHtml(templateNode, documentNodes[index]);
                 }
             }
 
@@ -243,51 +257,89 @@ class __Navimi_Components implements INavimi_Components {
         diffCount = documentNodes.length - templateNodes.length;
         while (diffCount > 0) {
             const index = documentNodes.length - diffCount;
-            this._traverseTree(documentNodes[index], this._removeComponent);
+            this._traverseComponentsTree(documentNodes[index], this._removeComponent);
             documentNodes[index].parentNode &&
                 documentNodes[index].parentNode.removeChild(documentNodes[index]);
             diffCount--;
         }
 
+        this._registerChildNodes(node as unknown as INavimi_Component);
+
     };
 
-    private watch() {
-        new MutationObserver((mutations: MutationRecord[]) => {
-            for (const mutation of mutations) {
-                if (mutation.type === "attributes") {
-                    const node = mutation.target as INavimi_Component;
-                    if (this._components[node.localName]) {
-                        const prevAttributes = this._readAttributes(node);
-                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                            node.update();
-                        }
-                    }
-                } else {
-                    for (const addedNode of mutation.addedNodes) {
-                        this._traverseTree(addedNode as INavimi_Component, this._registerTag);
-                    }
-                    for (const removedNode of mutation.removedNodes) {
-                        // todo: create a queue to remove components and give priority to adding components
-                        this._traverseTree(removedNode as INavimi_Component, this._removeComponent);
-                    }
+    public registerComponent = (
+        componentName: string,
+        componentClass: InstanceType<any>,
+        getFunctions: (callerUid: string) => INavimi_Functions,
+        services: INavimi_KeyList<InstanceType<any>>): InstanceType<any> => {
+
+        if (!componentName || !/-/.test(componentName)) {
+            return;
+        }
+
+        if (!getFunctions) {
+            getFunctions = () => undefined;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const that = this;
+
+        Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+
+        const wrappedComponentClass = class {
+
+            private _component: any;
+            private _node: any;
+            private _uid: string;
+            private _previousTemplate: string;
+            private _initalInnerHTML: string;
+
+            constructor(node: any) {
+                this._uid = `component:${that._uidCounter++}`;
+                this._node = node;
+
+                this._previousTemplate = undefined;
+                this._initalInnerHTML = node.innerHTML;
+                node.innerHTML = "";
+
+                this._component = new componentClass(this._node.props, getFunctions(this._uid), services);
+
+                // connects the component code to the tag 
+                Object.setPrototypeOf(this._node, this._component);
+
+                // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
+                this._component.update = that._navimiHelpers.throttle(this.render, 16, this._node);
+
+                this._component.___onUnmount = () => {
+                    that._navimiState.unwatchState(this._uid);
+                    this._component.onUnmount && this._component.onUnmount.call(this._node);
                 }
             }
-        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-    }
 
-    public init(navimiHelpers: INavimi_Helpers, navimiJSs: INavimi_JSs): void {
+            init = async () => {
+                await this.render();
+                this._component.onMount && await this._component.onMount.call(this._node);
+            }
 
-        this._components = this._components || {};
-        this._navimiHelpers = navimiHelpers;
-        this._navimiJSs = navimiJSs;
+            render = async () => {
+                const html = this._component.render && await this._component.render.call(this._node, this._initalInnerHTML);
 
-        this.watch();
-    }
+                if (html && html !== this._previousTemplate) {
 
-    public registerComponent = (
-        componentName: string, 
-        componentClass: InstanceType<any>): any => {
-            this._components[componentName] = componentClass;
+                    this._previousTemplate = html;
+
+                    const template = new DOMParser().parseFromString(html, "text/html");
+
+                    that._mergeHtml(template.querySelector("body"), this._node);
+                }
+
+                this._component.onRender && this._component.onRender.call(this._node);
+            }
+        };
+
+        this._components[componentName] = wrappedComponentClass;
+
+        return wrappedComponentClass;
     };
 
 }

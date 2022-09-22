@@ -1,10 +1,10 @@
 class __Navimi_State implements INavimi_State {
 
     private _state: INavimi_KeyList<any> = {};
-    private _stateWatchers: INavimi_KeyList<any> = {};
+    private _stateWatchers: INavimi_KeyList<INavimi_KeyList<Array<(state: any) => void>>> = {};
     private _prevState: INavimi_KeyList<any> = {};
     private _stateDiff: INavimi_KeyList<boolean> = {};
-    private _navimiHelpers: INavimi_Helpers = {} as any;
+    private _navimiHelpers: INavimi_Helpers;
 
     private _invokeStateWatchers: () => void;
 
@@ -21,8 +21,7 @@ class __Navimi_State implements INavimi_State {
                 Object.keys(this._stateWatchers[key]).map((jsUrl: string) => {
                     const state = this.getState(key);
                     this._stateWatchers[key][jsUrl] &&
-                        this._stateWatchers[key][jsUrl].map((cb: (state: any) => void) => cb && 
-                            cb(state));
+                        this._stateWatchers[key][jsUrl].map(cb => cb && cb(state));
                 });
             });
         }, 10);
@@ -89,7 +88,7 @@ class __Navimi_State implements INavimi_State {
         return state ? Object.freeze(this._navimiHelpers.cloneObject(state)) : undefined;
     };
 
-    public watchState = (callerId: number, key: string, callback: (state: any) => void): void => {
+    public watchState = (callerUid: string, key: string, callback: (state: any) => void): void => {
         if (!key || !callback) {
             return;
         }
@@ -98,17 +97,17 @@ class __Navimi_State implements INavimi_State {
         }
         this._stateWatchers[key] = {
             ...this._stateWatchers[key],
-            [callerId]: [
-                ...(this._stateWatchers[key][callerId] || []),
+            [callerUid]: [
+                ...(this._stateWatchers[key][callerUid] || []),
                 callback
             ]
         };
     };
 
-    public unwatchState = (callerId: number, key?: string | string[]): void => {
+    public unwatchState = (callerUid: string, key?: string | string[]): void => {
         const remove = (key: string): void => {
-            this._stateWatchers[key][callerId] = undefined;
-            delete this._stateWatchers[key][callerId];
+            this._stateWatchers[key][callerUid] = undefined;
+            delete this._stateWatchers[key][callerUid];
             Object.keys(this._stateWatchers[key]).length === 0 &&
                 delete this._stateWatchers[key];
         }
