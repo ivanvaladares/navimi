@@ -6,6 +6,9 @@
 
 ## Features
 
+- **Components**
+  - Allows you to create reusable custom elements with encapsulated functionality.
+
 - **Routing with path and queryString parsing**
   - Uses the widely adopted syntax for routes (/users/:id)
 
@@ -13,7 +16,7 @@
   - Watch changes to any level of the state using a simple dot notation.
 
 - **Services injection**
-  - Create your own services and have them auto inject to your routes scripts making it easier to create and test them.
+  - Create your own services and have injected to your Routes and Components.
 
 - **Routes middleware**
   - The middleware gives you a chance to intercept the request pipeline.
@@ -30,8 +33,7 @@
 
 <br>
 
-> All that in just ~5kb (compressed). Works well with Alpine.js, Ejs, jQuery, Mithril.js, Mustache, Zepto.js ...
-
+> All that in just ~7kb (compressed).
 
 <br>
 
@@ -46,7 +48,7 @@ https://navimi.web.app
 | Chrome 55        | Oct 2016 |
 | Firefox 52       | Mar 2017 |
 | Edge 15          | Oct 2017 |
-| Safari 11.1      | Sep 2017 |
+| Safari 11        | Sep 2017 |
 | Opera 42         | Dec 2016 |
 
 <br>
@@ -108,13 +110,14 @@ about.html
 - (routes: { [url: string]: Route }, options?: Options)
 
 ### Route
-| Property     | Type                   | Description                                                    |
+| Property     | Type                   | Description                                                     |
 |--------------|------------------------|-----------------------------------------------------------------|
 | title*       | string                 | The title that will be displayed on the browser                 |
 | jsUrl        | string                 | The path to the route script                                    |
 | cssUrl       | string                 | The path to the route css                                       |
 | templatesUrl | string                 | The path to the templates file of this route                    |
 | services     | string[]               | An array of services names for this route                       |
+| components   | string[]               | An array of components names for this route                     |
 | metadata     | { [key: string]: any } | Any literal you need to pass down to this route and middlewares |
 
 \* required
@@ -126,6 +129,7 @@ about.html
 | globalCssUrl        | string                   | The path to the global css                                      |
 | globalTemplatesUrl  | string                   | The path to the global templates file                           |
 | services            | { [key: string]: string }| A collection of all services {[service name]: script path}      |
+| components          | { [key: string]: string }| A collection of all components {[component name]: script path}  |
 | middlewares         | Middleware[]             | An array of functions to capture the request                    |
 | hot                 | number \| boolean        | The port to the websocket at localhost                          |
 | bustCache           | string                   | Adds a string at the end of files request to bust the cache     |
@@ -145,11 +149,9 @@ about.html
 
 <br />
 
-### Your Route Script constructor
+### Navimi functions
 
-The first param of your constructor will receive a collection of functions provided by Navimi and the following param is an object composed by all your own services. You can descostruct this param using the names defined on `options.services`. 
-
-List of function provided by Navimi to your Route Constructor.
+Routes and Components will receive a collection of functions provided by Navimi. 
 
 | Name                | Signature                                               | Description                                             |
 |---------------------|---------------------------------------------------------|---------------------------------------------------------|
@@ -167,58 +169,109 @@ List of function provided by Navimi to your Route Constructor.
 
 Check the examples folder for more details.
 
-<br />
+### Services
+You can build scripts that will serve as your Services and they will behave like modules.
+All services must be defined in `options.services`. 
+Routes and Components will receive an object composed by services. 
 
-### Route Script life-cycle
+- Routes: Services can be desconstruct from the second parameter on the constructor.
 
 ```js
-  class routeClassName {
-    constructor(functions) {
-        // 1 - optional
-        // variables initialization
-        // invoked after options.onBeforeRoute and options.middlewares
+  class {
+    constructor(functions, {yourService1, yourService2 ... }) {
+  ...
+```
+
+- Components: Services can be desconstruct from the third parameter on the constructor.
+
+```js
+  ['yourService1','yourService2', class ComponentClassName {
+    constructor(props, functions, {yourService1, yourService2 ... }) {
+  ...
+```
+
+For components, services must be explicitly declared as you see on the code above. 
+Routes can have services declared on the Navimi constructor.
+
+
+<br />
+
+### Route life-cycle
+
+```js
+  class {
+    constructor(functions, {yourServices ... }) {
+        // (OPTIONAL)
+        // variables initialization and binding events handlers
     }
 
     onEnter(context) {
-        // 2
-        // invoked before options.onAfterRoute
-        // invoked after options.onBeforeRoute and options.middlewares
+        // invoked when the route is mounted.
+        // context contains { url, Route, params }
+        // time to render any DOM component you need
     };
 
     onBeforeLeave(context) {
-        // 3 - optional
+        // (OPTIONAL)
+        // context contains { url, Route, params }
         // return false if you wish to maintain the user on the current page
-        // invoked before options.onAfterRoute
-        // invoked after options.onBeforeRoute and options.middlewares
     }
 
     onLeave() {
-        // 4 - optional
-        // invoked before options.onAfterRoute
-        // invoked after options.onBeforeRoute and options.middlewares
+        // (OPTIONAL)
+        // the user is leaving this route
+        // stop timers and event handlers if you need
     }
 
     destroy() {
-        // 5 - optional
-        // destroy timers and event handlers if you need
+        // (OPTIONAL)
         // this method will be called when the file changed and will Hot reload 
+        // destroy timers and event handlers
     }
   };
 ```
 
+<br />
+
+
+### Component life-cycle
+
+```js
+  class {
+    constructor(props, functions, {yourServices ... }) {
+        // (OPTIONAL)
+        // variables initialization and binding events handlers
+    }
+
+    onMount() {
+        // (OPTIONAL)
+        // invoked when the components is mounted.
+    };
+
+    render(children) {
+        // children contains any nested html from your component's tag
+        // return html code to render
+    }
+
+    shouldUpdate(prevProps, nextProps) {
+        // (OPTIONAL)
+        // this method will get called when any html property change on the component's tag
+        // return false if you wish to prevent a rerender
+    }
+
+    onUnmount() {
+        // (OPTIONAL)
+        // destroy timers and event handlers
+    }
+  };
+```
+
+By default, when your component’s props change, your component will re-render. 
+If your render() method depends on some other data, you can force the rerender by calling update().
+Calling update() will not trigguer shouldUpdate.
 
 <br />
 
-### Route Script in-line service injection
-
-```js
-  ['yourService1','yourService2', class routeClassName {
-    constructor(functions, {yourService1, yourService2 ... }) {...
-    ...
-  }];
-```
-
-You can also get your services by declaring them on the route.
 
 ### Page navigation
 

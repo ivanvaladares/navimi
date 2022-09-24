@@ -9,6 +9,7 @@ interface INavimi_Route {
     cssUrl?: string;
     templatesUrl?: string;
     services?: string[];
+    components?: string[];
     metadata?: INavimi_KeyList<any>;
 }
 
@@ -17,7 +18,7 @@ interface INavimi_Library {
     type: "css" | "library" | "module";
 }
 
-interface INavimi_RouterFunctions {
+interface INavimi_Functions {
     addLibrary: (url: string | string[] | INavimi_Library[]) => Promise<void>;
     fetchJS: (jsUrl: string | string[]) => Promise<InstanceType<any> | InstanceType<any>[]>;
     fetchTemplate: (templateUrl: string | string[]) => Promise<void | void[]>;
@@ -39,6 +40,7 @@ interface INavimi_Options {
     globalCssUrl?: string;
     globalTemplatesUrl?: string;
     services?: INavimi_KeyList<string>;
+    components?: INavimi_KeyList<string>;
     middlewares?: INavimi_Middleware[];
     hot?: number | boolean;
     bustCache?: string;
@@ -48,14 +50,15 @@ interface INavimi_Options {
 }
 
 interface INavimi_Services {
-    navimiFetch?: INavimi_Fetch,
-    navimiJSs?: INavimi_JSs,
-    navimiCSSs?: INavimi_CSSs,
-    navimiTemplates?: INavimi_Templates,
-    navimiMiddlewares?: INavimi_Middlewares,
-    navimiState?: INavimi_State,
-    navimiHot?: INavimi_Hot,
-    navimiHelpers?: INavimi_Helpers
+    navimiFetch?: INavimi_Fetch;
+    navimiJSs?: INavimi_JSs;
+    navimiCSSs?: INavimi_CSSs;
+    navimiTemplates?: INavimi_Templates;
+    navimiMiddlewares?: INavimi_Middlewares;
+    navimiState?: INavimi_State;
+    navimiHot?: INavimi_Hot;
+    navimiHelpers?: INavimi_Helpers;
+    navimiComponents?: INavimi_Components;
 }
 
 interface hotPayload {

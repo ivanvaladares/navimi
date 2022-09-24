@@ -40,7 +40,7 @@ declare class NavimiRoute {
      * @param services - Your own injected services \
      * @returns {NavimiRoute}
      */
-    constructor(functions: RouterFunctions, services: KeyList<any>);
+    constructor(functions: Functions, services: KeyList<any>);
 
     /**
      * Invoked after options.onBeforeRoute and options.middlewares \
