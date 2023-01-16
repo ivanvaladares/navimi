@@ -16,11 +16,6 @@
             this.update();
         }
 
-        onMount() {
-            console.warn('ClickComponentClass.onMount()');
-            this.querySelector("button").addEventListener("click", this.addChild.bind(this));
-        }
-
         render(children) {
             console.warn('ClickComponentClass.render()');
             this.counter++;
@@ -36,6 +31,10 @@
                     }
                         </div>
                     </div>`;
+        }
+
+        onMount(){
+            this.querySelector("button").addEventListener("click", this.addChild.bind(this));
         }
 
         onUnmount() {

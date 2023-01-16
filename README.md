@@ -53,7 +53,7 @@ https://navimi.web.app
 
 <br>
 
-## Basic Usage "no-code"
+## Basic Usage "low-code"
 
 index.html
 ```html

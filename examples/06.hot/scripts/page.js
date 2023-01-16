@@ -18,8 +18,8 @@
             this.showCounter();
 
             const button = document.querySelector(".counter_btn");
-            button && button.addEventListener('click', this.setNewState);
-        };
+            button && button.addEventListener('click', this.setNewState); 
+        }
 
         showCounter = (clicks) => {
             const counterEl = document.querySelector(".counter");
@@ -37,7 +37,7 @@
             });
         }
 
-        onLeave = () => {
+        onLeave = () => { 
             const button = document.querySelector(".counter_btn");
             button && button.removeEventListener('click', this.setNewState);
         }
