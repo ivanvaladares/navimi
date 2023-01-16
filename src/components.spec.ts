@@ -179,7 +179,7 @@ describe('components.spec', () => {
 
             done();
 
-        }, 10);
+        }, 20);
 
     });
     

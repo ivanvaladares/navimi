@@ -1,36 +1,37 @@
-(() => {
+class ChildComponentClass {
 
-    return ["linksFx", class ChildComponentClass {        
-        
-        constructor(props, functions, { linksFx }) {
+    constructor(node, functions) {
+        this.functions = functions;
+        this.count = this.functions.getState('test.clicks') || 0;
+    }
 
-            debugger
+    async onMount() {
+        this.teste = await this.functions.fetchJS('/scripts/service3.js');
+        this.functions.watchState("test.clicks", this.updateNum.bind(this) ); 
+    }
 
-            const t = new Date().getTime();
-            // this.timer = setInterval(() => {
-            //     console.log("child", t);
-            // }, 1000);
+    updateNum() {
+        debugger
+        this.teste.bla('test');
+        this.count = this.functions.getState('test.clicks');
+        this.update();
+    }
 
-            
-            console.warn("child constructor");
-            
-        }
+    click() {
+        this.functions.setState({
+            test: {
+                clicks: ++this.count
+            }
+        });
+    }
 
-        init() {
-            this.wasRemoved = false;
-        }
+    render(children){
+        debugger
+        return `<span onclick="this.click()">OK! ${this.count} ${children}</span>`
+    }
 
-        onUnmount() {
-            console.warn('ChildComponentClass.onUnmount()');
-            this.wasRemoved = true;
-            this.timer && clearInterval(this.timer);
-        }
+    onUnmount(){
+        console.log("unmounting child component")
+    }
 
-        render(children) {
-            console.warn('ChildComponentClass.render()');
-            return `<span>OK! ${children}</span>`
-        }
-
-    }];
-
-})();
+}
