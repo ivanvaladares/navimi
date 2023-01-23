@@ -24,6 +24,9 @@
 - **Scoped CSS**
   - Global and route scoped css with auto add and removal to avoid conflicts.
 
+- **Atomic css-in-js**
+  - Write CSS using JavaScript in a declarative, conflict-free and reusable way.
+
 - **Auto Lazy load scripts, templates, css and libraries**
   - Only load what and when you want.
 
@@ -166,6 +169,7 @@ Routes and Components will receive a collection of functions provided by Navimi.
 | setState            | (state: { [key: string]: any }) => void;                | Set the state at any level using . notation             |
 | unwatchState        | (key?: string \| string[]) => void;                     | Unwatch one or many state at any level using . notation | 
 | watchState          | (key: string, callback: (state: any) => void) => void;  | Set a watcher to state at any level using . notation    |
+| style               | (styles: { [key: string]: any }) => string;             | Returns class names for the provided styles object      |
 
 Check the examples folder for more details.
 

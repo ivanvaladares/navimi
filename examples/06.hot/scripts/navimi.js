@@ -1,5 +1,5 @@
 /**
- * Navimi v0.3.0 
+ * Navimi v0.4.0 
  * Developed by Ivan Valadares 
  * ivanvaladares@hotmail.com 
  * https://github.com/ivanvaladares/navimi 
@@ -465,12 +465,45 @@ class __Navimi_Core {
 class __Navimi_CSSs {
     constructor() {
         this._loadedCsss = {};
+        this._cssRulesCache = {};
+        this._cssCount = 0;
+        this._atomicCssId = '__navimi__cssInJs__';
         this._replaceCss = (cssCode, url) => {
             const oldTag = document.querySelector(`[cssUrl='${url}']`);
             if (!oldTag) {
                 return;
             }
             oldTag.innerHTML = cssCode;
+        };
+        this._insertCssRule = ({ className, child, media, cssRule }) => {
+            if (!this._cssSheet) {
+                const style = document.querySelector(`style[id=${this._atomicCssId}]`);
+                this._cssSheet = style.sheet;
+            }
+            const rule = `.${`${className}${child}`}{${cssRule.join(';')}}`;
+            this._cssSheet.insertRule(media ? `${media}{${rule}}` : rule, this._cssSheet.cssRules.length);
+        };
+        this._addCssToDom = (cssCode, prepend, props) => {
+            if (!document)
+                return null;
+            const style = document.createElement("style");
+            style.innerHTML = cssCode;
+            props && Object.entries(props).forEach(([key, value]) => {
+                style.setAttribute(key, value);
+            });
+            const head = document.getElementsByTagName("head")[0];
+            const target = (head || document.body);
+            prepend ? target.prepend(style) : target.appendChild(style);
+        };
+        this._parseCssRules = (obj, child = '', media = '') => {
+            return Object.entries(obj).reduce((rules, [key, value]) => {
+                if (value && typeof value === 'object') {
+                    const _media = /^@/.test(key) ? key : null;
+                    const _child = _media ? child : child + key.replace(/&/g, '');
+                    return rules.concat(this._parseCssRules(value, _child, _media || media));
+                }
+                return rules.concat({ media, child, cssRule: [`${key}:${value}`] });
+            }, []);
         };
         this.isCssLoaded = (url) => {
             return this._loadedCsss[url] !== undefined;
@@ -506,13 +539,19 @@ class __Navimi_CSSs {
             if (!cssCode) {
                 return;
             }
-            const style = document.createElement("style");
-            style.innerHTML = cssCode;
-            url && style.setAttribute("cssUrl", url);
-            url && style.setAttribute("cssType", type);
-            const head = document.getElementsByTagName("head")[0];
-            const target = (head || document.body);
-            prepend ? target.prepend(style) : target.appendChild(style);
+            this._addCssToDom(cssCode, prepend, { cssUrl: url, cssType: type });
+        };
+        this.style = (...styles) => {
+            return styles.map(style => this._parseCssRules(style).map(rule => {
+                const cacheKey = JSON.stringify(rule);
+                if (this._cssRulesCache[cacheKey]) {
+                    return this._cssRulesCache[cacheKey];
+                }
+                const className = `__navimi_${this._cssCount++}`;
+                this._insertCssRule(Object.assign(Object.assign({}, rule), { className }));
+                this._cssRulesCache[cacheKey] = className;
+                return className;
+            }).join(' ')).join('');
         };
         //removeIf(minify)
         this.digestHot = ({ filePath, data }) => {
@@ -528,6 +567,7 @@ class __Navimi_CSSs {
     }
     init(navimiFetch) {
         this._navimiFetch = navimiFetch;
+        this._addCssToDom('', true, { id: this._atomicCssId });
     }
 }
 class __Navimi_Fetch {
@@ -926,6 +966,7 @@ class __Navimi_JSs {
                 fetchTemplate: (url) => {
                     return this._navimiTemplates.fetchTemplate(undefined, url);
                 },
+                style: this._navimiCSSs.style,
                 setState: this._navimiState.setState,
                 getState: this._navimiState.getState,
                 setNavimiLinks: this._navimiHelpers.setNavimiLinks,

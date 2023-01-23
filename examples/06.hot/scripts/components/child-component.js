@@ -27,7 +27,12 @@ class ChildComponentClass {
 
     render(children){
         debugger
-        return `<span onclick="this.click()">OK! ${this.count} ${children}</span>`
+        const classNames = this.functions.style({
+            'color': 'green',
+            'font-size': '16px',
+        })
+
+        return `<span onclick="this.click()" class="${classNames}">OK! ${this.count} ${children}</span>`
     }
 
     onUnmount(){

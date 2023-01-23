@@ -18,7 +18,13 @@
             this.showCounter();
 
             const button = document.querySelector(".counter_btn");
-            button && button.addEventListener('click', this.setNewState); 
+            if (button) {
+                button.attributes.class.value = this.nfx.style({
+                    'color': 'purple',
+                    'font-size': '14px',
+                });
+                button.addEventListener('click', this.setNewState); 
+            }
         }
 
         showCounter = (clicks) => {
