@@ -175,6 +175,7 @@ class __Navimi_JSs implements INavimi_JSs {
             fetchTemplate: (url: string | string[]) => {
                 return this._navimiTemplates.fetchTemplate(undefined, url);
             },
+            style: this._navimiCSSs.style,
             setState: this._navimiState.setState,
             getState: this._navimiState.getState,
             setNavimiLinks: this._navimiHelpers.setNavimiLinks,

@@ -18,7 +18,19 @@
             this.showCounter();
 
             const button = document.querySelector(".counter_btn");
-            button && button.addEventListener('click', this.setNewState); 
+            if (button) {
+                button.attributes.class.value = this.nfx.style({
+                    'color': 'red',
+                    'font-size': '14px',
+                    'background-color': 'yellow',
+                    ':hover': {
+                        'color': 'white',
+                        'font-weight': 'bold',
+                        'background-color': 'green',
+                    }
+                });
+                button.addEventListener('click', this.setNewState); 
+            }
         }
 
         showCounter = (clicks) => {
