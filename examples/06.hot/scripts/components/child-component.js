@@ -3,6 +3,7 @@ class ChildComponentClass {
     constructor(node, functions) {
         this.functions = functions;
         this.count = this.functions.getState('test.clicks') || 0;
+        this.color = this.getRandomColor();
     }
 
     async onMount() {
@@ -25,10 +26,19 @@ class ChildComponentClass {
         });
     }
 
+    getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      }
+
     render(children){
         debugger
         const classNames = this.functions.style({
-            'color': 'green',
+            'color': this.color,
             'font-size': '16px',
         })
 
