@@ -14,15 +14,15 @@ class __Navimi_Helpers implements INavimi_Helpers {
             return [];
         }
 
-        const queryPos = path.indexOf("?");
+        const queryPos = path.indexOf('?');
         path = queryPos >= 0 ? path.substring(0, queryPos) : path;
 
-        return path.split("/").filter(p => p.length > 0);
+        return path.split('/').filter(p => p.length > 0);
     };
 
     private parsePath = (urlPath: string, urlPattern: string): INavimi_KeyList<any> => {
-        const queryPos = urlPath.indexOf("?");
-        const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : "";
+        const queryPos = urlPath.indexOf('?');
+        const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : '';
         const path = this.splitPath(urlPath);
         const pattern = this.splitPath(urlPattern);
 
@@ -89,9 +89,9 @@ class __Navimi_Helpers implements INavimi_Helpers {
     public getUrl = (): string => {
         const location = document.location;
         const matches = location.toString().match(/^[^#]*(#.+)$/);
-        const hash = matches ? matches[1] : "";
+        const hash = matches ? matches[1] : '';
         
-        return [location.pathname, location.search, hash].join("");
+        return [location.pathname, location.search, hash].join('');
     };
 
     public setTitle = (title: string): void => {
@@ -99,8 +99,8 @@ class __Navimi_Helpers implements INavimi_Helpers {
     };
 
     public setNavimiLinks = (): void => {
-        document.querySelectorAll("[navimi-link]").forEach(el => {
-            el.removeAttribute("navimi-link");
+        document.querySelectorAll('[navimi-link]').forEach(el => {
+            el.removeAttribute('navimi-link');
             el.addEventListener('click', (e: any) => {
                 e.preventDefault();
                 (window as any).navigateTo(e.target.pathname);
@@ -109,7 +109,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
     };
 
     public removeHash = (url: string): string => {
-        const hashPos = url.indexOf("#");
+        const hashPos = url.indexOf('#');
         return hashPos > 0 ? url.substring(0, hashPos) : url;
     };
 
@@ -168,16 +168,16 @@ class __Navimi_Helpers implements INavimi_Helpers {
 
     public cloneObject = (obj: any): INavimi_KeyList<any> => {
         //todo: error cloning is not working
-        return obj === null || typeof obj !== "object" ? obj :
+        return obj === null || typeof obj !== 'object' ? obj :
             Object.keys(obj).reduce((prev: any, current: string) =>
-                obj[current] !== null && typeof obj[current] === "object" ?
+                obj[current] !== null && typeof obj[current] === 'object' ?
                     (prev[current] = this.cloneObject(obj[current]), prev) :
                     (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
     };
 
     public getRouteAndParams = (url: string, routingList: INavimi_KeyList<INavimi_Route>): { routeItem: INavimi_Route, params: any } => {
         const urlParams = this.splitPath(url);
-        const catchAll = routingList["*"];
+        const catchAll = routingList['*'];
         let routeItem, params;
 
         for (const routeUrl in routingList) {

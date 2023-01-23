@@ -25,12 +25,12 @@ describe('fetch.spec', () => {
 
     it('Test success', (done) => {
 
-        const url = "/template1.html";
-        fetch_data_mock[url] = { text: `testing... ok!`, ok: true };
+        const url = '/template1.html';
+        fetch_data_mock[url] = { text: 'testing... ok!', ok: true };
 
         navimi_fetch.fetchFile(url).then((data: any) => {
 
-            expect(data).toEqual(`testing... ok!`);
+            expect(data).toEqual('testing... ok!');
 
             done();
         });
@@ -39,10 +39,10 @@ describe('fetch.spec', () => {
 
     it('Test not found', (done) => {
 
-        const url = "/template2.html";
+        const url = '/template2.html';
 
         navimi_fetch.fetchFile(url).then(() => {
-            done("Should not get here!");
+            done('Should not get here!');
         }).catch(() => {
             done();
         });
@@ -51,11 +51,11 @@ describe('fetch.spec', () => {
 
     it('Test error', (done) => {
 
-        const url = "/template3.html";
+        const url = '/template3.html';
         fetch_data_mock[url] = { ok: false };
 
         navimi_fetch.fetchFile(url).then(() => {
-            done("Should not get here!");
+            done('Should not get here!');
         }).catch(() => {
             done();
         });
@@ -64,7 +64,7 @@ describe('fetch.spec', () => {
 
     it('Test getErrors', () => {
 
-        const url = "/template2.html";
+        const url = '/template2.html';
 
         const error = navimi_fetch.getErrors(url);
 

@@ -31,8 +31,8 @@ class __Navimi_State implements INavimi_State {
         //start with longer keys to go deep first
         keys.sort((a, b) => b.length - a.length).map(key => {
             if (!this._stateDiff[key]) {
-                const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || "");
-                const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || "");
+                const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || '');
+                const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || '');
                 if (sOld !== sNew) {
                     this._stateDiff[key] = true;
                     //set upper keys as changed so we don't test them again

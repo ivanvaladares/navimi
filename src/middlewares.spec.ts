@@ -22,7 +22,7 @@ describe('middlewares.spec', () => {
             },
             (ctx, next) => {
                 if (ctx.params.forceNavigation) {
-                    next("/someUrl", {p1: "ok"});
+                    next('/someUrl', {p1: 'ok'});
                     return;
                 }
                 next();
@@ -44,7 +44,7 @@ describe('middlewares.spec', () => {
 
     test('Execute middlewares in order', (done) => {
 
-        let context = { 
+        const context = { 
             url: null, 
             routeItem: null, 
             params:  {
@@ -55,11 +55,11 @@ describe('middlewares.spec', () => {
             }
         } as INavimi_Context;
 
-        navimi_middlewares.executeMiddlewares(undefined, context, () => {}).then(_ => {
+        navimi_middlewares.executeMiddlewares(undefined, context, () => { } ).then(() => {
             if (context.params.test_1 === 1 && context.params.test_2 === 2 && context.params.test_3 === 3) {
                 done();
             } else {
-                done("Error: middlewares not executed correctly");
+                done('Error: middlewares not executed correctly');
             }
         }).catch(() => {
             done('Should not get here');
@@ -69,7 +69,7 @@ describe('middlewares.spec', () => {
 
     test('Get error', (done) => {
 
-        let context = {
+        const context = {
             url: null, 
             routeItem: null, 
             params:  {
@@ -78,9 +78,9 @@ describe('middlewares.spec', () => {
             }
         } as INavimi_Context;
 
-        navimi_middlewares.executeMiddlewares(undefined, context, (url, params) => {
-            done("Error: middlewares not executed correctly");
-        }).then(_ => {
+        navimi_middlewares.executeMiddlewares(undefined, context, () => {
+            done('Error: middlewares not executed correctly');
+        }).then(() => {
             done('Should not get here');
         }).catch(() => {
             done();
@@ -90,7 +90,7 @@ describe('middlewares.spec', () => {
 
     test('Navigate away', (done) => {
 
-        let context = {
+        const context = {
             url: null, 
             routeItem: null, 
             params:  {
@@ -100,10 +100,10 @@ describe('middlewares.spec', () => {
         } as INavimi_Context;
 
         navimi_middlewares.executeMiddlewares(undefined, context, (url, params) => {
-            if (url !== "/someUrl" || params.p1 !==  "ok") {
-                done("Error: middlewares not executed correctly");
+            if (url !== '/someUrl' || params.p1 !==  'ok') {
+                done('Error: middlewares not executed correctly');
             }
-        }).then(_ => {
+        }).then(() => {
             done();
         }).catch(() => {
             done('Should not get here');

@@ -8,7 +8,7 @@ class ChildComponentClass {
 
     async onMount() {
         this.teste = await this.functions.fetchJS('/scripts/service3.js');
-        this.functions.watchState("test.clicks", this.updateNum.bind(this) ); 
+        this.functions.watchState('test.clicks', this.updateNum.bind(this) ); 
     }
 
     updateNum() {
@@ -46,7 +46,7 @@ class ChildComponentClass {
     }
 
     onUnmount(){
-        console.log("unmounting child component")
+        console.log('unmounting child component')
     }
 
 }

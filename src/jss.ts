@@ -1,8 +1,8 @@
 class __Navimi_JSs implements INavimi_JSs {
 
-    private _navimiLoaderNS = "__navimiLoader";
-    private _callBackNS = "_jsLoaderCallback";
-    private _promiseNS = "_promise_";
+    private _navimiLoaderNS = '__navimiLoader';
+    private _callBackNS = '_jsLoaderCallback';
+    private _promiseNS = '_promise_';
 
     private _loadedJSs: INavimi_KeyList<string> = {};
     private _jsType: INavimi_KeyList<jsType> = {};
@@ -51,7 +51,7 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     private _rejectPromise = (reason: any, jsUrl: string): void => {
-        this._navimiLoader[this._promiseNS + jsUrl + "_reject"](reason);
+        this._navimiLoader[this._promiseNS + jsUrl + '_reject'](reason);
     };
 
     private _awaitJS = (jsUrl: string) => {
@@ -67,7 +67,7 @@ class __Navimi_JSs implements INavimi_JSs {
                 const type = this._jsType[jsUrl];
                 if ((type === 'library' || type === 'module') && this.isJsLoaded(jsUrl)) {
                     clearInterval(loadInterval);
-                    return resolve("");
+                    return resolve('');
                 }
 
                 const error = this._navimiFetch.getErrors(jsUrl);
@@ -88,8 +88,8 @@ class __Navimi_JSs implements INavimi_JSs {
         if (arr.length > 0) {
 
             const libraries: INavimi_Library[] = arr.map(lib => {
-                if (typeof lib === "string") {
-                    const type = lib.split(".").pop();
+                if (typeof lib === 'string') {
+                    const type = lib.split('.').pop();
                     return {
                         url: lib,
                         type: type.toLowerCase(),
@@ -101,12 +101,12 @@ class __Navimi_JSs implements INavimi_JSs {
 
             await Promise.all(libraries.map(obj => {
                 const type = obj.type.toLowerCase();
-                if (type === "css") {
+                if (type === 'css') {
                     return this._navimiCSSs.fetchCss(undefined, obj.url).then(() => {
                         return this._navimiCSSs.insertCss(obj.url, 'library', true);
                     });
                 } else {
-                    return this.fetchJS(undefined, [obj.url], type === "module" ? "module" : "library");
+                    return this.fetchJS(undefined, [obj.url], type === 'module' ? 'module' : 'library');
                 }
             })).catch(ex => {
                 throw new Error(ex)
@@ -116,13 +116,13 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     private _fetch = async (abortController: AbortController, url: string, type: jsType): Promise<void> => {
-        let jsCode = "";
+        let jsCode = '';
         if (this._loadedJSs[url]) {
             jsCode = this._loadedJSs[url];
         } else {
             jsCode = await this._navimiFetch.fetchFile(url, {
                 headers: {
-                    Accept: "application/javascript"
+                    Accept: 'application/javascript'
                 },
                 signal: abortController ? abortController.signal : undefined
             });
@@ -133,7 +133,7 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     private _insertJS = (url: string, jsCode: string, type: jsType): void => {
-        const jsHtmlBody = (type === "module" || type === "library") ? jsCode :
+        const jsHtmlBody = (type === 'module' || type === 'library') ? jsCode :
             `((loader, url, type) => { loader(url, type, (() => { return ${jsCode}
 })())})(${this._navimiLoaderNS}.${this._callBackNS}, "${url}", "${type}")`;
 
@@ -144,11 +144,11 @@ class __Navimi_JSs implements INavimi_JSs {
             oldTag.remove();
         }
 
-        const script: HTMLScriptElement = document.createElement("script");
-        script.type = type === "module" ? "module" : "text/javascript";
+        const script: HTMLScriptElement = document.createElement('script');
+        script.type = type === 'module' ? 'module' : 'text/javascript';
         script.innerHTML = jsHtmlBody;
-        script.setAttribute("jsUrl", url);
-        const head = document.getElementsByTagName("head")[0];
+        script.setAttribute('jsUrl', url);
+        const head = document.getElementsByTagName('head')[0];
         (head || document.body).appendChild(script);
 
         if (type === 'module' || type === 'library') {
@@ -170,7 +170,7 @@ class __Navimi_JSs implements INavimi_JSs {
                         [jsUrl]: true
                     };
                 });
-                return this.fetchJS(undefined, urls, "javascript");
+                return this.fetchJS(undefined, urls, 'javascript');
             },
             fetchTemplate: (url: string | string[]) => {
                 return this._navimiTemplates.fetchTemplate(undefined, url);
@@ -189,7 +189,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
         if (Array.isArray(JsClass)) {
             //add all other elements are expected to be services names
-            const services = JsClass.filter(s => typeof s === "string");
+            const services = JsClass.filter(s => typeof s === 'string');
             if (services.length > 0) {
                 this.loadServices(undefined, jsUrl, services);
             }
@@ -304,8 +304,8 @@ class __Navimi_JSs implements INavimi_JSs {
 
         try {
 
-            if (type === "route" || type === "component") {
-                const instance = type === "route" ?
+            if (type === 'route' || type === 'component') {
+                const instance = type === 'route' ?
                     await this._buildRoute(jsUrl, JsCode) :
                     await this._buildComponentClass(jsUrl, JsCode);
 
@@ -330,7 +330,7 @@ class __Navimi_JSs implements INavimi_JSs {
             !this._navimiFetch.getErrors(jsUrl);
     };
 
-    private _checkDepsUrls = (jsUrl: string, depArray: string[], type: "services" | "components"): string[] => {
+    private _checkDepsUrls = (jsUrl: string, depArray: string[], type: 'services' | 'components'): string[] => {
         const notFound: string[] = [];
         if (!this._servicesList[jsUrl]) {
             this._servicesList[jsUrl] = [];
@@ -341,7 +341,7 @@ class __Navimi_JSs implements INavimi_JSs {
             if (url === undefined) {
                 notFound.push(name);
             } else {
-                type === "services" &&
+                type === 'services' &&
                     this._servicesList[jsUrl].indexOf(name) === -1 &&
                     this._servicesList[jsUrl].push(name);
 
@@ -354,7 +354,7 @@ class __Navimi_JSs implements INavimi_JSs {
         });
 
         if (notFound.length > 0) {
-            throw new Error(type + " not defined: " + notFound.join(", "));
+            throw new Error(type + ' not defined: ' + notFound.join(', '));
         }
 
         return urls;
@@ -392,7 +392,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
                 // let the js resolve the promise itself when it loads (in _insertJS or _instantiateJS)
                 this._navimiLoader[this._promiseNS + url] = resolve;
-                this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
+                this._navimiLoader[this._promiseNS + url + '_reject'] = reject;
 
                 this._fetch(abortController, url, type).catch(reject);
             });
@@ -407,10 +407,10 @@ class __Navimi_JSs implements INavimi_JSs {
             return;
         }
 
-        const servicesUrls = this._checkDepsUrls(jsUrl, services, "services");
+        const servicesUrls = this._checkDepsUrls(jsUrl, services, 'services');
 
         const promises = servicesUrls.filter(url => url !== undefined)
-            .map(url => this.fetchJS(abortController, [url], "service"));
+            .map(url => this.fetchJS(abortController, [url], 'service'));
 
         return Promise.all(promises);
     };
@@ -421,10 +421,10 @@ class __Navimi_JSs implements INavimi_JSs {
             return;
         }
 
-        const componentsUrls = this._checkDepsUrls(jsUrl, components, "components");
+        const componentsUrls = this._checkDepsUrls(jsUrl, components, 'components');
 
         const promises = componentsUrls.filter(url => url !== undefined)
-            .map(url => this.fetchJS(abortController, [url], "component"));
+            .map(url => this.fetchJS(abortController, [url], 'component'));
 
         return Promise.all(promises);
     };
@@ -466,7 +466,7 @@ class __Navimi_JSs implements INavimi_JSs {
         const type = this._jsType[filePath];
 
         //destroy all instances
-        if (type === "library" || type === "module") {
+        if (type === 'library' || type === 'module') {
             for (const jsUrl in this._jsDepMap) {
                 destroyDependencies(jsUrl);
             }

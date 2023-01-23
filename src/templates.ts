@@ -10,9 +10,9 @@ class __Navimi_Templates implements INavimi_Templates {
     public init(navimiFetch: INavimi_Fetch): void {
         this._navimiFetch = navimiFetch;
 
-        this._regIni = new RegExp("<t ([^>]+)>");
-        this._regEnd = new RegExp("</t>");
-        this._regId = new RegExp("id=(\"[^\"]+\"|'[^']+')");
+        this._regIni = new RegExp('<t ([^>]+)>');
+        this._regEnd = new RegExp('</t>');
+        this._regId = new RegExp('id=("[^"]+"|\'[^\']+\')');
     }
 
     private loadTemplate = (templateCode: string, url?: string): void => {
@@ -61,7 +61,7 @@ class __Navimi_Templates implements INavimi_Templates {
 
             return this._navimiFetch.fetchFile(url, {
                 headers: {
-                    Accept: "text/html"
+                    Accept: 'text/html'
                 },
                 signal: abortController ? abortController.signal : undefined
             }).then(templateCode => {

@@ -21,7 +21,7 @@ class __Navimi_Core {
     constructor(routes: INavimi_KeyList<INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
 
         this._callId = 0;
-        this._abortController = window["AbortController"] ? new AbortController() : undefined;
+        this._abortController = window['AbortController'] ? new AbortController() : undefined;
         this._currentJSUrl;
         this._currentUrl;
         this._routesParams = {};
@@ -134,7 +134,7 @@ class __Navimi_Core {
                     return;
                 }
                 this._abortController && this._abortController.abort();
-                this._abortController = window["AbortController"] ? new AbortController() : undefined;
+                this._abortController = window['AbortController'] ? new AbortController() : undefined;
             }
 
             const callId = ++this._callId;
@@ -179,7 +179,7 @@ class __Navimi_Core {
             }
 
             if (!routeItem) {
-                callId === this._callId && this._reportError(new Error("No route match for url: " + url));
+                callId === this._callId && this._reportError(new Error('No route match for url: ' + url));
                 return;
             }
 
@@ -189,7 +189,7 @@ class __Navimi_Core {
 
             if (callId < this._callId) {
                 //removeIf(minify)
-                console.warn("Navimi: A middleware has exited or errored.");
+                console.warn('Navimi: A middleware has exited or errored.');
                 //endRemoveIf(minify)
                 return;
             }
@@ -199,7 +199,7 @@ class __Navimi_Core {
             const { title, jsUrl, cssUrl, templatesUrl, services, components } = routeItem || {};
 
             if (!jsUrl && !templatesUrl) {
-                throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
+                throw new Error('The route must define the \'jsUrl\' or \'templatesUrl\'!');
             }
 
             if (jsUrl) {
@@ -221,7 +221,7 @@ class __Navimi_Core {
                 this._navimiJSs.loadComponents(this._abortController, jsUrl || url, components),
                 this._navimiCSSs.fetchCss(this._abortController, cssUrl),
                 this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl),
-                (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], "route"))
+                (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'))
             ]).catch(this._reportError);
 
             //wait global css and template to load, if any
@@ -238,7 +238,7 @@ class __Navimi_Core {
                 await this._navimiJSs.initRoute(jsUrl, this._routesParams[jsUrl]);
             } else {
                 const template = this._navimiTemplates.getTemplate(templatesUrl) as string;
-                const body = document.querySelector("body");
+                const body = document.querySelector('body');
                 if (template && body) {
                     body.innerHTML = template;
                 }

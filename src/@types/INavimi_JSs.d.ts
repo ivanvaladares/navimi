@@ -1,4 +1,4 @@
-type jsType = "component" | "javascript" | "library" | "module" | "route" | "service";
+type jsType = 'component' | 'javascript' | 'library' | 'module' | 'route' | 'service';
 interface INavimi_JSs {
     init: (navimiHelpers: INavimi_Helpers,
         navimiFetch: INavimi_Fetch,

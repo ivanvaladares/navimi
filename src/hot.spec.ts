@@ -23,7 +23,7 @@ describe('hot.spec', () => {
 
         window.WebSocket = jest.fn(() => {
             return {
-                addEventListener: (eventName: string, callback: Function) => {
+                addEventListener: (eventName: string, callback: () => void) => {
                     webSocketMessageEventMock[eventName] = callback;
                 }
             }
@@ -57,7 +57,7 @@ describe('hot.spec', () => {
     it('Test messsage', () => {
 
         const hotPayload: hotPayload = {
-            message: "TESTE"
+            message: 'TESTE'
         };
 
         webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
@@ -69,7 +69,7 @@ describe('hot.spec', () => {
     it('Test img update', () => {
 
         const hotPayload: hotPayload = {
-            filePath: "./images/test.gif",
+            filePath: './images/test.gif',
             data: null
         };
 
@@ -82,8 +82,8 @@ describe('hot.spec', () => {
     it('Test css update', () => {
 
         const hotPayload: hotPayload = {
-            filePath: "./css/test.css",
-            data: "css content..."
+            filePath: './css/test.css',
+            data: 'css content...'
         };
 
         webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
@@ -95,8 +95,8 @@ describe('hot.spec', () => {
     it('Test template update', (done) => {
 
         const hotPayload: hotPayload = {
-            filePath: "./html/test.html",
-            data: "html content..."
+            filePath: './html/test.html',
+            data: 'html content...'
         };
 
         webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
@@ -112,8 +112,8 @@ describe('hot.spec', () => {
     it('Test js update', (done) => {
 
         const hotPayload: hotPayload = {
-            filePath: "./js/test.js",
-            data: "js content..."
+            filePath: './js/test.js',
+            data: 'js content...'
         };
 
         webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });

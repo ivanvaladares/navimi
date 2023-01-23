@@ -2,24 +2,24 @@ describe('navimi.spec', () => {
     const { Navimi } = require('./navimi');
 
     const routes = {
-        "/": {
-            title: "Home",
-            jsUrl: "/scripts/home.js",
-            templatesUrl: "/templates/home.html",
+        '/': {
+            title: 'Home',
+            jsUrl: '/scripts/home.js',
+            templatesUrl: '/templates/home.html',
         },
-        "/about": {
-            title: "About",
-            jsUrl: "/scripts/about.js",
-            templatesUrl: "/templates/about.html"
+        '/about': {
+            title: 'About',
+            jsUrl: '/scripts/about.js',
+            templatesUrl: '/templates/about.html'
         },
-        "*": {
-            title: "Not found",
-            jsUrl: "/scripts/404.js"
+        '*': {
+            title: 'Not found',
+            jsUrl: '/scripts/404.js'
         }
     } as INavimi_KeyList<INavimi_Route>;
 
     const options = {
-        globalCssUrl: "/css/global.css",
+        globalCssUrl: '/css/global.css',
     } as INavimi_Options;
 
 
@@ -55,7 +55,7 @@ describe('navimi.spec', () => {
         window.__Navimi_Core = jest.fn((routes, services, options) => {
             coreReturn = { routes, services, options };
             return {}
-        });;
+        });
 
         new Navimi(routes, options);
 

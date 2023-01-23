@@ -18,17 +18,17 @@ class __Navimi_Hot implements INavimi_Hot {
     public openHotWs = (hotOption: number | boolean): void => {
         try {
             if (!('WebSocket' in window)) {
-                console.error("Websocket is not supported by your browser!");
+                console.error('Websocket is not supported by your browser!');
                 return;
             }
 
-            console.warn("Connecting HOT...");
+            console.warn('Connecting HOT...');
             const port = hotOption === true ? 8080 : hotOption;
             this._wsHotClient = null;
             this._wsHotClient = new WebSocket(`ws://localhost:${port}`);
             this._wsHotClient.addEventListener('message', async (e: any) => {
                 try {
-                    const payload: hotPayload = JSON.parse(e.data || "");
+                    const payload: hotPayload = JSON.parse(e.data || '');
                     if (payload.message) {
                         console.warn(payload.message);
                         return;
@@ -37,7 +37,7 @@ class __Navimi_Hot implements INavimi_Hot {
                         await this._digestHot(payload);
                     }
                 } catch (ex) {
-                    console.error("Could not parse HOT message:", ex);
+                    console.error('Could not parse HOT message:', ex);
                 }
             });
             this._wsHotClient.onclose = () => {
@@ -51,38 +51,38 @@ class __Navimi_Hot implements INavimi_Hot {
 
     private _digestHot = async (payload: hotPayload): Promise<void> => {
         try {
-            payload.filePath = payload.filePath.replace(/\\/g, "/");
-            const fileType = payload.filePath.split(".").pop()?.toLocaleLowerCase();
+            payload.filePath = payload.filePath.replace(/\\/g, '/');
+            const fileType = payload.filePath.split('.').pop()?.toLocaleLowerCase();
 
             switch (fileType) {
-                case "css":
+                case 'css':
                     await this._navimiCSSs.digestHot(payload)
                     .catch(() => {/*ignore*/});
                     break;
 
-                case "html":
-                case "htm":
+                case 'html':
+                case 'htm':
                     await this._navimiTemplates.digestHot(payload)
                         .then(() => this._initRouteFunc())
                         .catch(() => {/*ignore*/});
                     break;
 
-                case "js":
+                case 'js':
                     this._navimiJSs.digestHot(payload)
                     .then(() => this._initRouteFunc())
                     .catch(() => {/*ignore*/});
                     break;
 
-                case "gif":
-                case "jpg":
-                case "jpeg":
-                case "png":
-                case "svg":
+                case 'gif':
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'svg':
                     this._initRouteFunc();
                     break;
             }
         } catch (ex) {
-            console.error("Could not digest HOT payload: ", ex);
+            console.error('Could not digest HOT payload: ', ex);
         }
     };
     //endRemoveIf(minify)

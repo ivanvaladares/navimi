@@ -1,4 +1,4 @@
-describe("state.spec", () => {
+describe('state.spec', () => {
     const { state } = require('./state');
     const { helpers } = require('./helpers');
 
@@ -14,7 +14,7 @@ describe("state.spec", () => {
     });
 
     test('Initial state', () => {
-        let currentState = navimi_state.getState();
+        const currentState = navimi_state.getState();
 
         expect(currentState).toEqual({});
     });
@@ -22,23 +22,23 @@ describe("state.spec", () => {
     test('Initial test', () => {
 
         navimi_state.setState({
-            teste: "ok"
+            teste: 'ok'
         });
 
-        let currentState = navimi_state.getState();
+        const currentState = navimi_state.getState();
 
-        expect(currentState?.teste).toBe("ok");
+        expect(currentState?.teste).toBe('ok');
     });
 
     test('Watch test', (done) => {
 
-        navimi_state.watchState(callerUid, "teste", (state: any) => {
-            expect(state).toBe("changed!");
+        navimi_state.watchState(callerUid, 'teste', (state: any) => {
+            expect(state).toBe('changed!');
             done();
         });
 
         navimi_state.setState({
-            teste: "changed!"
+            teste: 'changed!'
         });
 
     });
@@ -46,14 +46,14 @@ describe("state.spec", () => {
     test('Unwatch test', (done) => {
         let error: string;
 
-        navimi_state.watchState(callerUid, "silent", () => {
-            error = "The state listener should not be called";
+        navimi_state.watchState(callerUid, 'silent', () => {
+            error = 'The state listener should not be called';
         });
 
-        navimi_state.unwatchState(callerUid, "silent");
+        navimi_state.unwatchState(callerUid, 'silent');
 
         navimi_state.setState({
-            silent: "silent change!"
+            silent: 'silent change!'
         });
 
         setTimeout(() => {
@@ -67,8 +67,8 @@ describe("state.spec", () => {
 
         navimi_state.setState({
             client: {
-                name: "test",
-                email: "test@test.com"
+                name: 'test',
+                email: 'test@test.com'
             }
         });
 
@@ -80,7 +80,7 @@ describe("state.spec", () => {
 
         navimi_state.setState({
             client: {
-                phone: "123456789"
+                phone: '123456789'
             }
         });
 
@@ -88,23 +88,23 @@ describe("state.spec", () => {
         navimi_state.setState({
             client: {
                 address: {
-                    street: "test street",
-                    number: "123"
+                    street: 'test street',
+                    number: '123'
                 }
             }
         });
 
 
-        let currentState = navimi_state.getState("client");
+        const currentState = navimi_state.getState('client');
 
         expect(currentState).toEqual({
             name: 'test',
             age: 20,
-            email: "test@test.com",
+            email: 'test@test.com',
             phone: '123456789',
             address: {
-                street: "test street",
-                number: "123"
+                street: 'test street',
+                number: '123'
             }
         });
 
@@ -112,18 +112,18 @@ describe("state.spec", () => {
 
     test('Get nested key test', () => {
 
-        const currentState = navimi_state.getState("client.address");
+        const currentState = navimi_state.getState('client.address');
 
         expect(currentState).toEqual({
-            street: "test street",
-            number: "123"
+            street: 'test street',
+            number: '123'
         });
     });
 
 
     test('Watch nested key test', (done) => {
 
-        navimi_state.watchState(callerUid, "client.address.number", (state: any) => {
+        navimi_state.watchState(callerUid, 'client.address.number', (state: any) => {
             expect(state).toEqual(456);
             done();
         });
@@ -143,36 +143,36 @@ describe("state.spec", () => {
         navimi_state.setState({
             toClear: {
                 subKey1: {
-                    street: "test street",
-                    number: "123",
+                    street: 'test street',
+                    number: '123',
                     subKey2: {
-                        street: "street test",
-                        number: "321"
+                        street: 'street test',
+                        number: '321'
                     },
                     test: [1,2,3],
-                    func: () => { console.log( "func" ) },
+                    func: () => { console.log( 'func' ) },
                     cl: class {}
                 }
             }
         });
 
-        navimi_state.clear("toClear");
+        navimi_state.clear('toClear');
 
-        let currentState = navimi_state.getState();
+        const currentState = navimi_state.getState();
 
         expect(currentState).toEqual({
             client: {
                 name: 'test',
                 age: 20,
-                email: "test@test.com",
+                email: 'test@test.com',
                 phone: '123456789',
                 address: {
-                    street: "test street",
+                    street: 'test street',
                     number: 456
                 }
             },
-            silent: "silent change!",
-            teste: "changed!",
+            silent: 'silent change!',
+            teste: 'changed!',
             toClear: {}
         });
 
@@ -191,7 +191,7 @@ describe("state.spec", () => {
 
         navimi_state.clear();
 
-        let currentState = navimi_state.getState();
+        const currentState = navimi_state.getState();
 
         expect(currentState).toEqual({});
 

@@ -2,7 +2,7 @@ describe('core.spec', () => {
     const { core } = require('./core');
     const { helpers } = require('./helpers');
 
-    window["AbortController"] = undefined;
+    window['AbortController'] = undefined;
 
     const report_error = jest.fn();
 

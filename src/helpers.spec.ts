@@ -9,7 +9,7 @@ describe('helpers.spec', () => {
 
     it('debounce', (done) => {
 
-        let result = "";
+        let result = '';
         const debouncedFunc = navimi_helpers.debounce((arg: string) => {
             result += arg;
         }, 10) as unknown as (arg: string) => void;
@@ -27,7 +27,7 @@ describe('helpers.spec', () => {
 
     it('throttle', (done) => {
 
-        let result = "";
+        let result = '';
         const throttledFunc = navimi_helpers.throttle((arg: string) => {
             result += arg;
         }, 10, this) as unknown as (arg: string) => void;
@@ -38,7 +38,7 @@ describe('helpers.spec', () => {
         expect(result).toEqual('throttled');
 
         setTimeout(() => {
-            expect(result).toEqual("throttledthrottled");
+            expect(result).toEqual('throttledthrottled');
             done();
         }, 50);
 
@@ -49,7 +49,7 @@ describe('helpers.spec', () => {
 
         const result = navimi_helpers.getUrl();
 
-        expect(result).toEqual("/whatever/url/you/want");
+        expect(result).toEqual('/whatever/url/you/want');
     });
 
     it('getUrl', (done) => {
@@ -57,16 +57,16 @@ describe('helpers.spec', () => {
 
         setTimeout(() => {
             const result = navimi_helpers.getUrl();
-            expect(result).toEqual("/whatever/url/you/want?param=1&param2=2#hash");
+            expect(result).toEqual('/whatever/url/you/want?param=1&param2=2#hash');
             done();
         }, 50);
 
     });
 
     it('setTitle', () => {
-        navimi_helpers.setTitle("my title!");
+        navimi_helpers.setTitle('my title!');
 
-        expect(document.title).toEqual("my title!");
+        expect(document.title).toEqual('my title!');
     });
 
     it('setNavimiLinks', () => {
@@ -94,7 +94,7 @@ describe('helpers.spec', () => {
 
         const result = navimi_helpers.removeHash('/whatever/url/you/want?param=1&param2=2#hash');
 
-        expect(result).toEqual("/whatever/url/you/want?param=1&param2=2");
+        expect(result).toEqual('/whatever/url/you/want?param=1&param2=2');
     });
 
     it('stringify 1', () => {
@@ -102,11 +102,11 @@ describe('helpers.spec', () => {
         const result = navimi_helpers.stringify({
             name: 'test',
             age: 20,
-            email: "test@test.com",
+            email: 'test@test.com',
             phone: '123456789',
             address: {
-                street: "test street",
-                number: "123"
+                street: 'test street',
+                number: '123'
             }
         });
 
@@ -119,7 +119,7 @@ describe('helpers.spec', () => {
             action: 'add',
             func: (param: any) => { console.log(param); },
             arr: [1, 2, 3],
-            error: new Error("test error")
+            error: new Error('test error')
         });
 
         expect(result).toEqual('{"action":"add","func":"(param) => { console.log(param); }","arr":[1,2,3],"error":"test error"}');
@@ -133,11 +133,11 @@ describe('helpers.spec', () => {
             person: {
                 name: 'test',
                 age: 20,
-                email: "test@test.com",
+                email: 'test@test.com',
                 phone: '123456789',
                 address: {
-                    street: "test street",
-                    number: "123"
+                    street: 'test street',
+                    number: '123'
                 }
             },
             arr: [1, 2, 3],
@@ -152,14 +152,14 @@ describe('helpers.spec', () => {
     it('getRouteAndParams 1', () => {
 
         const routeList = {
-            "/user/:userId": {
-                title: "User",
-                jsUrl: "/scripts/user.js",
-                templatesUrl: "/templates/user.html"
+            '/user/:userId': {
+                title: 'User',
+                jsUrl: '/scripts/user.js',
+                templatesUrl: '/templates/user.html'
             }
         };
 
-        const result = navimi_helpers.getRouteAndParams("/user/123456", routeList);
+        const result = navimi_helpers.getRouteAndParams('/user/123456', routeList);
 
         expect(result).toEqual({
             routeItem: {
@@ -177,14 +177,14 @@ describe('helpers.spec', () => {
     it('getRouteAndParams 2', () => {
 
         const routeList = {
-            "/user/:userId/:addressId": {
-                title: "User",
-                jsUrl: "/scripts/user.js",
-                templatesUrl: "/templates/user.html"
+            '/user/:userId/:addressId': {
+                title: 'User',
+                jsUrl: '/scripts/user.js',
+                templatesUrl: '/templates/user.html'
             }
         };
 
-        const result = navimi_helpers.getRouteAndParams("/user/123456/789?param1=p1&param2=p2#hash", routeList);
+        const result = navimi_helpers.getRouteAndParams('/user/123456/789?param1=p1&param2=p2#hash', routeList);
 
         expect(result).toEqual({
             routeItem: {
@@ -204,18 +204,18 @@ describe('helpers.spec', () => {
     it('getRouteAndParams 3', () => {
 
         const routeList = {
-            "/user/:userId/:addressId": {
-                title: "User",
-                jsUrl: "/scripts/user.js",
-                templatesUrl: "/templates/user.html"
+            '/user/:userId/:addressId': {
+                title: 'User',
+                jsUrl: '/scripts/user.js',
+                templatesUrl: '/templates/user.html'
             },
-            "*": {
-                title: "Not found",
-                jsUrl: "/scripts/404.js"
+            '*': {
+                title: 'Not found',
+                jsUrl: '/scripts/404.js'
             }
         };
 
-        const result = navimi_helpers.getRouteAndParams("/xxxx/123456/789?param1=p1&param2=p2#hash", routeList);
+        const result = navimi_helpers.getRouteAndParams('/xxxx/123456/789?param1=p1&param2=p2#hash', routeList);
 
         expect(result).toEqual({
             routeItem: { title: 'Not found', jsUrl: '/scripts/404.js' },

@@ -12,7 +12,7 @@ class __Navimi_Components implements INavimi_Components {
 
         new window.MutationObserver((mutations: MutationRecord[]) => {
             mutations.forEach(mutation => {
-                if (mutation.type === "attributes") {
+                if (mutation.type === 'attributes') {
                     const node = mutation.target as INavimi_Component;
                     if (this._components[node.localName]) {
                         const prevAttributes = this._readAttributes(node);
@@ -64,7 +64,7 @@ class __Navimi_Components implements INavimi_Components {
         [].slice.call(node.attributes).map((attr: any) => {
             const name = attr.name;
             //@ts-ignore
-            if (typeof node[name] !== "function") {
+            if (typeof node[name] !== 'function') {
                 node.props = {
                     ...node.props || {},
                     [name]: attr.value
@@ -137,7 +137,7 @@ class __Navimi_Components implements INavimi_Components {
             [].slice.call(childNode.attributes).map((attr: any) => {
                 const name = attr.name;
                 //@ts-ignore
-                if (typeof childNode[name] === "function") {
+                if (typeof childNode[name] === 'function') {
                     //@ts-ignore
                     childNode[name] = childNode[name].bind(parentNode);
                 }
@@ -161,8 +161,8 @@ class __Navimi_Components implements INavimi_Components {
     private _mergeHtml = (template: HTMLBodyElement, node: DocumentFragment) => {
 
         const getNodeType = (node: any) => {
-            if (node.nodeType === 3) return "text";
-            if (node.nodeType === 8) return "comment";
+            if (node.nodeType === 3) return 'text';
+            if (node.nodeType === 8) return 'comment';
             return node.tagName.toLowerCase();
         };
 
@@ -233,7 +233,7 @@ class __Navimi_Components implements INavimi_Components {
 
                 // clear child nodes
                 if (documentNodes[index].childNodes.length > 0 && templateNode.childNodes.length < 1) {
-                    documentNodes[index].innerHTML = "";
+                    documentNodes[index].innerHTML = '';
                     continue;
                 }
 
@@ -300,7 +300,7 @@ class __Navimi_Components implements INavimi_Components {
 
                 this._previousTemplate = undefined;
                 this._initalInnerHTML = node.innerHTML;
-                node.innerHTML = "";
+                node.innerHTML = '';
 
                 this._component = new componentClass(this._node.props, getFunctions(this._uid), services);
 
@@ -328,9 +328,9 @@ class __Navimi_Components implements INavimi_Components {
 
                     this._previousTemplate = html;
 
-                    const template = new DOMParser().parseFromString(html, "text/html");
+                    const template = new DOMParser().parseFromString(html, 'text/html');
 
-                    that._mergeHtml(template.querySelector("body"), this._node);
+                    that._mergeHtml(template.querySelector('body'), this._node);
                 }
 
                 this._component.onRender && this._component.onRender.call(this._node);

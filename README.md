@@ -169,7 +169,7 @@ Routes and Components will receive a collection of functions provided by Navimi.
 | setState            | (state: { [key: string]: any }) => void;                | Set the state at any level using . notation             |
 | unwatchState        | (key?: string \| string[]) => void;                     | Unwatch one or many state at any level using . notation | 
 | watchState          | (key: string, callback: (state: any) => void) => void;  | Set a watcher to state at any level using . notation    |
-| style               | (styles: { [key: string]: any }) => string;             | Returns class names for the provided styles object      |
+| style               | (styles: { [key: string]: any }) => string;             | Returns class names for the provided style object       |
 
 Check the examples folder for more details.
 

@@ -36,7 +36,7 @@ class __Navimi_Components {
             [].slice.call(node.attributes).map((attr) => {
                 const name = attr.name;
                 //@ts-ignore
-                if (typeof node[name] !== "function") {
+                if (typeof node[name] !== 'function') {
                     node.props = Object.assign(Object.assign({}, node.props || {}), { [name]: attr.value });
                 }
             });
@@ -94,7 +94,7 @@ class __Navimi_Components {
                 [].slice.call(childNode.attributes).map((attr) => {
                     const name = attr.name;
                     //@ts-ignore
-                    if (typeof childNode[name] === "function") {
+                    if (typeof childNode[name] === 'function') {
                         //@ts-ignore
                         childNode[name] = childNode[name].bind(parentNode);
                     }
@@ -116,9 +116,9 @@ class __Navimi_Components {
         this._mergeHtml = (template, node) => {
             const getNodeType = (node) => {
                 if (node.nodeType === 3)
-                    return "text";
+                    return 'text';
                 if (node.nodeType === 8)
-                    return "comment";
+                    return 'comment';
                 return node.tagName.toLowerCase();
             };
             const getNodeContent = (node) => {
@@ -177,7 +177,7 @@ class __Navimi_Components {
                     }
                     // clear child nodes
                     if (documentNodes[index].childNodes.length > 0 && templateNode.childNodes.length < 1) {
-                        documentNodes[index].innerHTML = "";
+                        documentNodes[index].innerHTML = '';
                         continue;
                     }
                     // prepare empty node for next round
@@ -224,8 +224,8 @@ class __Navimi_Components {
                         const html = this._component.render && await this._component.render.call(this._node, this._initalInnerHTML);
                         if (html && html !== this._previousTemplate) {
                             this._previousTemplate = html;
-                            const template = new DOMParser().parseFromString(html, "text/html");
-                            that._mergeHtml(template.querySelector("body"), this._node);
+                            const template = new DOMParser().parseFromString(html, 'text/html');
+                            that._mergeHtml(template.querySelector('body'), this._node);
                         }
                         this._component.onRender && this._component.onRender.call(this._node);
                     };
@@ -233,7 +233,7 @@ class __Navimi_Components {
                     this._node = node;
                     this._previousTemplate = undefined;
                     this._initalInnerHTML = node.innerHTML;
-                    node.innerHTML = "";
+                    node.innerHTML = '';
                     this._component = new componentClass(this._node.props, getFunctions(this._uid), services);
                     // connects the component code to the tag 
                     Object.setPrototypeOf(this._node, this._component);
@@ -254,7 +254,7 @@ class __Navimi_Components {
         this._navimiState = navimiState;
         new window.MutationObserver((mutations) => {
             mutations.forEach(mutation => {
-                if (mutation.type === "attributes") {
+                if (mutation.type === 'attributes') {
                     const node = mutation.target;
                     if (this._components[node.localName]) {
                         const prevAttributes = this._readAttributes(node);
@@ -319,7 +319,7 @@ class __Navimi_Core {
                         return;
                     }
                     this._abortController && this._abortController.abort();
-                    this._abortController = window["AbortController"] ? new AbortController() : undefined;
+                    this._abortController = window['AbortController'] ? new AbortController() : undefined;
                 }
                 const callId = ++this._callId;
                 const pushState = urlToGo !== undefined;
@@ -352,7 +352,7 @@ class __Navimi_Core {
                     }
                 }
                 if (!routeItem) {
-                    callId === this._callId && this._reportError(new Error("No route match for url: " + url));
+                    callId === this._callId && this._reportError(new Error('No route match for url: ' + url));
                     return;
                 }
                 await this._navimiMiddlewares.executeMiddlewares(this._abortController, routeParams, (url, params) => {
@@ -360,14 +360,14 @@ class __Navimi_Core {
                 }).catch(this._reportError);
                 if (callId < this._callId) {
                     //removeIf(minify)
-                    console.warn("Navimi: A middleware has exited or errored.");
+                    console.warn('Navimi: A middleware has exited or errored.');
                     //endRemoveIf(minify)
                     return;
                 }
                 this._currentUrl = url;
                 const { title, jsUrl, cssUrl, templatesUrl, services, components } = routeItem || {};
                 if (!jsUrl && !templatesUrl) {
-                    throw new Error("The route must define the 'jsUrl' or 'templatesUrl'!");
+                    throw new Error('The route must define the \'jsUrl\' or \'templatesUrl\'!');
                 }
                 if (jsUrl) {
                     this._currentJSUrl = jsUrl;
@@ -387,7 +387,7 @@ class __Navimi_Core {
                     this._navimiJSs.loadComponents(this._abortController, jsUrl || url, components),
                     this._navimiCSSs.fetchCss(this._abortController, cssUrl),
                     this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl),
-                    (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], "route"))
+                    (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'))
                 ]).catch(this._reportError);
                 //wait global css and template to load, if any
                 await this._waitForAssets(callId);
@@ -401,7 +401,7 @@ class __Navimi_Core {
                 }
                 else {
                     const template = this._navimiTemplates.getTemplate(templatesUrl);
-                    const body = document.querySelector("body");
+                    const body = document.querySelector('body');
                     if (template && body) {
                         body.innerHTML = template;
                     }
@@ -418,7 +418,7 @@ class __Navimi_Core {
             }
         };
         this._callId = 0;
-        this._abortController = window["AbortController"] ? new AbortController() : undefined;
+        this._abortController = window['AbortController'] ? new AbortController() : undefined;
         this._currentJSUrl;
         this._currentUrl;
         this._routesParams = {};
@@ -486,12 +486,12 @@ class __Navimi_CSSs {
         this._addCssToDom = (cssCode, prepend, props) => {
             if (!document)
                 return null;
-            const style = document.createElement("style");
+            const style = document.createElement('style');
             style.innerHTML = cssCode;
             props && Object.entries(props).forEach(([key, value]) => {
                 style.setAttribute(key, value);
             });
-            const head = document.getElementsByTagName("head")[0];
+            const head = document.getElementsByTagName('head')[0];
             const target = (head || document.body);
             prepend ? target.prepend(style) : target.appendChild(style);
         };
@@ -514,7 +514,7 @@ class __Navimi_CSSs {
             }
             return this._navimiFetch.fetchFile(url, {
                 headers: {
-                    Accept: "text/css"
+                    Accept: 'text/css'
                 },
                 signal: abortController ? abortController.signal : undefined
             }).then(cssCode => {
@@ -522,7 +522,7 @@ class __Navimi_CSSs {
             });
         };
         this.insertCss = (url, type, prepend) => {
-            if (type === "routeCss") {
+            if (type === 'routeCss') {
                 const oldRouteTag = document.querySelector(`[cssType='${type}']`);
                 if (oldRouteTag) {
                     if (oldRouteTag.getAttribute('cssUrl') === url) {
@@ -615,13 +615,13 @@ class __Navimi_Helpers {
             if (!path) {
                 return [];
             }
-            const queryPos = path.indexOf("?");
+            const queryPos = path.indexOf('?');
             path = queryPos >= 0 ? path.substring(0, queryPos) : path;
-            return path.split("/").filter(p => p.length > 0);
+            return path.split('/').filter(p => p.length > 0);
         };
         this.parsePath = (urlPath, urlPattern) => {
-            const queryPos = urlPath.indexOf("?");
-            const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : "";
+            const queryPos = urlPath.indexOf('?');
+            const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : '';
             const path = this.splitPath(urlPath);
             const pattern = this.splitPath(urlPattern);
             let params = {};
@@ -679,15 +679,15 @@ class __Navimi_Helpers {
         this.getUrl = () => {
             const location = document.location;
             const matches = location.toString().match(/^[^#]*(#.+)$/);
-            const hash = matches ? matches[1] : "";
-            return [location.pathname, location.search, hash].join("");
+            const hash = matches ? matches[1] : '';
+            return [location.pathname, location.search, hash].join('');
         };
         this.setTitle = (title) => {
             document.title = title;
         };
         this.setNavimiLinks = () => {
-            document.querySelectorAll("[navimi-link]").forEach(el => {
-                el.removeAttribute("navimi-link");
+            document.querySelectorAll('[navimi-link]').forEach(el => {
+                el.removeAttribute('navimi-link');
                 el.addEventListener('click', (e) => {
                     e.preventDefault();
                     window.navigateTo(e.target.pathname);
@@ -695,7 +695,7 @@ class __Navimi_Helpers {
             });
         };
         this.removeHash = (url) => {
-            const hashPos = url.indexOf("#");
+            const hashPos = url.indexOf('#');
             return hashPos > 0 ? url.substring(0, hashPos) : url;
         };
         this.stringify = (obj) => {
@@ -741,14 +741,14 @@ class __Navimi_Helpers {
         };
         this.cloneObject = (obj) => {
             //todo: error cloning is not working
-            return obj === null || typeof obj !== "object" ? obj :
-                Object.keys(obj).reduce((prev, current) => obj[current] !== null && typeof obj[current] === "object" ?
+            return obj === null || typeof obj !== 'object' ? obj :
+                Object.keys(obj).reduce((prev, current) => obj[current] !== null && typeof obj[current] === 'object' ?
                     (prev[current] = this.cloneObject(obj[current]), prev) :
                     (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
         };
         this.getRouteAndParams = (url, routingList) => {
             const urlParams = this.splitPath(url);
-            const catchAll = routingList["*"];
+            const catchAll = routingList['*'];
             let routeItem, params;
             for (const routeUrl in routingList) {
                 const routeParams = this.splitPath(routeUrl);
@@ -773,16 +773,16 @@ class __Navimi_Hot {
         this.openHotWs = (hotOption) => {
             try {
                 if (!('WebSocket' in window)) {
-                    console.error("Websocket is not supported by your browser!");
+                    console.error('Websocket is not supported by your browser!');
                     return;
                 }
-                console.warn("Connecting HOT...");
+                console.warn('Connecting HOT...');
                 const port = hotOption === true ? 8080 : hotOption;
                 this._wsHotClient = null;
                 this._wsHotClient = new WebSocket(`ws://localhost:${port}`);
                 this._wsHotClient.addEventListener('message', async (e) => {
                     try {
-                        const payload = JSON.parse(e.data || "");
+                        const payload = JSON.parse(e.data || '');
                         if (payload.message) {
                             console.warn(payload.message);
                             return;
@@ -792,7 +792,7 @@ class __Navimi_Hot {
                         }
                     }
                     catch (ex) {
-                        console.error("Could not parse HOT message:", ex);
+                        console.error('Could not parse HOT message:', ex);
                     }
                 });
                 this._wsHotClient.onclose = () => {
@@ -807,35 +807,35 @@ class __Navimi_Hot {
         this._digestHot = async (payload) => {
             var _a;
             try {
-                payload.filePath = payload.filePath.replace(/\\/g, "/");
-                const fileType = (_a = payload.filePath.split(".").pop()) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase();
+                payload.filePath = payload.filePath.replace(/\\/g, '/');
+                const fileType = (_a = payload.filePath.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toLocaleLowerCase();
                 switch (fileType) {
-                    case "css":
+                    case 'css':
                         await this._navimiCSSs.digestHot(payload)
                             .catch(() => { });
                         break;
-                    case "html":
-                    case "htm":
+                    case 'html':
+                    case 'htm':
                         await this._navimiTemplates.digestHot(payload)
                             .then(() => this._initRouteFunc())
                             .catch(() => { });
                         break;
-                    case "js":
+                    case 'js':
                         this._navimiJSs.digestHot(payload)
                             .then(() => this._initRouteFunc())
                             .catch(() => { });
                         break;
-                    case "gif":
-                    case "jpg":
-                    case "jpeg":
-                    case "png":
-                    case "svg":
+                    case 'gif':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'png':
+                    case 'svg':
                         this._initRouteFunc();
                         break;
                 }
             }
             catch (ex) {
-                console.error("Could not digest HOT payload: ", ex);
+                console.error('Could not digest HOT payload: ', ex);
             }
         };
         //endRemoveIf(minify)
@@ -850,9 +850,9 @@ class __Navimi_Hot {
 }
 class __Navimi_JSs {
     constructor() {
-        this._navimiLoaderNS = "__navimiLoader";
-        this._callBackNS = "_jsLoaderCallback";
-        this._promiseNS = "_promise_";
+        this._navimiLoaderNS = '__navimiLoader';
+        this._callBackNS = '_jsLoaderCallback';
+        this._promiseNS = '_promise_';
         this._loadedJSs = {};
         this._jsType = {};
         this._jsInstances = {};
@@ -863,7 +863,7 @@ class __Navimi_JSs {
             this._navimiLoader[this._promiseNS + jsUrl](value);
         };
         this._rejectPromise = (reason, jsUrl) => {
-            this._navimiLoader[this._promiseNS + jsUrl + "_reject"](reason);
+            this._navimiLoader[this._promiseNS + jsUrl + '_reject'](reason);
         };
         this._awaitJS = (jsUrl) => {
             return new Promise((resolve, reject) => {
@@ -875,7 +875,7 @@ class __Navimi_JSs {
                     const type = this._jsType[jsUrl];
                     if ((type === 'library' || type === 'module') && this.isJsLoaded(jsUrl)) {
                         clearInterval(loadInterval);
-                        return resolve("");
+                        return resolve('');
                     }
                     const error = this._navimiFetch.getErrors(jsUrl);
                     if (error) {
@@ -889,8 +889,8 @@ class __Navimi_JSs {
             const arr = Array.isArray(library) ? library : [library];
             if (arr.length > 0) {
                 const libraries = arr.map(lib => {
-                    if (typeof lib === "string") {
-                        const type = lib.split(".").pop();
+                    if (typeof lib === 'string') {
+                        const type = lib.split('.').pop();
                         return {
                             url: lib,
                             type: type.toLowerCase(),
@@ -902,13 +902,13 @@ class __Navimi_JSs {
                 });
                 await Promise.all(libraries.map(obj => {
                     const type = obj.type.toLowerCase();
-                    if (type === "css") {
+                    if (type === 'css') {
                         return this._navimiCSSs.fetchCss(undefined, obj.url).then(() => {
                             return this._navimiCSSs.insertCss(obj.url, 'library', true);
                         });
                     }
                     else {
-                        return this.fetchJS(undefined, [obj.url], type === "module" ? "module" : "library");
+                        return this.fetchJS(undefined, [obj.url], type === 'module' ? 'module' : 'library');
                     }
                 })).catch(ex => {
                     throw new Error(ex);
@@ -916,14 +916,14 @@ class __Navimi_JSs {
             }
         };
         this._fetch = async (abortController, url, type) => {
-            let jsCode = "";
+            let jsCode = '';
             if (this._loadedJSs[url]) {
                 jsCode = this._loadedJSs[url];
             }
             else {
                 jsCode = await this._navimiFetch.fetchFile(url, {
                     headers: {
-                        Accept: "application/javascript"
+                        Accept: 'application/javascript'
                     },
                     signal: abortController ? abortController.signal : undefined
                 });
@@ -932,7 +932,7 @@ class __Navimi_JSs {
             this._insertJS(url, jsCode.replace(/^\s+|\s+$/g, ''), type);
         };
         this._insertJS = (url, jsCode, type) => {
-            const jsHtmlBody = (type === "module" || type === "library") ? jsCode :
+            const jsHtmlBody = (type === 'module' || type === 'library') ? jsCode :
                 `((loader, url, type) => { loader(url, type, (() => { return ${jsCode}
 })())})(${this._navimiLoaderNS}.${this._callBackNS}, "${url}", "${type}")`;
             this._loadedJSs[url] = jsCode;
@@ -940,11 +940,11 @@ class __Navimi_JSs {
             if (oldTag) {
                 oldTag.remove();
             }
-            const script = document.createElement("script");
-            script.type = type === "module" ? "module" : "text/javascript";
+            const script = document.createElement('script');
+            script.type = type === 'module' ? 'module' : 'text/javascript';
             script.innerHTML = jsHtmlBody;
-            script.setAttribute("jsUrl", url);
-            const head = document.getElementsByTagName("head")[0];
+            script.setAttribute('jsUrl', url);
+            const head = document.getElementsByTagName('head')[0];
             (head || document.body).appendChild(script);
             if (type === 'module' || type === 'library') {
                 this._resolvePromise(true, url); // resolve the promise - script is loaded
@@ -961,7 +961,7 @@ class __Navimi_JSs {
                     urls.map(u => {
                         this._jsDepMap[u] = Object.assign(Object.assign({}, this._jsDepMap[u] || {}), { [jsUrl]: true });
                     });
-                    return this.fetchJS(undefined, urls, "javascript");
+                    return this.fetchJS(undefined, urls, 'javascript');
                 },
                 fetchTemplate: (url) => {
                     return this._navimiTemplates.fetchTemplate(undefined, url);
@@ -978,7 +978,7 @@ class __Navimi_JSs {
             var _a;
             if (Array.isArray(JsClass)) {
                 //add all other elements are expected to be services names
-                const services = JsClass.filter(s => typeof s === "string");
+                const services = JsClass.filter(s => typeof s === 'string');
                 if (services.length > 0) {
                     this.loadServices(undefined, jsUrl, services);
                 }
@@ -1055,8 +1055,8 @@ class __Navimi_JSs {
         };
         this._instantiateJS = async (jsUrl, type, JsCode) => {
             try {
-                if (type === "route" || type === "component") {
-                    const instance = type === "route" ?
+                if (type === 'route' || type === 'component') {
+                    const instance = type === 'route' ?
                         await this._buildRoute(jsUrl, JsCode) :
                         await this._buildComponentClass(jsUrl, JsCode);
                     //keep this instance to reuse later
@@ -1087,7 +1087,7 @@ class __Navimi_JSs {
                     notFound.push(name);
                 }
                 else {
-                    type === "services" &&
+                    type === 'services' &&
                         this._servicesList[jsUrl].indexOf(name) === -1 &&
                         this._servicesList[jsUrl].push(name);
                     this._jsDepMap[url] = Object.assign(Object.assign({}, this._jsDepMap[url] || {}), { [jsUrl]: true });
@@ -1095,7 +1095,7 @@ class __Navimi_JSs {
                 return url;
             });
             if (notFound.length > 0) {
-                throw new Error(type + " not defined: " + notFound.join(", "));
+                throw new Error(type + ' not defined: ' + notFound.join(', '));
             }
             return urls;
         };
@@ -1124,7 +1124,7 @@ class __Navimi_JSs {
                     }
                     // let the js resolve the promise itself when it loads (in _insertJS or _instantiateJS)
                     this._navimiLoader[this._promiseNS + url] = resolve;
-                    this._navimiLoader[this._promiseNS + url + "_reject"] = reject;
+                    this._navimiLoader[this._promiseNS + url + '_reject'] = reject;
                     this._fetch(abortController, url, type).catch(reject);
                 });
             };
@@ -1134,18 +1134,18 @@ class __Navimi_JSs {
             if (!jsUrl) {
                 return;
             }
-            const servicesUrls = this._checkDepsUrls(jsUrl, services, "services");
+            const servicesUrls = this._checkDepsUrls(jsUrl, services, 'services');
             const promises = servicesUrls.filter(url => url !== undefined)
-                .map(url => this.fetchJS(abortController, [url], "service"));
+                .map(url => this.fetchJS(abortController, [url], 'service'));
             return Promise.all(promises);
         };
         this.loadComponents = (abortController, jsUrl, components) => {
             if (!jsUrl) {
                 return;
             }
-            const componentsUrls = this._checkDepsUrls(jsUrl, components, "components");
+            const componentsUrls = this._checkDepsUrls(jsUrl, components, 'components');
             const promises = componentsUrls.filter(url => url !== undefined)
-                .map(url => this.fetchJS(abortController, [url], "component"));
+                .map(url => this.fetchJS(abortController, [url], 'component'));
             return Promise.all(promises);
         };
         this.initRoute = async (jsUrl, params) => {
@@ -1173,7 +1173,7 @@ class __Navimi_JSs {
             }
             const type = this._jsType[filePath];
             //destroy all instances
-            if (type === "library" || type === "module") {
+            if (type === 'library' || type === 'module') {
                 for (const jsUrl in this._jsDepMap) {
                     destroyDependencies(jsUrl);
                 }
@@ -1298,8 +1298,8 @@ class __Navimi_State {
             //start with longer keys to go deep first
             keys.sort((a, b) => b.length - a.length).map(key => {
                 if (!this._stateDiff[key]) {
-                    const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || "");
-                    const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || "");
+                    const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || '');
+                    const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || '');
                     if (sOld !== sNew) {
                         this._stateDiff[key] = true;
                         //set upper keys as changed so we don't test them again
@@ -1453,7 +1453,7 @@ class __Navimi_Templates {
                 }
                 return this._navimiFetch.fetchFile(url, {
                     headers: {
-                        Accept: "text/html"
+                        Accept: 'text/html'
                     },
                     signal: abortController ? abortController.signal : undefined
                 }).then(templateCode => {
@@ -1477,8 +1477,8 @@ class __Navimi_Templates {
     }
     init(navimiFetch) {
         this._navimiFetch = navimiFetch;
-        this._regIni = new RegExp("<t ([^>]+)>");
-        this._regEnd = new RegExp("</t>");
-        this._regId = new RegExp("id=(\"[^\"]+\"|'[^']+')");
+        this._regIni = new RegExp('<t ([^>]+)>');
+        this._regEnd = new RegExp('</t>');
+        this._regId = new RegExp('id=("[^"]+"|\'[^\']+\')');
     }
 }

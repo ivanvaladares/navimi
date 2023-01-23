@@ -31,12 +31,12 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
     private _addCssToDom = (cssCode: string, prepend?: boolean, props?: INavimi_KeyList<string>): void => {
         if (!document) return null;
-        const style = document.createElement("style");
+        const style = document.createElement('style');
         style.innerHTML = cssCode;
         props && Object.entries(props).forEach(([key, value]) => {
             style.setAttribute(key, value);
         });
-        const head = document.getElementsByTagName("head")[0];
+        const head = document.getElementsByTagName('head')[0];
         const target = (head || document.body);
         prepend ? target.prepend(style) : target.appendChild(style);
     };
@@ -63,7 +63,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
         return this._navimiFetch.fetchFile(url, {
             headers: {
-                Accept: "text/css"
+                Accept: 'text/css'
             },
             signal: abortController ? abortController.signal : undefined
         }).then(cssCode => {
@@ -73,7 +73,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
     };
 
     public insertCss = (url: string, type: string, prepend?: boolean): void => {
-        if (type === "routeCss") {
+        if (type === 'routeCss') {
             const oldRouteTag = document.querySelector(`[cssType='${type}']`);
             if (oldRouteTag) {
                 if (oldRouteTag.getAttribute('cssUrl') === url) {
