@@ -24,7 +24,7 @@
 - **Scoped CSS**
   - Global and route scoped css with auto add and removal to avoid conflicts.
 
-- **Atomic css-in-js**
+- **Atomic CSS-in-JS**
   - Write CSS using JavaScript in a declarative, conflict-free and reusable way.
 
 - **Auto Lazy load scripts, templates, css and libraries**

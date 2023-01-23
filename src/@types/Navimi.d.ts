@@ -30,6 +30,7 @@ interface INavimi_Functions {
     setState: (state: INavimi_KeyList<any>) => void;
     unwatchState: (key?: string | string[]) => void;
     watchState: (key: string, callback: (state: any) => void) => void;
+    style: (...styles: object[]) => string;
 }
 
 type INavimi_Next = (url?: string, params?: INavimi_KeyList<any>) => Promise<void> | void;
