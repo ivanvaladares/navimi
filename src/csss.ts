@@ -38,7 +38,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
         });
         const head = document.getElementsByTagName('head')[0];
         const target = (head || document.body);
-        prepend ? target.prepend(style) : target.appendChild(style);
+        prepend ? target.insertBefore(style, target.firstChild) : target.appendChild(style);
     };
 
     private _parseCssRules = (obj: object, child = '', media = ''): INavimi_CssRule[] => {

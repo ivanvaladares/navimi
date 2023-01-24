@@ -493,7 +493,7 @@ class __Navimi_CSSs {
             });
             const head = document.getElementsByTagName('head')[0];
             const target = (head || document.body);
-            prepend ? target.prepend(style) : target.appendChild(style);
+            prepend ? target.insertBefore(style, target.firstChild) : target.appendChild(style);
         };
         this._parseCssRules = (obj, child = '', media = '') => {
             return Object.entries(obj).reduce((rules, [key, value]) => {

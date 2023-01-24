@@ -1,47 +1,47 @@
 new Navimi({
-    "/": {
-        title: "Home",
-        jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/home.html",
+    '/': {
+        title: 'Home',
+        jsUrl: '/scripts/page.js',
+        templatesUrl: '/templates/home.html',
         metadata: {
-            templateName: "home-template"
+            templateName: 'home-template'
         },
-        components: ["click-component", "child-component"],
+        components: ['click-component', 'child-component'],
     },
-    "/about": {
-        title: "About",
-        jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/about.html",
+    '/about': {
+        title: 'About',
+        jsUrl: '/scripts/page.js',
+        templatesUrl: '/templates/about.html',
         metadata: {
-            templateName: "about-template"
+            templateName: 'about-template'
         }
     },
-    "/contact": {
-        title: "Contact",
-        jsUrl: "/scripts/page.js",
-        templatesUrl: "/templates/contact.html",
+    '/contact': {
+        title: 'Contact',
+        jsUrl: '/scripts/page.js',
+        templatesUrl: '/templates/contact.html',
         metadata: {
-            templateName: "contact-template"
+            templateName: 'contact-template'
         }
     },
-    "*": {
-        title: "Not found",
-        jsUrl: "/scripts/page.js",
+    '*': {
+        title: 'Not found',
+        jsUrl: '/scripts/page.js',
         metadata: {
             notFound: true
         }
     }
 },
     {
-        globalTemplatesUrl: "/templates/global.html",
-        globalCssUrl: "/css/global.css",
+        globalTemplatesUrl: '/templates/global.html',
+        globalCssUrl: '/css/global.css',
         components: {
-            "click-component": "/scripts/components/click-component.js",
-            "child-component": "/scripts/components/child-component.js",
+            'click-component': '/scripts/components/click-component.js',
+            'child-component': '/scripts/components/child-component.js',
         },
         services: {
-            "myfx": "/scripts/service1.js",
-            "linksFx": "/scripts/service2.js"
+            'myfx': '/scripts/service1.js',
+            'linksFx': '/scripts/service2.js'
         },        
         middlewares: [
             (ctx, next) => {
@@ -50,7 +50,7 @@ new Navimi({
                 //     document.querySelector("#div-content").innerHTML = "loading..."
                 // }
                 //adding common service to all routes
-                ctx.routeItem.services = ["myfx", "linksFx"];
+                ctx.routeItem.services = ['myfx', 'linksFx'];
                 next();
             }
         ],
