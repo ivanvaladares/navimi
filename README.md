@@ -1,37 +1,36 @@
 # Navimi - Simplicity focused SPA library
 
 > Navimi is a minimalist JavaScript library to create SPAs without a build process. <br>
-> You will not be forced to take an imperative or reactive approach. Go the way you like it. <br>
-> There is also no need to learn TypeScript, Babel, Webpack... You can use them if you want but you don't need.
+> With Navimi, you have the flexibility to choose between an imperative or reactive approach, depending on your preferences. The library is designed to be simple and easy to use, so you can focus on your code and not worry about learning complex tools like TypeScript, Babel, or Webpack. Of course, if you're already familiar with these tools, you can still use them with Navimi to enhance your development experience.
 
 ## Features
 
 - **Components**
-  - Allows you to create reusable custom elements with encapsulated functionality.
+  - Create reusable custom elements with encapsulated functionality.
 
 - **Routing with path and queryString parsing**
-  - Uses the widely adopted syntax for routes (/users/:id)
+  - Use the widely-adopted syntax for routes, including support for path and query string parsing.
 
 - **State management with watchers**
   - Watch changes to any level of the state using a simple dot notation.
 
 - **Services injection**
-  - Create your own services and have injected to your Routes and Components.
+  - Create your own services and have them injected into your routes and components.
 
 - **Routes middleware**
-  - The middleware gives you a chance to intercept the request pipeline.
+  - Intercept the request pipeline with middleware.
  
 - **Scoped CSS**
-  - Global and route scoped css with auto add and removal to avoid conflicts.
+  - Use global and route-scoped CSS with automatic addition and removal to avoid conflicts.
 
 - **Atomic CSS-in-JS**
   - Write CSS using JavaScript in a declarative, conflict-free and reusable way.
 
 - **Auto Lazy load scripts, templates, css and libraries**
-  - Only load what and when you want.
+  - Only load what you need, when you need it.
 
 - **Hot reload**
-  - Makes it easier to create pages without having to refresh after every single modification. <br>
+  - Make it easier to create pages without having to refresh after every single modification. <br>
   <small>(This funcionality is only enabled in the unminified version)</small>
 
 <br>
@@ -159,7 +158,7 @@ Routes and Components will receive a collection of functions provided by Navimi.
 | Name                | Signature                                               | Description                                             |
 |---------------------|---------------------------------------------------------|---------------------------------------------------------|
 | addLibrary          | (jsOrCssUrl: string[]) => Promise<void>;                | Add one or more js and css to the page (global)         |
-| fetchJS             | (jsUrl: string[]) => Promise<InstanceType<any>[]>;      | Fetch and return to your script one or many scripts     |
+| fetchJS             | (jsUrl: string[]) => Promise<InstanceType<any>[]>;      | Fetch and return one or many scripts                    |
 | fetchTemplate       | (templateUrl: string[]) => Promise<void[]>;             | Fetch and parse one or many templates                   |
 | getState            | (key?: string) => any;                                  | Returns the state at any level using . notation         |
 | getTemplate         | (templateId: string[]) => string[];                     | Returns one or many templates by templateId             |
@@ -168,7 +167,7 @@ Routes and Components will receive a collection of functions provided by Navimi.
 | setTitle            | (title: string) => void;                                | Set the navigator title                                 |
 | setState            | (state: { [key: string]: any }) => void;                | Set the state at any level using . notation             |
 | unwatchState        | (key?: string \| string[]) => void;                     | Unwatch one or many state at any level using . notation | 
-| watchState          | (key: string, callback: (state: any) => void) => void;  | Set a watcher to state at any level using . notation    |
+| watchState          | (key: string, callback: (state: any) => void) => void;  | Set a state watcher at any level using . notation       |
 | style               | (styles: { [key: string]: any }) => string;             | Returns class names for the provided style object       |
 
 Check the examples folder for more details.
@@ -256,6 +255,11 @@ Routes can have services declared on the Navimi constructor.
         // children contains any nested html from your component's tag
         // return html code to render
     }
+
+    onRender() {
+        // (OPTIONAL)
+        // invoked when the components is rendered.
+    };
 
     shouldUpdate(prevProps, nextProps) {
         // (OPTIONAL)

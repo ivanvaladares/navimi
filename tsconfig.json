@@ -1,23 +1,23 @@
 {
   "compilerOptions": {
     "target": "es2017",
-    "module": "none",
-    "moduleResolution": "Node",
-    "outFile": "./dist/navimi.js",
+    "module": "ES6",
+    "outDir": "./dist",
     "noImplicitAny": true,
     "sourceMap": true,
     "removeComments": false,
     "allowJs": false,
     "noEmitOnError": true,
     "declaration": false,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },  
   "lib": ["dom", "es2017"],
-  "exclude": [
-    ".git",
-    "node_modules"
-  ],
   "include": [
-    "src"
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
   ]
 }

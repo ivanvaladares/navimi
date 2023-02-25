@@ -1,7 +1,13 @@
-describe('templates.spec', () => {
-    const { templates } = require('./templates');
+import { INavimi_Fetch } from "./@types/INavimi_Fetch";
+import { INavimi_Templates } from "./@types/INavimi_Templates";
+import { INavimi_HotPayload } from "./@types/Navimi";
+import templates from "./templates";
 
+describe('templates.spec', () => {
     let navimi_templates: INavimi_Templates;
+    const abortControllerMock = {
+        signal: {}
+    } as any;
     
     const fetch_data_mock = {} as any;
     const navimi_fetch_mock = {
@@ -27,7 +33,7 @@ describe('templates.spec', () => {
 
         fetch_data_mock[url] = `<t id="${templateId}">${templateBody}</t>`;
 
-        navimi_templates.fetchTemplate(undefined, url).then(() => {
+        navimi_templates.fetchTemplate(abortControllerMock, url).then(() => {
             const result = navimi_templates.getTemplate(templateId);
 
             expect(result).toEqual(templateBody);
@@ -45,7 +51,7 @@ describe('templates.spec', () => {
 
         fetch_data_mock[url] = `<t id='${templateId}'>${templateBody}</t>`;
 
-        navimi_templates.fetchTemplate(undefined, url).then(() => {
+        navimi_templates.fetchTemplate(abortControllerMock, url).then(() => {
             const result = navimi_templates.getTemplate(templateId);
 
             expect(result).toEqual(templateBody);
@@ -79,7 +85,7 @@ describe('templates.spec', () => {
 
         fetch_data_mock[url] = template3 + template4;
 
-        navimi_templates.fetchTemplate(undefined, url).then(() => {
+        navimi_templates.fetchTemplate(abortControllerMock, url).then(() => {
             const resTemplate3 = navimi_templates.getTemplate('template3');
             const resTemplate4 = navimi_templates.getTemplate('template4');
 
@@ -115,7 +121,7 @@ describe('templates.spec', () => {
 
         const templateId = 'template1';
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             filePath: '/template1.html',
             data: `<t id="${templateId}">updated</t>`
         }

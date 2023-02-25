@@ -1,3 +1,9 @@
+import { INavimi_Middlewares } from './@types/INavimi_Middleware';
+import { 
+    INavimi_Context, 
+    INavimi_Middleware 
+} from './@types/Navimi';
+
 class __Navimi_Middlewares implements INavimi_Middlewares {
 
     private _middlewareStack: INavimi_Middleware[] = [];
@@ -8,7 +14,7 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
         }
     };
 
-    public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: INavimi_KeyList<any>) => void): Promise<any> => {
+    public executeMiddlewares = async (abortController: AbortController, context: INavimi_Context, callback: (url: string, params: Record<string, any>) => void): Promise<any> => {
         let prevIndex = -1;
         const runner = async (resolve: (value?: unknown) => void, reject: (reason?: any) => void, index = 0): Promise<void> => {
             //removeIf(minify)
@@ -20,7 +26,7 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
             const middleware = this._middlewareStack[index];
             if (middleware) {
                 try {
-                    await middleware(context, async (url: string, params?: INavimi_KeyList<any>) => {
+                    await middleware(context, async (url: string, params?: Record<string, any>) => {
                         if (abortController && abortController.signal.aborted) {
                             resolve();
                         } else {
@@ -44,6 +50,4 @@ class __Navimi_Middlewares implements INavimi_Middlewares {
 
 }
 
-//removeIf(dist)
-module.exports.middlewares = __Navimi_Middlewares;
-//endRemoveIf(dist)
+export default __Navimi_Middlewares;

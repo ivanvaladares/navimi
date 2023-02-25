@@ -1,10 +1,12 @@
-describe('fetch.spec', () => {
-    const { fetch } = require('./fetch');
+import { INavimi_Fetch } from "./@types/INavimi_Fetch";
+import fetch from "./fetch";
 
+describe('fetch.spec', () => {
     let navimi_fetch: INavimi_Fetch;
     const fetch_data_mock = {} as any;
 
     beforeAll(() => {
+        //@ts-ignore
         global.fetch = jest.fn((url: string) =>
             new Promise((resolve, reject) => {
                 if (fetch_data_mock[url]) {

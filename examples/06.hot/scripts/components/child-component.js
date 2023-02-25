@@ -12,7 +12,7 @@ class ChildComponentClass {
     }
 
     updateNum() {
-        debugger
+        //debugger
         this.teste.bla('test');
         this.count = this.functions.getState('test.clicks');
         this.update();
@@ -36,7 +36,7 @@ class ChildComponentClass {
       }
 
     render(children){
-        debugger
+        //debugger
         const classNames = this.functions.style({
             'color': this.color,
             'font-size': '16px',

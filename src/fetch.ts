@@ -1,7 +1,10 @@
+import { INavimi_Fetch } from './@types/INavimi_Fetch';
+import { INavimi_Options } from './@types/Navimi';
+
 class __Navimi_Fetch implements INavimi_Fetch {
 
     private _bustCache: string;
-    private loadErrors: INavimi_KeyList<string> = {};
+    private loadErrors: Record<string, string> = {};
 
     public init = (options: INavimi_Options): void => {
         this._bustCache = options.bustCache;
@@ -38,6 +41,4 @@ class __Navimi_Fetch implements INavimi_Fetch {
 
 }
 
-//removeIf(dist)
-module.exports.fetch = __Navimi_Fetch;
-//endRemoveIf(dist)
+export default __Navimi_Fetch;

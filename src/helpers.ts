@@ -1,7 +1,10 @@
+import { INavimi_Helpers } from './@types/INavimi_Helpers';
+import { INavimi_Route } from './@types/Navimi';
+
 class __Navimi_Helpers implements INavimi_Helpers {
 
-    private parseQuery = (queryString: string): INavimi_KeyList<string> => {
-        const query: INavimi_KeyList<string> = {};
+    private parseQuery = (queryString: string): Record<string, string> => {
+        const query: Record<string, string> = {};
         queryString.split('&').map(pair => {
             const kv = pair.split('=');
             query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
@@ -20,13 +23,13 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return path.split('/').filter(p => p.length > 0);
     };
 
-    private parsePath = (urlPath: string, urlPattern: string): INavimi_KeyList<any> => {
+    private parsePath = (urlPath: string, urlPattern: string): Record<string, unknown> => {
         const queryPos = urlPath.indexOf('?');
         const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : '';
         const path = this.splitPath(urlPath);
         const pattern = this.splitPath(urlPattern);
 
-        let params: INavimi_KeyList<any> = {};
+        let params: Record<string, unknown> = {};
 
         if (queryPos > 0) {
             params = {
@@ -66,7 +69,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
     };
 
     // eslint-disable-next-line @typescript-eslint/ban-types
-    public throttle = (task: Function, wait: number, context: any): () => void => {
+    public throttle = (task: Function, wait: number, context: unknown): () => void => {
         let timeout: ReturnType<typeof setTimeout>;
         let lastTime: number;
 
@@ -90,7 +93,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
         const location = document.location;
         const matches = location.toString().match(/^[^#]*(#.+)$/);
         const hash = matches ? matches[1] : '';
-        
+
         return [location.pathname, location.search, hash].join('');
     };
 
@@ -101,9 +104,9 @@ class __Navimi_Helpers implements INavimi_Helpers {
     public setNavimiLinks = (): void => {
         document.querySelectorAll('[navimi-link]').forEach(el => {
             el.removeAttribute('navimi-link');
-            el.addEventListener('click', (e: any) => {
+            el.addEventListener('click', (e: MouseEvent) => {
                 e.preventDefault();
-                (window as any).navigateTo(e.target.pathname);
+                (window as any).navigateTo((event.target as HTMLAnchorElement).pathname);
             });
         });
     };
@@ -114,15 +117,14 @@ class __Navimi_Helpers implements INavimi_Helpers {
     };
 
     public stringify = (obj: any) => {
-        const visited: any[] = [];
+        const visited = new Map<any, number>();
+        let index = 0;
 
         const iterateObject = (obj: any): any => {
-
             if (typeof obj === 'function') {
                 return String(obj);
             }
 
-            //todo: error serialization is not working
             if (obj instanceof Error) {
                 return obj.message;
             }
@@ -131,15 +133,15 @@ class __Navimi_Helpers implements INavimi_Helpers {
                 return obj;
             }
 
-            if (visited.indexOf(obj) !== -1) {
-                return `[Circular: ${visited.indexOf(obj)}]`;
+            if (visited.has(obj)) {
+                return `[Circular: ${visited.get(obj)}]`;
             }
 
-            visited.push(obj);
+            visited.set(obj, index++);
 
             if (Array.isArray(obj)) {
                 const aResult = obj.map(iterateObject);
-                visited.pop();
+                visited.delete(obj);
                 return aResult;
             }
 
@@ -148,8 +150,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
                     if (Object.prototype.hasOwnProperty.call(obj, prop)) {
                         try {
                             return obj[prop];
-                        }
-                        catch {
+                        } catch {
                             return;
                         }
                     }
@@ -158,7 +159,7 @@ class __Navimi_Helpers implements INavimi_Helpers {
                 return result;
             }, {});
 
-            visited.pop();
+            visited.delete(obj);
 
             return result;
         };
@@ -166,16 +167,25 @@ class __Navimi_Helpers implements INavimi_Helpers {
         return JSON.stringify(iterateObject(obj));
     };
 
-    public cloneObject = (obj: any): INavimi_KeyList<any> => {
-        //todo: error cloning is not working
-        return obj === null || typeof obj !== 'object' ? obj :
-            Object.keys(obj).reduce((prev: any, current: string) =>
-                obj[current] !== null && typeof obj[current] === 'object' ?
-                    (prev[current] = this.cloneObject(obj[current]), prev) :
-                    (prev[current] = obj[current], prev), Array.isArray(obj) ? [] : {});
+    public cloneObject = (obj: any): Record<string, any> => {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        if (obj instanceof Error) {
+            return new Error(obj.message);
+        }
+
+        if (Array.isArray(obj)) {
+            return obj.map(this.cloneObject);
+        }
+
+        return Object.assign({}, ...Object.entries(obj).map(([key, value]) => ({
+            [key]: this.cloneObject(value)
+        })));
     };
 
-    public getRouteAndParams = (url: string, routingList: INavimi_KeyList<INavimi_Route>): { routeItem: INavimi_Route, params: any } => {
+    public getRouteAndParams = (url: string, routingList: Record<string, INavimi_Route>): { routeItem: INavimi_Route, params: unknown } => {
         const urlParams = this.splitPath(url);
         const catchAll = routingList['*'];
         let routeItem, params;
@@ -199,8 +209,76 @@ class __Navimi_Helpers implements INavimi_Helpers {
 
         return { routeItem, params };
     };
+
+    public getNodeType = (node: Element): string => {
+        switch (node.nodeType) {
+            case Node.TEXT_NODE:
+                return 'text';
+            case Node.COMMENT_NODE:
+                return 'comment';
+            default:
+                return node.tagName.toLowerCase();
+        }
+    };
+
+    public getNodeContent = (node: Node): string | null => {
+        if (node.childNodes.length > 0) {
+            return null;
+        }
+        return node.textContent;
+    };
+
+    public mergeHtmlElement = (templateNode: Element, documentNode: Element, callback: (template: Element, node: Element | DocumentFragment) => void): void => {
+        // Clear child nodes
+        if (documentNode.childNodes.length > 0 && !templateNode.childNodes.length) {
+            documentNode.innerHTML = '';
+            return;
+        }
+
+        // Prepare empty node for next round
+        if (!documentNode.childNodes.length && templateNode.childNodes.length) {
+            const fragment = document.createDocumentFragment();
+            callback(templateNode, fragment);
+            documentNode.appendChild(fragment);
+            return;
+        }
+
+        // Dive deeper into the tree
+        if (templateNode.childNodes.length > 0) {
+            callback(templateNode, documentNode);
+        }
+    };
+
+    public syncAttributes = (templateNode: Element, documentNode: Element): void => {
+        if (templateNode.tagName.toLowerCase() !== documentNode.tagName.toLowerCase()) {
+            return;
+        }
+
+        const documentNodeAttr: Attr[] = [].slice.call(documentNode.attributes);
+        const templateNodeAttr: Attr[] = [].slice.call(templateNode.attributes);
+
+        const update = templateNodeAttr.filter(templateAttr => {
+            const documentAttr = documentNodeAttr.find(
+                (docAttr: Attr) => templateAttr.name === docAttr.name
+            );
+            return documentAttr && templateAttr.value !== documentAttr.value;
+        });
+        const remove = documentNodeAttr.filter(
+            (docAttr) => !templateNodeAttr.some((templateAttr) => docAttr.name === templateAttr.name)
+        );
+        const add = templateNodeAttr.filter(
+            (templateAttr) => !documentNodeAttr.some((docAttr) => templateAttr.name === docAttr.name)
+        );
+
+        remove.forEach((attr) => {
+            documentNode.removeAttribute(attr.name);
+        });
+
+        [...update, ...add].forEach(({ name, value }) => {
+            documentNode.setAttribute(name, value);
+        });
+    };
+
 }
 
-//removeIf(dist)
-module.exports.helpers = __Navimi_Helpers;
-//endRemoveIf(dist)
+export default __Navimi_Helpers;

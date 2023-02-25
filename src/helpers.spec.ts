@@ -1,5 +1,7 @@
+import { INavimi_Helpers } from "./@types/INavimi_Helpers";
+import helpers from "./helpers";
+
 describe('helpers.spec', () => {
-    const { helpers } = require('./helpers');
 
     let navimi_helpers: INavimi_Helpers;
 
@@ -221,6 +223,119 @@ describe('helpers.spec', () => {
             routeItem: { title: 'Not found', jsUrl: '/scripts/404.js' },
             params: { queryString: { param1: 'p1', param2: 'p2#hash' } }
         });
+
+    });
+
+    test('getNodeType', () => {
+        const textNode = document.createTextNode('Text Node') as unknown as Element;
+        expect(navimi_helpers.getNodeType(textNode)).toBe('text');
+
+        const commentNode = document.createComment('Comment Node') as unknown as Element;
+        expect(navimi_helpers.getNodeType(commentNode)).toBe('comment');
+
+        const divNode = document.createElement('div');
+        expect(navimi_helpers.getNodeType(divNode)).toBe('div');
+    });
+
+    test('getNodeContent', () => {
+        const textNode = document.createTextNode('Text Node');
+        expect(navimi_helpers.getNodeContent(textNode)).toBe('Text Node');
+    
+        const spanNode = document.createElement('span');
+        spanNode.appendChild(document.createTextNode('Span Node'));
+        expect(navimi_helpers.getNodeContent(spanNode)).toBe(null);
+    });
+
+    describe('mergeHtmlElement', () => {
+
+        test('clears child nodes of documentNode when documentNode has child nodes and templateNode does not', () => {
+            const templateNode = document.createElement('div');
+            const documentNode = document.createElement('div');
+            documentNode.innerHTML = '<p>Child Node</p>';
+            const callback = jest.fn();
+
+            navimi_helpers.mergeHtmlElement(templateNode, documentNode, callback);
+            expect(callback).toHaveBeenCalledTimes(0);
+
+            expect(documentNode.innerHTML).toBe('');
+        });
+
+        test('creates and appends a document fragment to documentNode when documentNode does not have child nodes and templateNode has child nodes', () => {
+            const templateNode = document.createElement('div');
+            templateNode.innerHTML = '<p>Child Node</p>';
+            const documentNode = document.createElement('div');
+            const callback = jest.fn();
+
+            navimi_helpers.mergeHtmlElement(templateNode, documentNode, callback);
+
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        test('calls the callback function with the correct arguments when templateNode has child nodes', () => {
+            const templateNode = document.createElement('div');
+            templateNode.innerHTML = '<p>Child Node</p>';
+            const documentNode = document.createElement('div');
+            documentNode.innerHTML = '<p>Child Node</p>';
+            const callback = jest.fn();
+
+            navimi_helpers.mergeHtmlElement(templateNode, documentNode, callback);
+
+            expect(callback).toHaveBeenCalledTimes(1);
+            expect(callback).toHaveBeenCalledWith(templateNode, documentNode);
+        });
+
+    });
+
+    describe('syncAttributes', () => {
+
+        test('syncs attributes between templateNode and documentNode when they have the same tagName', () => {
+            const templateNode = document.createElement('div');
+            const documentNode = document.createElement('div');
+            templateNode.setAttribute('id', 'template-id');
+            templateNode.setAttribute('class', 'document-class');
+          
+            navimi_helpers.syncAttributes(templateNode, documentNode);
+          
+            expect(documentNode.getAttribute('id')).toBe('template-id');
+            expect(documentNode.getAttribute('class')).toBe('document-class');
+          });
+
+
+          test('does not sync attributes between templateNode and documentNode when they have different tagNames', () => {
+            const templateNode = document.createElement('div');
+            const documentNode = document.createElement('span');
+            templateNode.setAttribute('id', 'template-id');
+            documentNode.setAttribute('class', 'document-class');
+            documentNode.setAttribute('id', 'document-id');
+          
+            navimi_helpers.syncAttributes(templateNode, documentNode);
+          
+            expect(documentNode.getAttribute('id')).toBe('document-id');
+            expect(documentNode.getAttribute('class')).toBe('document-class');
+          });
+          
+          test('removes attributes from documentNode when they are present in documentNode but not in templateNode', () => {
+            const templateNode = document.createElement('div');
+            const documentNode = document.createElement('div');
+            documentNode.setAttribute('id', 'document-id');
+            documentNode.setAttribute('class', 'document-class');
+          
+            navimi_helpers.syncAttributes(templateNode, documentNode);
+          
+            expect(documentNode.getAttribute('id')).toBe(null);
+            expect(documentNode.getAttribute('class')).toBe(null);
+          });
+          
+          test('updates attributes in documentNode when their values differ between templateNode and documentNode', () => {
+            const templateNode = document.createElement('div');
+            const documentNode = document.createElement('div');
+            templateNode.setAttribute('id', 'template-id');
+            documentNode.setAttribute('id', 'document-id');
+          
+            navimi_helpers.syncAttributes(templateNode, documentNode);
+          
+            expect(documentNode.getAttribute('id')).toBe('template-id');
+          });
 
     });
 

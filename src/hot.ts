@@ -1,20 +1,26 @@
+import { INavimi_CSSs } from './@types/INavimi_CSSs';
+import { INavimi_Hot } from './@types/INavimi_Hot';
+import { INavimi_JSs } from './@types/INavimi_JSs';
+import { INavimi_Templates } from './@types/INavimi_Templates';
+import { INavimi_HotPayload } from './@types/Navimi';
+
 class __Navimi_Hot implements INavimi_Hot {
-    //removeIf(minify)
     private _wsHotClient: WebSocket;
     private _navimiCSSs: INavimi_CSSs;
     private _navimiJSs: INavimi_JSs;
     private _navimiTemplates: INavimi_Templates;
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    private _initRouteFunc: Function;
-
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    public init(navimiCSSs: INavimi_CSSs, navimiJSs: INavimi_JSs, navimiTemplates: INavimi_Templates, initRoute: Function): void {
+    private _initRouteFunc: () => void;
+    
+    public init(navimiCSSs: INavimi_CSSs, navimiJSs: INavimi_JSs, navimiTemplates: INavimi_Templates, initRoute: () => void): void {
+        //removeIf(minify)
         this._navimiCSSs = navimiCSSs;
         this._navimiJSs = navimiJSs;
         this._navimiTemplates = navimiTemplates;
         this._initRouteFunc = initRoute;
+        //endRemoveIf(minify)
     }
-
+    
+    //removeIf(minify)
     public openHotWs = (hotOption: number | boolean): void => {
         try {
             if (!('WebSocket' in window)) {
@@ -28,7 +34,7 @@ class __Navimi_Hot implements INavimi_Hot {
             this._wsHotClient = new WebSocket(`ws://localhost:${port}`);
             this._wsHotClient.addEventListener('message', async (e: any) => {
                 try {
-                    const payload: hotPayload = JSON.parse(e.data || '');
+                    const payload: INavimi_HotPayload = JSON.parse(e.data || '');
                     if (payload.message) {
                         console.warn(payload.message);
                         return;
@@ -48,8 +54,10 @@ class __Navimi_Hot implements INavimi_Hot {
             console.error(ex);
         }
     };
-
-    private _digestHot = async (payload: hotPayload): Promise<void> => {
+    //endRemoveIf(minify)
+    
+    //removeIf(minify)
+    private _digestHot = async (payload: INavimi_HotPayload): Promise<void> => {
         try {
             payload.filePath = payload.filePath.replace(/\\/g, '/');
             const fileType = payload.filePath.split('.').pop()?.toLocaleLowerCase();
@@ -88,6 +96,5 @@ class __Navimi_Hot implements INavimi_Hot {
     //endRemoveIf(minify)
 }
 
-//removeIf(dist)
-module.exports.hot = __Navimi_Hot;
-//endRemoveIf(dist)
+export default __Navimi_Hot;
+

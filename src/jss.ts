@@ -1,14 +1,28 @@
+import { INavimi_Components } from './@types/INavimi_Components';
+import { INavimi_CSSs } from './@types/INavimi_CSSs';
+import { INavimi_Fetch } from './@types/INavimi_Fetch';
+import { INavimi_Helpers } from './@types/INavimi_Helpers';
+import { INavimi_JSs, jsType } from './@types/INavimi_JSs';
+import { INavimi_State } from './@types/INavimi_State';
+import { INavimi_Templates } from './@types/INavimi_Templates';
+import { 
+    INavimi_Options, 
+    INavimi_Library, 
+    INavimi_Functions, 
+    INavimi_HotPayload 
+} from './@types/Navimi';
+
 class __Navimi_JSs implements INavimi_JSs {
 
     private _navimiLoaderNS = '__navimiLoader';
     private _callBackNS = '_jsLoaderCallback';
     private _promiseNS = '_promise_';
 
-    private _loadedJSs: INavimi_KeyList<string> = {};
-    private _jsType: INavimi_KeyList<jsType> = {};
-    private _jsInstances: INavimi_KeyList<InstanceType<any>> = {};
-    private _jsDepMap: INavimi_KeyList<INavimi_KeyList<boolean>> = {};
-    private _servicesList: INavimi_KeyList<string[]> = {};
+    private _loadedJSs: Record<string, string> = {};
+    private _jsType: Record<string, jsType> = {};
+    private _jsInstances: Record<string, InstanceType<any>> = {};
+    private _jsDepMap: Record<string, Record<string, boolean>> = {};
+    private _servicesList: Record<string, string[]> = {};
 
     private _navimiLoader: any;
     private _options: INavimi_Options;
@@ -83,7 +97,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
     private _addLibrary = async (library: string | string[] | INavimi_Library[]): Promise<void> => {
 
-        const arr = Array.isArray(library) ? library : [library];
+        const arr: unknown[] = Array.isArray(library) ? library : [library];
 
         if (arr.length > 0) {
 
@@ -180,12 +194,12 @@ class __Navimi_JSs implements INavimi_JSs {
             getState: this._navimiState.getState,
             setNavimiLinks: this._navimiHelpers.setNavimiLinks,
             unwatchState: (key: string) => this._navimiState.unwatchState(callerUid, key),
-            watchState: (key: string, callback: (state: INavimi_KeyList<any>) => void) =>
+            watchState: (key: string, callback: (state: Record<string, any>) => void) =>
                 this._navimiState.watchState(callerUid, key, callback)
         });
     };
 
-    private _getServices = async (jsUrl: string, JsClass: InstanceType<any>): Promise<INavimi_KeyList<InstanceType<any>>> => {
+    private _getServices = async (jsUrl: string, JsClass: InstanceType<any>): Promise<Record<string, InstanceType<any>>> => {
 
         if (Array.isArray(JsClass)) {
             //add all other elements are expected to be services names
@@ -205,7 +219,7 @@ class __Navimi_JSs implements INavimi_JSs {
         await Promise.all(dependencies.map(this._awaitJS));
 
         //gather required services
-        let services: INavimi_KeyList<InstanceType<any>> = {};
+        let services: Record<string, InstanceType<any>> = {};
         this._servicesList[jsUrl]?.map((serviceName: string) => {
             services = {
                 ...services,
@@ -218,7 +232,7 @@ class __Navimi_JSs implements INavimi_JSs {
 
     private _getClassAndServices = async (jsUrl: string, JsClass: InstanceType<any>): Promise<{
         JsClass: InstanceType<any>,
-        services: INavimi_KeyList<InstanceType<any>>
+        services: Record<string, InstanceType<any>>
     }> => {
         let finalClass = JsClass;
 
@@ -248,13 +262,13 @@ class __Navimi_JSs implements INavimi_JSs {
                 super(functions, services);
             }
 
-            onEnter(params: INavimi_KeyList<string>): void {
+            onEnter(params: Record<string, string>): void {
                 if (super.onEnter) {
                     super.onEnter(params);
                 }
             }
 
-            onBeforeLeave(params: INavimi_KeyList<string>): boolean {
+            onBeforeLeave(params: Record<string, string>): boolean {
                 if (super.onBeforeLeave) {
                     return super.onBeforeLeave(params);
                 }
@@ -429,7 +443,7 @@ class __Navimi_JSs implements INavimi_JSs {
         return Promise.all(promises);
     };
 
-    public initRoute = async (jsUrl: string, params: INavimi_KeyList<any>): Promise<void> => {
+    public initRoute = async (jsUrl: string, params: Record<string, any>): Promise<void> => {
 
         const jsInstance = this.getInstance(jsUrl);
 
@@ -439,7 +453,7 @@ class __Navimi_JSs implements INavimi_JSs {
     };
 
     //removeIf(minify)
-    public digestHot = async ({ filePath, data }: hotPayload): Promise<void> => {
+    public digestHot = async ({ filePath, data }: INavimi_HotPayload): Promise<void> => {
 
         const destroyed: string[] = [];
 
@@ -489,6 +503,4 @@ class __Navimi_JSs implements INavimi_JSs {
     //endRemoveIf(minify)
 }
 
-//removeIf(dist)
-module.exports.jss = __Navimi_JSs
-//endRemoveIf(dist)
+export default __Navimi_JSs;

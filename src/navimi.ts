@@ -1,17 +1,45 @@
-class Navimi {
+import __Navimi_Core from './core';
+import __Navimi_Fetch from './fetch';
+import __Navimi_CSSs from './csss';
+import __Navimi_JSs from './jss';
+import __Navimi_Templates from './templates';
+import __Navimi_Middlewares from './middlewares';
+import __Navimi_State from './state';
+import __Navimi_Hot from './hot';
+import __Navimi_Helpers from './helpers';
+import __Navimi_Components from './components';
+import { 
+    INavimi_Route, 
+    INavimi_Options, 
+    INavimi_Services,
+    INavimi
+} from './@types/Navimi';
+class Navimi implements INavimi {
 
-    constructor(routes: INavimi_KeyList<INavimi_Route>, options?: INavimi_Options, services?: INavimi_Services, 
-            core?: (routes: INavimi_KeyList<INavimi_Route>, services?: INavimi_Services, options?: INavimi_Options) => any) {
+    constructor(routes: Record<string, INavimi_Route>, options?: INavimi_Options, services?: INavimi_Services, 
+            core?: (routes: Record<string, INavimi_Route>, services?: INavimi_Services, options?: INavimi_Options) => void) {
 
-        const navimiFetch = services?.navimiFetch ?? new __Navimi_Fetch()
-        const navimiCSSs = services?.navimiCSSs ?? new __Navimi_CSSs();
-        const navimiJSs = services?.navimiJSs ?? new __Navimi_JSs();
-        const navimiTemplates = services?.navimiTemplates ?? new __Navimi_Templates();
-        const navimiMiddlewares = services?.navimiMiddlewares ?? new __Navimi_Middlewares();
-        const navimiState = services?.navimiState ?? new __Navimi_State();
-        const navimiHot = services?.navimiHot ?? new __Navimi_Hot();
-        const navimiHelpers = services?.navimiHelpers ?? new __Navimi_Helpers();
-        const navimiComponents = services?.navimiComponents ?? new __Navimi_Components();
+        let { 
+            navimiFetch, 
+            navimiCSSs,
+            navimiJSs,
+            navimiTemplates,
+            navimiMiddlewares,
+            navimiState,
+            navimiHot,
+            navimiHelpers,
+            navimiComponents  
+        } = services || {};
+
+        navimiFetch = navimiFetch || new __Navimi_Fetch()
+        navimiCSSs = navimiCSSs || new __Navimi_CSSs();
+        navimiJSs = navimiJSs || new __Navimi_JSs();
+        navimiTemplates = navimiTemplates || new __Navimi_Templates();
+        navimiMiddlewares = navimiMiddlewares || new __Navimi_Middlewares();
+        navimiState = navimiState || new __Navimi_State();
+        navimiHot = navimiHot || new __Navimi_Hot();
+        navimiHelpers = navimiHelpers || new __Navimi_Helpers();
+        navimiComponents = navimiComponents || new __Navimi_Components();
 
         // setup DI
         navimiComponents.init(navimiHelpers, navimiState);
@@ -48,12 +76,10 @@ class Navimi {
             navimiComponents
         };
 
-        return core ? core(routes, _services, options) :
+        core ? core(routes, _services, options) :
             new __Navimi_Core(routes, _services, options);
     }
 
 }
 
-//removeIf(dist)
-module.exports.Navimi = Navimi;
-//endRemoveIf(dist)
+export default Navimi

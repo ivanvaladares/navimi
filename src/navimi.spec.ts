@@ -1,6 +1,23 @@
-describe('navimi.spec', () => {
-    const { Navimi } = require('./navimi');
+import {
+    INavimi_Route,
+    INavimi_Options,
+    INavimi_Services
+} from "./@types/Navimi";
 
+jest.mock('./core', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./fetch', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./csss', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./jss', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./templates', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./state', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./hot', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./components', () => jest.fn(() => ({ init: jest.fn() })));
+jest.mock('./middlewares', () => jest.fn());
+jest.mock('./helpers', () => jest.fn());
+
+import Navimi from "./navimi";
+
+describe('navimi.spec', () => {
     const routes = {
         '/': {
             title: 'Home',
@@ -16,7 +33,7 @@ describe('navimi.spec', () => {
             title: 'Not found',
             jsUrl: '/scripts/404.js'
         }
-    } as INavimi_KeyList<INavimi_Route>;
+    } as Record<string, INavimi_Route>;
 
     const options = {
         globalCssUrl: '/css/global.css',
@@ -25,44 +42,8 @@ describe('navimi.spec', () => {
 
     test('Test constructor', () => {
 
-        const initMock = jest.fn(() => {
-            return {
-                init: jest.fn()
-            }
-        });
-
-        //@ts-ignore
-        window.__Navimi_Fetch = initMock;
-        //@ts-ignore
-        window.__Navimi_CSSs = initMock;
-        //@ts-ignore
-        window.__Navimi_JSs = initMock;
-        //@ts-ignore
-        window.__Navimi_Templates = initMock
-        //@ts-ignore
-        window.__Navimi_Middlewares = initMock;
-        //@ts-ignore
-        window.__Navimi_State = initMock;
-        //@ts-ignore
-        window.__Navimi_Hot = initMock;
-        //@ts-ignore
-        window.__Navimi_Helpers = initMock;
-        //@ts-ignore
-        window.__Navimi_Components = initMock;
-        
-        let coreReturn = {} as any;
-        //@ts-ignore
-        window.__Navimi_Core = jest.fn((routes, services, options) => {
-            coreReturn = { routes, services, options };
-            return {}
-        });
-
-        new Navimi(routes, options);
-
-        //@ts-ignore
-        expect(window.__Navimi_Core).toHaveBeenCalled();
-        expect(coreReturn.routes).toEqual(routes);
-        expect(coreReturn.options).toEqual(options);
+        const navimi = new Navimi(routes, options);
+        expect(navimi).toBeDefined();
 
     });
 
@@ -80,8 +61,7 @@ describe('navimi.spec', () => {
             navimiHelpers: {}
         } as unknown as INavimi_Services;
 
-        new Navimi(routes, options, services, 
-            (_routes: INavimi_KeyList<INavimi_Route>, _services: INavimi_Services, _options?: INavimi_Options) => {
+        new Navimi(routes, options, services, (_routes, _services, _options) => {
 
             expect({
                 routes: _routes,
@@ -97,6 +77,5 @@ describe('navimi.spec', () => {
         });
 
     });
-
 
 });

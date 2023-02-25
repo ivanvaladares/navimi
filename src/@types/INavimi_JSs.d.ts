@@ -1,5 +1,14 @@
+import { INavimi_Components } from './INavimi_Components';
+import { INavimi_CSSs } from './INavimi_CSSs';
+import { INavimi_Fetch } from './INavimi_Fetch';
+import { INavimi_Helpers } from './INavimi_Helpers';
+import { INavimi_State } from './INavimi_State';
+import { INavimi_Templates } from './INavimi_Templates';
+import { INavimi_Options, INavimi_HotPayload } from './Navimi';
+
+//todo: improve name
 type jsType = 'component' | 'javascript' | 'library' | 'module' | 'route' | 'service';
-interface INavimi_JSs {
+declare class INavimi_JSs {
     init: (navimiHelpers: INavimi_Helpers,
         navimiFetch: INavimi_Fetch,
         navimiCSSs: INavimi_CSSs,
@@ -12,6 +21,8 @@ interface INavimi_JSs {
     fetchJS: (abortController: AbortController, urls: string[], type: jsType) => Promise<InstanceType<any> | InstanceType<any>[]>;
     loadServices: (abortController: AbortController, jsUrl: string, services: string[]) => Promise<any[]>;
     loadComponents: (abortController: AbortController, jsUrl: string, components: string[]) => Promise<any[]>;
-    initRoute: (jsUrl: string, params: INavimi_KeyList<any>) => Promise<void>;
-    digestHot: (payload: hotPayload) => Promise<void>;
+    initRoute: (jsUrl: string, params: Record<string, any>) => Promise<void>;
+    digestHot: (payload: INavimi_HotPayload) => Promise<void>;
 }
+
+export { INavimi_JSs, jsType };

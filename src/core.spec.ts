@@ -1,7 +1,17 @@
-describe('core.spec', () => {
-    const { core } = require('./core');
-    const { helpers } = require('./helpers');
+import { INavimi_CSSs } from "./@types/INavimi_CSSs";
+import { INavimi_Fetch } from "./@types/INavimi_Fetch";
+import { INavimi_Hot } from "./@types/INavimi_Hot";
+import { INavimi_JSs } from "./@types/INavimi_JSs";
+import { INavimi_Middlewares } from "./@types/INavimi_Middleware";
+import { INavimi_State } from "./@types/INavimi_State";
+import { INavimi_Templates } from "./@types/INavimi_Templates";
+import { INavimi_Services } from "./@types/Navimi";
+import core from "./core";
+import helpers from "./helpers";
 
+describe('core.spec', () => {
+
+    //@ts-ignore
     window['AbortController'] = undefined;
 
     const report_error = jest.fn();
@@ -17,8 +27,8 @@ describe('core.spec', () => {
 
             return Promise.reject(new Error(`File ${url} not found`));
         },
-        getErrors: (url: string) => undefined
-    } as INavimi_Fetch;
+        getErrors: (url: string): void => undefined
+    } as unknown as INavimi_Fetch;
 
     const navimi_jss_mock = {
         getInstance: jest.fn(),

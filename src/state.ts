@@ -1,9 +1,12 @@
+import { INavimi_Helpers } from './@types/INavimi_Helpers';
+import { INavimi_State } from './@types/INavimi_State';
+
 class __Navimi_State implements INavimi_State {
 
-    private _state: INavimi_KeyList<any> = {};
-    private _stateWatchers: INavimi_KeyList<INavimi_KeyList<Array<(state: any) => void>>> = {};
-    private _prevState: INavimi_KeyList<any> = {};
-    private _stateDiff: INavimi_KeyList<boolean> = {};
+    private _state: Record<string, any> = {};
+    private _stateWatchers: Record<string, Record<string, Array<(state: any) => void>>> = {};
+    private _prevState: Record<string, any> = {};
+    private _stateDiff: Record<string, boolean> = {};
     private _navimiHelpers: INavimi_Helpers;
 
     private _invokeStateWatchers: () => void;
@@ -68,7 +71,7 @@ class __Navimi_State implements INavimi_State {
         }
     };
 
-    public setState = (newState: INavimi_KeyList<any>): void => {
+    public setState = (newState: Record<string, any>): void => {
         const observedKeys = Object.keys(this._stateWatchers);
         if (observedKeys.length > 0) {
             this._prevState = this._navimiHelpers.cloneObject(this._state);
@@ -80,7 +83,7 @@ class __Navimi_State implements INavimi_State {
         }
     };
 
-    public getState = (key?: string, _state?: any): INavimi_KeyList<any> => {
+    public getState = (key?: string, _state?: any): Record<string, any> => {
         const state = key ?
             key.split('.')
                 .reduce((v, k) => (v && v[k]) || undefined, _state || this._state) :
@@ -147,6 +150,4 @@ class __Navimi_State implements INavimi_State {
 
 }
 
-//removeIf(dist)
-module.exports.state = __Navimi_State;
-//endRemoveIf(dist)
+export default __Navimi_State;

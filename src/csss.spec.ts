@@ -1,7 +1,13 @@
-describe('css.spec', () => {
-    const { csss } = require('./csss');
+import { INavimi_CSSs } from "./@types/INavimi_CSSs";
+import { INavimi_Fetch } from "./@types/INavimi_Fetch";
+import { INavimi_HotPayload } from "./@types/Navimi";
+import csss from "./csss";
 
+describe('css.spec', () => {
     let navimi_css: INavimi_CSSs;
+    const abortControllerMock = {
+        signal: {}
+    } as any;
     
     const fetch_data_mock = {} as any;
     const navimi_fetch_mock = {
@@ -30,7 +36,7 @@ describe('css.spec', () => {
 
         fetch_data_mock[url] = cssBody;
 
-        navimi_css.fetchCss(undefined, url).then(() => {
+        navimi_css.fetchCss(abortControllerMock, url).then(() => {
             expect(navimi_css.isCssLoaded(url)).toBeTruthy()
             done();
         });
@@ -51,6 +57,7 @@ describe('css.spec', () => {
         expect(classNames).toEqual('__navimi_0 __navimi_1');
 
         const styleTag = document.querySelector('style[id=__navimi__cssInJs__]') as HTMLStyleElement;
+        //@ts-ignore
         const { cssRules } = styleTag.sheet;
         const cssArray = [].slice.call(cssRules);
 
@@ -68,6 +75,7 @@ describe('css.spec', () => {
         expect(classNames).toEqual('__navimi_0 __navimi_2');
 
         const styleTag = document.querySelector('style[id=__navimi__cssInJs__]') as HTMLStyleElement;
+        //@ts-ignore
         const { cssRules } = styleTag.sheet;
         const cssArray = [].slice.call(cssRules);
 
@@ -97,6 +105,7 @@ describe('css.spec', () => {
         expect(classNames).toEqual('__navimi_0 __navimi_2 __navimi_3 __navimi_4 __navimi_5 __navimi_6');
 
         const styleTag = document.querySelector('style[id=__navimi__cssInJs__]') as HTMLStyleElement;
+        //@ts-ignore
         const { cssRules } = styleTag.sheet;
         const cssArray = [].slice.call(cssRules);
 
@@ -137,7 +146,7 @@ describe('css.spec', () => {
 
         fetch_data_mock[url] = cssBody;
 
-        navimi_css.fetchCss(undefined, url).then(() => {        
+        navimi_css.fetchCss(abortControllerMock, url).then(() => {        
             navimi_css.insertCss(url, 'routeCss');
 
             const styles = document.getElementsByTagName('style');
@@ -159,7 +168,7 @@ describe('css.spec', () => {
 
         fetch_data_mock[url] = cssBody;
 
-        navimi_css.fetchCss(undefined, url).then(() => {        
+        navimi_css.fetchCss(abortControllerMock, url).then(() => {        
             navimi_css.insertCss(url, 'routeCss');
 
             const styles = document.getElementsByTagName('style');
@@ -174,7 +183,7 @@ describe('css.spec', () => {
 
     test('digestHot', (done) => {
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             filePath: '/route2.css',
             data:  `
             .myRoute2CssNewClass {

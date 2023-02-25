@@ -1,7 +1,11 @@
+import { INavimi_Fetch } from './@types/INavimi_Fetch';
+import { INavimi_Templates } from './@types/INavimi_Templates';
+import { INavimi_HotPayload } from './@types/Navimi';
+
 class __Navimi_Templates implements INavimi_Templates {
 
-    private _templatesCache: INavimi_KeyList<string> = {};
-    private _loadedTemplates: INavimi_KeyList<boolean> = {};
+    private _templatesCache: Record<string, string> = {};
+    private _loadedTemplates: Record<string, boolean> = {};
     private _navimiFetch: INavimi_Fetch;        
     private _regIni: RegExp;
     private _regEnd: RegExp;
@@ -75,7 +79,7 @@ class __Navimi_Templates implements INavimi_Templates {
     };
 
     //removeIf(minify)
-    public digestHot = ({filePath, data}: hotPayload): Promise<void> => {
+    public digestHot = ({filePath, data}: INavimi_HotPayload): Promise<void> => {
         
         if (!this.isTemplateLoaded(filePath)) {
             return Promise.reject();
@@ -91,6 +95,4 @@ class __Navimi_Templates implements INavimi_Templates {
 
 }
 
-//removeIf(dist)
-module.exports.templates = __Navimi_Templates;
-//endRemoveIf(dist)
+export default __Navimi_Templates;

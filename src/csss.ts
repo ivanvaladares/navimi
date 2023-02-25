@@ -1,8 +1,12 @@
+import { INavimi_CSSs, INavimi_CssRule } from './@types/INavimi_CSSs';
+import { INavimi_Fetch } from './@types/INavimi_Fetch';
+import { INavimi_HotPayload } from './@types/Navimi';
+
 class __Navimi_CSSs implements INavimi_CSSs {
 
     private _navimiFetch: INavimi_Fetch;
-    private _loadedCsss: INavimi_KeyList<string> = {};
-    private _cssRulesCache: INavimi_KeyList<string> = {};
+    private _loadedCsss: Record<string, string> = {};
+    private _cssRulesCache: Record<string, string> = {};
     private _cssCount = 0;
     private _cssSheet: CSSStyleSheet;
     private _atomicCssId = '__navimi__cssInJs__';
@@ -23,14 +27,15 @@ class __Navimi_CSSs implements INavimi_CSSs {
     private _insertCssRule = ({ className, child, media, cssRule }: INavimi_CssRule): void => {
         if (!this._cssSheet) {
             const style = document.querySelector(`style[id=${this._atomicCssId}]`) as HTMLStyleElement;
+            // @ts-ignore
             this._cssSheet = style.sheet;
         }
         const rule = `.${`${className}${child}`}{${cssRule.join(';')}}`;
         this._cssSheet.insertRule(media ? `${media}{${rule}}` : rule, this._cssSheet.cssRules.length);
     };
 
-    private _addCssToDom = (cssCode: string, prepend?: boolean, props?: INavimi_KeyList<string>): void => {
-        if (!document) return null;
+    private _addCssToDom = (cssCode: string, prepend?: boolean, props?: Record<string, string>): void => {
+        if (!document) return;
         const style = document.createElement('style');
         style.innerHTML = cssCode;
         props && Object.entries(props).forEach(([key, value]) => {
@@ -110,7 +115,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
     }
 
     //removeIf(minify)
-    public digestHot = ({ filePath, data }: hotPayload): Promise<void> => {
+    public digestHot = ({ filePath, data }: INavimi_HotPayload): Promise<void> => {
 
         if (!this.isCssLoaded(filePath)) {
             return Promise.reject();
@@ -130,6 +135,4 @@ class __Navimi_CSSs implements INavimi_CSSs {
 
 }
 
-//removeIf(dist)
-module.exports.csss = __Navimi_CSSs;
-//endRemoveIf(dist)
+export default __Navimi_CSSs;

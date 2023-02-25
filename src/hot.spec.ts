@@ -1,6 +1,11 @@
-describe('hot.spec', () => {
-    const { hot } = require('./hot');
+import { INavimi_Hot } from "./@types/INavimi_Hot";
+import { INavimi_Templates } from "./@types/INavimi_Templates";
+import { INavimi_CSSs } from "./@types/INavimi_CSSs";
+import { INavimi_JSs } from "./@types/INavimi_JSs";
+import { INavimi_HotPayload } from "./@types/Navimi";
+import hot from "./hot";
 
+describe('hot.spec', () => {
     let navimi_hot: INavimi_Hot;
 
     const webSocketMessageEventMock = {} as any;
@@ -9,15 +14,15 @@ describe('hot.spec', () => {
 
     const cssMock = {
         digestHot: jest.fn(() => Promise.resolve())
-    } as unknown as __Navimi_CSSs;
+    } as unknown as INavimi_CSSs;
 
     const jssMock = {
         digestHot: jest.fn(() => Promise.resolve())
-    } as unknown as __Navimi_JSs;
+    } as unknown as INavimi_JSs;
 
     const templatesMock = {
         digestHot: jest.fn(() => Promise.resolve())
-    } as unknown as __Navimi_Templates;
+    } as unknown as INavimi_Templates;
 
     beforeAll(() => {
 
@@ -56,7 +61,7 @@ describe('hot.spec', () => {
 
     it('Test messsage', () => {
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             message: 'TESTE'
         };
 
@@ -68,9 +73,8 @@ describe('hot.spec', () => {
 
     it('Test img update', () => {
 
-        const hotPayload: hotPayload = {
-            filePath: './images/test.gif',
-            data: null
+        const hotPayload: INavimi_HotPayload = {
+            filePath: './images/test.gif'
         };
 
         webSocketMessageEventMock['message']({ data: JSON.stringify(hotPayload) });
@@ -81,7 +85,7 @@ describe('hot.spec', () => {
 
     it('Test css update', () => {
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             filePath: './css/test.css',
             data: 'css content...'
         };
@@ -94,7 +98,7 @@ describe('hot.spec', () => {
 
     it('Test template update', (done) => {
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             filePath: './html/test.html',
             data: 'html content...'
         };
@@ -111,7 +115,7 @@ describe('hot.spec', () => {
 
     it('Test js update', (done) => {
 
-        const hotPayload: hotPayload = {
+        const hotPayload: INavimi_HotPayload = {
             filePath: './js/test.js',
             data: 'js content...'
         };

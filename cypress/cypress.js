@@ -1,15 +1,17 @@
-const cypress = require('cypress')
-const path = require('path');
-const express = require('express');
-const http = require('http');
+import cypress from 'cypress';
+import path from 'path';
+import express from 'express';
+import http from 'http';
 
 const app = express();
 const server = http.createServer(app);
 
-app.use(express.static(path.resolve(__dirname, "./site")));
+const __dirname = path.resolve();
+
+app.use(express.static(path.resolve(__dirname, './cypress/site')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, "./site/index.html"));
+  res.sendFile(path.resolve(__dirname, './cypress/site/index.html'));
 });
 
 server.listen(3000, () => {

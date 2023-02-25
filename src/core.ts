@@ -1,11 +1,26 @@
-class __Navimi_Core {
+import { INavimi_CSSs } from './@types/INavimi_CSSs';
+import { INavimi_Fetch } from './@types/INavimi_Fetch';
+import { INavimi_Helpers } from './@types/INavimi_Helpers';
+import { INavimi_Hot } from './@types/INavimi_Hot';
+import { INavimi_JSs } from './@types/INavimi_JSs';
+import { INavimi_Middlewares } from './@types/INavimi_Middleware';
+import { INavimi_Templates } from './@types/INavimi_Templates';
+import { INavimi_Core } from './@types/iNavimi_Core';
+import { 
+    INavimi_Route, 
+    INavimi_Options, 
+    INavimi_Services, 
+    INavimi_Context 
+} from './@types/Navimi';
+
+class __Navimi_Core implements INavimi_Core {
 
     private _callId: number;
     private _abortController: AbortController;
     private _currentJSUrl: string;
     private _currentUrl: string;
-    private _routesParams: INavimi_KeyList<any>;
-    private _routesList: INavimi_KeyList<INavimi_Route>;
+    private _routesParams: Record<string, unknown>;
+    private _routesList: Record<string, INavimi_Route>;
     private _options: INavimi_Options;
     private _globalCssInserted: boolean;
     private _win: any;
@@ -18,7 +33,7 @@ class __Navimi_Core {
     private _navimiHot: INavimi_Hot;
     private _navimiHelpers: INavimi_Helpers;
 
-    constructor(routes: INavimi_KeyList<INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
+    constructor(routes: Record<string, INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
 
         this._callId = 0;
         this._abortController = window['AbortController'] ? new AbortController() : undefined;
@@ -58,7 +73,7 @@ class __Navimi_Core {
         }
     }
 
-    private _init(): Promise<any> {
+    private _init(): Promise<void | [void, void | void[]]> {
         if (this._options.globalCssUrl || this._options.globalTemplatesUrl) {
 
             return Promise.all([
@@ -69,10 +84,7 @@ class __Navimi_Core {
         }
     }
 
-    private _initHot() {
-        //removeIf(!minify)
-        console.warn('HOT is disabled! Use the unminified version to enable it.');
-        //endRemoveIf(!minify)
+    private _initHot(): void {
         //removeIf(minify)
         this._navimiHot.init(
             this._navimiCSSs,
@@ -84,7 +96,7 @@ class __Navimi_Core {
         //endRemoveIf(minify)
     }
 
-    private _navigateTo = (url: string, params?: INavimi_KeyList<any>): void => {
+    private _navigateTo = (url: string, params?: Record<string, unknown>): void => {
         this._initRoute(url, params);
     };
 
@@ -124,7 +136,7 @@ class __Navimi_Core {
         });
     };
 
-    private _initRoute = async (urlToGo?: string, navParams?: INavimi_KeyList<any>, force?: boolean): Promise<void> => {
+    private _initRoute = async (urlToGo?: string, navParams?: Record<string, unknown>, force?: boolean): Promise<void> => {
         try {
 
             const url = this._navimiHelpers.removeHash(urlToGo || this._navimiHelpers.getUrl());
@@ -260,6 +272,4 @@ class __Navimi_Core {
 
 }
 
-//removeIf(dist)
-module.exports.core = __Navimi_Core;
-//endRemoveIf(dist)
+export default __Navimi_Core;

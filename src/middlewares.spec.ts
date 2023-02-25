@@ -1,7 +1,12 @@
-describe('middlewares.spec', () => {
-    const { middlewares } = require('./middlewares');
+import { INavimi_Middlewares } from "./@types/INavimi_Middleware";
+import { INavimi_Context } from "./@types/Navimi";
+import middlewares from "./middlewares";
 
+describe('middlewares.spec', () => {
     let navimi_middlewares: INavimi_Middlewares;
+    const abortControllerMock = {
+        signal: {}
+    } as any;
 
     beforeAll(() => {
         navimi_middlewares = new middlewares() as INavimi_Middlewares;
@@ -53,9 +58,9 @@ describe('middlewares.spec', () => {
                 test_2: 0,
                 test_3: 0,
             }
-        } as INavimi_Context;
+        } as unknown as INavimi_Context;
 
-        navimi_middlewares.executeMiddlewares(undefined, context, () => { } ).then(() => {
+        navimi_middlewares.executeMiddlewares(abortControllerMock, context, () => { } ).then(() => {
             if (context.params.test_1 === 1 && context.params.test_2 === 2 && context.params.test_3 === 3) {
                 done();
             } else {
@@ -76,9 +81,9 @@ describe('middlewares.spec', () => {
                 counter: 0,
                 forceError: true,
             }
-        } as INavimi_Context;
+        } as unknown as INavimi_Context;
 
-        navimi_middlewares.executeMiddlewares(undefined, context, () => {
+        navimi_middlewares.executeMiddlewares(abortControllerMock, context, () => {
             done('Error: middlewares not executed correctly');
         }).then(() => {
             done('Should not get here');
@@ -97,9 +102,9 @@ describe('middlewares.spec', () => {
                 counter: 0,
                 forceNavigation: true,
             }
-        } as INavimi_Context;
+        } as unknown as INavimi_Context;
 
-        navimi_middlewares.executeMiddlewares(undefined, context, (url, params) => {
+        navimi_middlewares.executeMiddlewares(abortControllerMock, context, (url, params) => {
             if (url !== '/someUrl' || params.p1 !==  'ok') {
                 done('Error: middlewares not executed correctly');
             }

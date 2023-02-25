@@ -1,7 +1,8 @@
-describe('state.spec', () => {
-    const { state } = require('./state');
-    const { helpers } = require('./helpers');
+import { INavimi_State } from "./@types/INavimi_State";
+import helpers from "./helpers";
+import state from "./state";
 
+describe('state.spec', () => {
     let navimi_state: INavimi_State;
 
     const callerUid = 'uid: 1';

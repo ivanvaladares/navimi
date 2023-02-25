@@ -1,0 +1,13 @@
+{
+  "preset": "ts-jest",
+  "testEnvironment": "jest-environment-jsdom",
+  "globals": {
+    "jest": {
+      "globals": {
+        "ts-jest": {
+          "tsconfig": "tsconfig.json"
+        }
+      }
+    }
+  }
+}

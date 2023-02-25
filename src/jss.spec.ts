@@ -1,7 +1,17 @@
-describe('jss.spec', () => {
-    const { jss } = require('./jss');
+import { INavimi_Components } from "./@types/INavimi_Components";
+import { INavimi_CSSs } from "./@types/INavimi_CSSs";
+import { INavimi_Fetch } from "./@types/INavimi_Fetch";
+import { INavimi_Helpers } from "./@types/INavimi_Helpers";
+import { INavimi_JSs } from "./@types/INavimi_JSs";
+import { INavimi_State } from "./@types/INavimi_State";
+import { INavimi_Templates } from "./@types/INavimi_Templates";
+import jss from "./jss";
 
+describe('jss.spec', () => {
     let navimi_jss: INavimi_JSs;
+    const abortControllerMock = {
+        signal: {}
+    } as any;
 
     const fetch_data_mock = {} as any;
     const navimi_fetch_mock = {
@@ -12,8 +22,8 @@ describe('jss.spec', () => {
 
             return Promise.reject(new Error(`File ${url} not found`));
         },
-        getErrors: (url: string) => undefined
-    } as INavimi_Fetch;
+        getErrors: (url: string): void => undefined
+    } as unknown as INavimi_Fetch;
 
     const navimi_helpers_mock = {
         setTitle: jest.fn(),
@@ -153,7 +163,7 @@ describe('jss.spec', () => {
                 };
             })();`;
 
-        navimi_jss.fetchJS(null, ['/js/test.js'], 'javascript').then(() => {
+        navimi_jss.fetchJS(abortControllerMock, ['/js/test.js'], 'javascript').then(() => {
             expect(navimi_jss.isJsLoaded('/js/test.js')).toBeTruthy();
             done();
         });
@@ -193,7 +203,7 @@ describe('jss.spec', () => {
                 };
             })();`;
 
-        navimi_jss.fetchJS(null, [url], 'route').then(route => {
+        navimi_jss.fetchJS(abortControllerMock, [url], 'route').then(route => {
             route.onEnter();
             expect(route.nfx).toBeDefined();
             expect(route.context).not.toBeNull();
@@ -230,8 +240,8 @@ describe('jss.spec', () => {
         };
         `;
 
-        navimi_jss.loadServices(null, '/js/routeWithService.js', ['service1', 'service2']);
-        navimi_jss.fetchJS(null, ['/js/routeWithService.js'], 'route').then(route => {
+        navimi_jss.loadServices(abortControllerMock, '/js/routeWithService.js', ['service1', 'service2']);
+        navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithService.js'], 'route').then(route => {
             expect(route.service1.testService1('OK')).toBe('OK');
             expect(route.service2.testService2('OK')).toBe('OK');
             //@ts-ignore
@@ -263,7 +273,7 @@ describe('jss.spec', () => {
             }];
         `;
 
-        navimi_jss.fetchJS(null, ['/js/routeWithServiceInline.js'], 'route').then(route => {
+        navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithServiceInline.js'], 'route').then(route => {
             expect(route.service1.testService1('OK')).toBe('OK');
             expect(route.service2.testService2('OK')).toBe('OK');
             expect(route.service3.testService3('OK')).toBe('OK');
@@ -291,8 +301,8 @@ describe('jss.spec', () => {
         };
         `;
 
-        navimi_jss.loadComponents(null, '/js/routeWithComponents.js', ['component-1', 'component-2']);
-        navimi_jss.fetchJS(null, ['/js/routeWithComponents.js'], 'route').then(() => {
+        navimi_jss.loadComponents(abortControllerMock, '/js/routeWithComponents.js', ['component-1', 'component-2']);
+        navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithComponents.js'], 'route').then(() => {
             //@ts-ignore
             expect(navimi_jss._jsDepMap['/js/component1.js']['/js/routeWithComponents.js']).toBeDefined();
             //@ts-ignore
@@ -312,8 +322,8 @@ describe('jss.spec', () => {
         };
         `;
 
-        navimi_jss.loadComponents(null, '/js/routeWithComponentsWithServices.js', ['component-3']);
-        navimi_jss.fetchJS(null, ['/js/routeWithComponentsWithServices.js'], 'route').then(() => {
+        navimi_jss.loadComponents(abortControllerMock, '/js/routeWithComponentsWithServices.js', ['component-3']);
+        navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithComponentsWithServices.js'], 'route').then(() => {
             //@ts-ignore
             expect(navimi_jss._jsDepMap['/js/component3.js']['/js/routeWithComponentsWithServices.js']).toBeDefined();
             //@ts-ignore
@@ -473,7 +483,7 @@ describe('jss.spec', () => {
 
         navimi_jss.digestHot({filePath: url , data}).then(() => {
 
-            navimi_jss.fetchJS(null, [url], 'route').then(route => {
+            navimi_jss.fetchJS(abortControllerMock, [url], 'route').then(route => {
                 expect(route.nfx).toBeDefined();
                 expect(route.newFunction()).toBe('OK');
                 done();
@@ -503,7 +513,7 @@ describe('jss.spec', () => {
                 };
             })();`;
 
-        navimi_jss.fetchJS(null, [url], 'route').then(async route => {
+        navimi_jss.fetchJS(abortControllerMock, [url], 'route').then(async route => {
             await route.onEnter();
             expect(route.loadedJs.test).toBeDefined();
             expect(route.loadedJs.newFunc).toBeUndefined();
@@ -521,7 +531,7 @@ describe('jss.spec', () => {
 
             navimi_jss.digestHot({filePath: '/js/routeJs.js', data: newJs}).then(() => {
     
-                navimi_jss.fetchJS(null, ['/js/routeWithJs.js'], 'route').then(async route => {
+                navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithJs.js'], 'route').then(async route => {
                     await route.onEnter();
                     expect(route.loadedJs.test).toBeDefined();
                     expect(route.loadedJs.newFunc()).toBe('OK');
@@ -557,7 +567,7 @@ describe('jss.spec', () => {
             const oldRoute = navimi_jss.getInstance('/js/routeWithService.js');
             expect(oldRoute).toBeUndefined();
 
-            navimi_jss.fetchJS(null, ['/js/routeWithService.js'], 'route').then(route => {
+            navimi_jss.fetchJS(abortControllerMock, ['/js/routeWithService.js'], 'route').then(route => {
                 expect(route.service1.newFunction()).toBe('OK');
                 expect(route.service2.testService2('OK')).toBe('OK');
                 //@ts-ignore
