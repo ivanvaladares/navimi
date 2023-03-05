@@ -50,5 +50,8 @@ gulp.task('copyJsToExamplesAndTest', function(done) {
     gulp.src(paths.dirOutput + '/navimi.js')
         .pipe(gulp.dest(paths.hotPath));
 
+    gulp.src(paths.dirOutput + '/navimi.js.map')
+        .pipe(gulp.dest(paths.hotPath));
+
     done();
 });

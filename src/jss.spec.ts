@@ -1,11 +1,15 @@
 import { INavimi_Components } from "./@types/INavimi_Components";
 import { INavimi_CSSs } from "./@types/INavimi_CSSs";
 import { INavimi_Fetch } from "./@types/INavimi_Fetch";
-import { INavimi_Helpers } from "./@types/INavimi_Helpers";
 import { INavimi_JSs } from "./@types/INavimi_JSs";
 import { INavimi_State } from "./@types/INavimi_State";
 import { INavimi_Templates } from "./@types/INavimi_Templates";
+import { setNavimiLinks } from './helpers/setNavimiLinks';
+import { setTitle } from './helpers/setTitle';
 import jss from "./jss";
+
+jest.mock('./helpers/setNavimiLinks');
+jest.mock('./helpers/setTitle');
 
 describe('jss.spec', () => {
     let navimi_jss: INavimi_JSs;
@@ -24,11 +28,6 @@ describe('jss.spec', () => {
         },
         getErrors: (url: string): void => undefined
     } as unknown as INavimi_Fetch;
-
-    const navimi_helpers_mock = {
-        setTitle: jest.fn(),
-        setNavimiLinks: jest.fn()
-    } as unknown as INavimi_Helpers;
 
     const navimi_css_mock = {
         fetchCss: jest.fn(() => Promise.resolve()),
@@ -124,7 +123,6 @@ describe('jss.spec', () => {
         })();`;
 
         navimi_jss.init(
-            navimi_helpers_mock,
             navimi_fetch_mock,
             navimi_css_mock,
             navimi_templates_mock,
@@ -444,7 +442,7 @@ describe('jss.spec', () => {
 
         route.nfx.setTitle('My Title');
 
-        expect(navimi_helpers_mock.setTitle).toHaveBeenCalledWith('My Title');
+        expect(setTitle).toHaveBeenCalledWith('My Title');
         
     });
 
@@ -454,7 +452,7 @@ describe('jss.spec', () => {
 
         route.nfx.setNavimiLinks();
 
-        expect(navimi_helpers_mock.setNavimiLinks).toHaveBeenCalledWith();
+        expect(setNavimiLinks).toHaveBeenCalledWith();
         
     });
 

@@ -1,18 +1,20 @@
 import { INavimi_Components, INavimi_Component, INavimi_WrappedComponent } from './@types/INavimi_Components';
-import { INavimi_Helpers } from './@types/INavimi_Helpers';
 import { INavimi_State } from './@types/INavimi_State';
 import { INavimi_Functions } from './@types/Navimi';
+import { getNodeContent } from './helpers/getNodeContent';
+import { getNodeType } from './helpers/getNodeType';
+import { mergeHtmlElement } from './helpers/mergeHtmlElement';
+import { syncAttributes } from './helpers/syncAttributes';
+import { throttle } from './helpers/throttle';
 
 class __Navimi_Components implements INavimi_Components {
 
-    private _navimiHelpers: INavimi_Helpers;
     private _navimiState: INavimi_State;
     private _components: Record<string, InstanceType<any>> = {};
     private _uidCounter = 0;
 
-    public init(navimiHelpers: INavimi_Helpers, navimiState: INavimi_State): void {
+    public init(navimiState: INavimi_State): void {
 
-        this._navimiHelpers = navimiHelpers;
         this._navimiState = navimiState;
 
         new window.MutationObserver((mutations: MutationRecord[]) => {
@@ -30,7 +32,6 @@ class __Navimi_Components implements INavimi_Components {
                         this._traverseComponentsTree(addedNode, this._registerTag);
                     });
                     [].slice.call(mutation.removedNodes).map((removedNode: INavimi_Component) => {
-                        // todo: create a queue to remove components and give priority to adding components
                         this._traverseComponentsTree(removedNode, this._removeComponent);
                     });
                 }
@@ -39,17 +40,12 @@ class __Navimi_Components implements INavimi_Components {
     }
 
     private _removeComponent = (node: INavimi_Component): void => {
-        if (node.localName && !node.__removed && this._components[node.localName]) {
-            node.__removed = true;
-            this._navimiState.unwatchState(node.__uid);
-            this._removeChildComponents(node);
-            this._disconnectComponent(node);
-            node.remove();
-            node.onUnmount && node.onUnmount();
+        if (node.localName && this._components[node.localName] && node.__wrapper) {
+            node.__wrapper.unmount();
         }
     }
 
-    private _disconnectComponent = (node: INavimi_Component): void => {
+    private _disconnectFromParent = (node: INavimi_Component): void => {
         if (node.parentComponent) {
             node.parentComponent.childComponents =
                 node.parentComponent.childComponents
@@ -107,7 +103,7 @@ class __Navimi_Components implements INavimi_Components {
         this._findParentComponent(node, parentNode);
         this._readAttributes(node);
 
-        const component = new componentClass(node);
+        const component = new componentClass(node, node.props);
 
         component.init();
     };
@@ -182,7 +178,7 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             // add/remove nodes to match the template
-            if (this._navimiHelpers.getNodeType(templateNode) !== this._navimiHelpers.getNodeType(documentNode)) {
+            if (getNodeType(templateNode) !== getNodeType(documentNode)) {
                 if (diffCount > 0) {
                     this._traverseComponentsTree(documentNode as Element, this._removeComponent);
                     if (documentNode.parentNode) {
@@ -197,17 +193,17 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             // update text content
-            const templateContent = this._navimiHelpers.getNodeContent(templateNode);
-            const documentContent = this._navimiHelpers.getNodeContent(documentNode);
+            const templateContent = getNodeContent(templateNode);
+            const documentContent = getNodeContent(documentNode);
             if (templateContent && templateContent !== documentContent) {
                 documentNode.textContent = templateContent;
             }
 
             if (templateNode.localName) {
-                this._navimiHelpers.syncAttributes(templateNode, documentNode);
+                syncAttributes(templateNode, documentNode);
                 // Check if the element is a component and stop
                 if (!this._components[templateNode.localName]) {
-                    this._navimiHelpers.mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
+                    mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
                 }
             }
         }
@@ -242,52 +238,73 @@ class __Navimi_Components implements INavimi_Components {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const that = this;
 
-        Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-
         const wrappedComponentClass = class implements INavimi_WrappedComponent {
+            private _node: INavimi_Component;
+            private _removed: boolean;
+            private _uid: string;
+            private _previousTemplate: string | undefined;
+            private _initialInnerHTML: string;
 
-            private _component: INavimi_Component;
-            private _node: any;
-            private _previousTemplate: string;
-            private _initalInnerHTML: string;
-
-            constructor(node: HTMLElement) {
-                const uid = `component:${that._uidCounter++}`;
-
+            constructor(node: INavimi_Component) {
+                this._uid = `component:${that._uidCounter++}`;
                 this._node = node;
-
                 this._previousTemplate = undefined;
-                this._initalInnerHTML = node.innerHTML;
-                node.innerHTML = '';
+                this._initialInnerHTML = node.innerHTML;
 
-                this._component = new componentClass(this._node.props, getFunctions(uid), services);
-                this._component.__uid = uid
+                node.innerHTML = '';               
+                node.__wrapper = this;
 
-                // connects the component code to the tag 
-                Object.setPrototypeOf(this._node, this._component);
+                // inherits from HTMLElement
+                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+
+                const component = new componentClass(node.props, getFunctions(this._uid), services);
 
                 // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
-                this._component.update = that._navimiHelpers.throttle(this.render, 16, this._node);
+                node.update = throttle(this.render.bind(this), 16, this);
+
+                // connects the component code to the tag 
+                Object.setPrototypeOf(node, component);
+
             }
 
             init = async () => {
                 await this.render();
-                this._component.onMount && await this._component.onMount.call(this._node);
+                this._node.onMount && await this._node.onMount.call(this._node);
             }
 
             render = async () => {
-                const html = this._component.render && await this._component.render.call(this._node, this._initalInnerHTML);
-
-                if (html && html !== this._previousTemplate) {
-
-                    this._previousTemplate = html;
-
-                    const template = new DOMParser().parseFromString(html, 'text/html');
-
-                    that._mergeHtml(template.querySelector('body'), this._node);
+                const { render } = this._node;
+                if (!render) {
+                    return;
                 }
 
-                this._component.onRender && this._component.onRender.call(this._node);
+                const html = await render.call(this._node, this._initialInnerHTML);
+                if (this._removed || !html || html === this._previousTemplate) {
+                    return;
+                }
+
+                this._previousTemplate = html;
+                const template = new DOMParser().parseFromString(html, 'text/html');
+                that._mergeHtml(template.querySelector('body'), this._node);
+
+                this._node.onRender && this._node.onRender.call(this._node);
+            }
+
+            unmount = () => {
+                if (!this._removed) {
+                    this._removed = true;
+                    that._navimiState.unwatchState(this._uid);
+                    that._removeChildComponents(this._node);
+                    that._disconnectFromParent(this._node);
+                    this._node.remove();
+                    this._node.onUnmount && this._node.onUnmount();
+                    this._node.update = undefined;
+                    this._node.__wrapper = undefined;
+                    delete this._node;
+                    delete this._uid;
+                    delete this._previousTemplate;
+                    delete this._initialInnerHTML;
+                }
             }
 
         };

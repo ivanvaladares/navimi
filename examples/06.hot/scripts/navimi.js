@@ -8,6 +8,95 @@
 var Navimi = (function () {
     'use strict';
 
+    const removeHash = (url) => {
+        const hashPos = url.indexOf('#');
+        return hashPos > 0 ? url.substring(0, hashPos) : url;
+    };
+
+    const getUrl = () => {
+        const location = document.location;
+        const matches = location.toString().match(/^[^#]*(#.+)$/);
+        const hash = matches ? matches[1] : '';
+        return [location.pathname, location.search, hash].join('');
+    };
+
+    const parseQuery = (queryString) => {
+        const query = {};
+        queryString.split('&').map(pair => {
+            const kv = pair.split('=');
+            query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+        });
+        return query;
+    };
+    const splitPath = (path) => {
+        if (!path) {
+            return [];
+        }
+        const queryPos = path.indexOf('?');
+        path = queryPos >= 0 ? path.substring(0, queryPos) : path;
+        return path.split('/').filter(p => p.length > 0);
+    };
+    const parsePath = (urlPath, urlPattern) => {
+        const queryPos = urlPath.indexOf('?');
+        const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : '';
+        const path = splitPath(urlPath);
+        const pattern = splitPath(urlPattern);
+        let params = {};
+        if (queryPos > 0) {
+            params = {
+                queryString: parseQuery(query)
+            };
+        }
+        for (let i = 0; i < pattern.length; i++) {
+            if (pattern[i].charAt(0) === ':') {
+                const name = pattern[i].slice(1);
+                if (path.length <= i) {
+                    return null;
+                }
+                params[name] = decodeURIComponent(path[i]);
+            }
+            else {
+                if (!path[i] || pattern[i].toLowerCase() !== path[i].toLowerCase())
+                    return null;
+            }
+        }
+        return params;
+    };
+    const getRouteAndParams = (url, routingList) => {
+        const urlParams = splitPath(url);
+        const catchAll = routingList['*'];
+        let routeItem, params;
+        for (const routeUrl in routingList) {
+            const routeParams = splitPath(routeUrl);
+            if (routeParams.length === urlParams.length) {
+                params = parsePath(url, routeUrl);
+                if (params) {
+                    routeItem = routingList[routeUrl];
+                    break;
+                }
+            }
+        }
+        if (!routeItem && catchAll) {
+            params = parsePath(url, url);
+            routeItem = catchAll;
+        }
+        return { routeItem, params };
+    };
+
+    const setTitle = (title) => {
+        document.title = title;
+    };
+
+    const setNavimiLinks = () => {
+        document.querySelectorAll('[navimi-link]').forEach(el => {
+            el.removeAttribute('navimi-link');
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.navigateTo(event.target.pathname);
+            });
+        });
+    };
+
     class __Navimi_Core {
         constructor(routes, services, options) {
             this._navigateTo = (url, params) => {
@@ -45,7 +134,7 @@ var Navimi = (function () {
             };
             this._initRoute = async (urlToGo, navParams, force) => {
                 try {
-                    const url = this._navimiHelpers.removeHash(urlToGo || this._navimiHelpers.getUrl());
+                    const url = removeHash(urlToGo || getUrl());
                     if (!force) {
                         if (this._currentUrl === url) {
                             return;
@@ -55,7 +144,7 @@ var Navimi = (function () {
                     }
                     const callId = ++this._callId;
                     const pushState = urlToGo !== undefined;
-                    const { routeItem, params } = this._navimiHelpers.getRouteAndParams(url, this._routesList);
+                    const { routeItem, params } = getRouteAndParams(url, this._routesList);
                     const routeParams = Object.assign({ url,
                         routeItem,
                         params }, (navParams ? navParams : {}));
@@ -123,7 +212,7 @@ var Navimi = (function () {
                     ]).catch(this._reportError);
                     //wait global css and template to load, if any
                     await this._waitForAssets(callId);
-                    this._navimiHelpers.setTitle(title);
+                    setTitle(title);
                     if (!this._globalCssInserted) {
                         this._globalCssInserted = true;
                         this._navimiCSSs.insertCss(this._options.globalCssUrl, 'globalCss');
@@ -139,7 +228,7 @@ var Navimi = (function () {
                         }
                     }
                     if (callId === this._callId) {
-                        this._navimiHelpers.setNavimiLinks();
+                        setNavimiLinks();
                         this._navimiCSSs.insertCss(cssUrl, 'routeCss');
                         this._options.onAfterRoute &&
                             this._options.onAfterRoute(routeParams, this._navigateTo);
@@ -164,7 +253,6 @@ var Navimi = (function () {
             this._navimiTemplates = services.navimiTemplates;
             this._navimiMiddlewares = services.navimiMiddlewares;
             this._navimiHot = services.navimiHot;
-            this._navimiHelpers = services.navimiHelpers;
             this._win.addEventListener('popstate', () => {
                 this._initRoute();
             });
@@ -442,7 +530,7 @@ var Navimi = (function () {
             this._getFunctions = (callerUid, jsUrl) => {
                 return Object.freeze({
                     addLibrary: this._addLibrary,
-                    setTitle: this._navimiHelpers.setTitle,
+                    setTitle,
                     navigateTo: window.navigateTo,
                     getTemplate: this._navimiTemplates.getTemplate,
                     fetchJS: (url) => {
@@ -458,7 +546,7 @@ var Navimi = (function () {
                     style: this._navimiCSSs.style,
                     setState: this._navimiState.setState,
                     getState: this._navimiState.getState,
-                    setNavimiLinks: this._navimiHelpers.setNavimiLinks,
+                    setNavimiLinks,
                     unwatchState: (key) => this._navimiState.unwatchState(callerUid, key),
                     watchState: (key, callback) => this._navimiState.watchState(callerUid, key, callback)
                 });
@@ -548,7 +636,7 @@ var Navimi = (function () {
                         const instance = type === 'route' ?
                             await this._buildRoute(jsUrl, JsCode) :
                             await this._buildComponentClass(jsUrl, JsCode);
-                        //keep this instance to reuse later
+                        //keep this instance to reuse later -- component = class / route = object
                         this._jsInstances[jsUrl] = instance;
                         return this._resolvePromise(instance, jsUrl);
                     }
@@ -681,8 +769,7 @@ var Navimi = (function () {
             };
             //endRemoveIf(minify)
         }
-        init(navimiHelpers, navimiFetch, navimiCSSs, navimiTemplates, navimiState, navimiComponents, options) {
-            this._navimiHelpers = navimiHelpers;
+        init(navimiFetch, navimiCSSs, navimiTemplates, navimiState, navimiComponents, options) {
             this._navimiFetch = navimiFetch;
             this._navimiCSSs = navimiCSSs;
             this._navimiTemplates = navimiTemplates;
@@ -815,6 +902,86 @@ var Navimi = (function () {
         }
     }
 
+    const cloneObject = (obj, clonedObjects = new Map()) => {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+        if (obj instanceof Error) {
+            return Object.assign(new Error(obj.message), { stack: obj.stack });
+        }
+        if (obj instanceof Date) {
+            return new Date(obj.getTime());
+        }
+        if (Array.isArray(obj)) {
+            const clonedArray = obj.map((item) => cloneObject(item, clonedObjects));
+            clonedObjects.set(obj, clonedArray);
+            return clonedArray;
+        }
+        if (clonedObjects.has(obj)) {
+            return clonedObjects.get(obj);
+        }
+        const clonedObj = Object.create(Object.getPrototypeOf(obj));
+        clonedObjects.set(obj, clonedObj);
+        for (const [key, value] of Object.entries(obj)) {
+            clonedObj[key] = cloneObject(value, clonedObjects);
+        }
+        return clonedObj;
+    };
+
+    const debounce = (task, wait) => {
+        let timeout;
+        return function (...args) {
+            const func = () => {
+                timeout = null;
+                task.apply(this, args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(func, wait);
+        };
+    };
+
+    const stringify = (obj) => {
+        const visited = new Map();
+        let index = 0;
+        const iterateObject = (obj) => {
+            if (typeof obj === 'function') {
+                return String(obj);
+            }
+            if (obj instanceof Error) {
+                return obj.message;
+            }
+            if (obj === null || typeof obj !== 'object') {
+                return obj;
+            }
+            if (visited.has(obj)) {
+                return `[Circular: ${visited.get(obj)}]`;
+            }
+            visited.set(obj, index++);
+            if (Array.isArray(obj)) {
+                const aResult = obj.map(iterateObject);
+                visited.delete(obj);
+                return aResult;
+            }
+            const result = Object.keys(obj).reduce((result, prop) => {
+                result[prop] = iterateObject(((obj, prop) => {
+                    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+                        try {
+                            return obj[prop];
+                        }
+                        catch (_a) {
+                            return;
+                        }
+                    }
+                    return obj[prop];
+                })(obj, prop));
+                return result;
+            }, {});
+            visited.delete(obj);
+            return result;
+        };
+        return JSON.stringify(iterateObject(obj));
+    };
+
     class __Navimi_State {
         constructor() {
             this._state = {};
@@ -825,8 +992,8 @@ var Navimi = (function () {
                 //start with longer keys to go deep first
                 keys.sort((a, b) => b.length - a.length).map(key => {
                     if (!this._stateDiff[key]) {
-                        const sOld = this._navimiHelpers.stringify(this.getState(key, this._prevState) || '');
-                        const sNew = this._navimiHelpers.stringify(this.getState(key, this._state) || '');
+                        const sOld = stringify(this.getState(key, this._prevState) || '');
+                        const sNew = stringify(this.getState(key, this._state) || '');
                         if (sOld !== sNew) {
                             this._stateDiff[key] = true;
                             //set upper keys as changed so we don't test them again
@@ -859,7 +1026,7 @@ var Navimi = (function () {
             this.setState = (newState) => {
                 const observedKeys = Object.keys(this._stateWatchers);
                 if (observedKeys.length > 0) {
-                    this._prevState = this._navimiHelpers.cloneObject(this._state);
+                    this._prevState = cloneObject(this._state);
                 }
                 this._mergeState(this._state, newState);
                 if (observedKeys.length > 0) {
@@ -872,7 +1039,7 @@ var Navimi = (function () {
                     key.split('.')
                         .reduce((v, k) => (v && v[k]) || undefined, _state || this._state) :
                     _state || this._state;
-                return state ? Object.freeze(this._navimiHelpers.cloneObject(state)) : undefined;
+                return state ? Object.freeze(cloneObject(state)) : undefined;
             };
             this.watchState = (callerUid, key, callback) => {
                 if (!key || !callback) {
@@ -922,10 +1089,9 @@ var Navimi = (function () {
                 });
             };
         }
-        init(navimiHelpers) {
-            this._navimiHelpers = navimiHelpers;
+        init() {
             // debounce this so we fire in batches
-            this._invokeStateWatchers = navimiHelpers.debounce(() => {
+            this._invokeStateWatchers = debounce(() => {
                 const keys = Object.keys(this._stateWatchers);
                 const diff = Object.keys(this._stateDiff);
                 this._stateDiff = {};
@@ -1026,249 +1192,92 @@ var Navimi = (function () {
         }
     }
 
-    class __Navimi_Helpers {
-        constructor() {
-            this.parseQuery = (queryString) => {
-                const query = {};
-                queryString.split('&').map(pair => {
-                    const kv = pair.split('=');
-                    query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
-                });
-                return query;
-            };
-            this.splitPath = (path) => {
-                if (!path) {
-                    return [];
-                }
-                const queryPos = path.indexOf('?');
-                path = queryPos >= 0 ? path.substring(0, queryPos) : path;
-                return path.split('/').filter(p => p.length > 0);
-            };
-            this.parsePath = (urlPath, urlPattern) => {
-                const queryPos = urlPath.indexOf('?');
-                const query = queryPos > 0 ? urlPath.substring(queryPos + 1, urlPath.length) : '';
-                const path = this.splitPath(urlPath);
-                const pattern = this.splitPath(urlPattern);
-                let params = {};
-                if (queryPos > 0) {
-                    params = {
-                        queryString: this.parseQuery(query)
-                    };
-                }
-                for (let i = 0; i < pattern.length; i++) {
-                    if (pattern[i].charAt(0) === ':') {
-                        const name = pattern[i].slice(1);
-                        if (path.length <= i) {
-                            return null;
-                        }
-                        params[name] = decodeURIComponent(path[i]);
-                    }
-                    else {
-                        if (!path[i] || pattern[i].toLowerCase() !== path[i].toLowerCase())
-                            return null;
-                    }
-                }
-                return params;
-            };
-            // eslint-disable-next-line @typescript-eslint/ban-types
-            this.debounce = (task, wait) => {
-                let timeout;
-                return function (...args) {
-                    const func = () => {
-                        timeout = null;
-                        task.apply(this, args);
-                    };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(func, wait);
-                };
-            };
-            // eslint-disable-next-line @typescript-eslint/ban-types
-            this.throttle = (task, wait, context) => {
-                let timeout;
-                let lastTime;
-                return function (...args) {
-                    const now = Date.now();
-                    if (lastTime && now < lastTime + wait) {
-                        clearTimeout(timeout);
-                        timeout = setTimeout(() => {
-                            lastTime = now;
-                            task.apply(context, args);
-                        }, wait);
-                    }
-                    else {
-                        lastTime = now;
-                        task.apply(context, args);
-                    }
-                };
-            };
-            this.getUrl = () => {
-                const location = document.location;
-                const matches = location.toString().match(/^[^#]*(#.+)$/);
-                const hash = matches ? matches[1] : '';
-                return [location.pathname, location.search, hash].join('');
-            };
-            this.setTitle = (title) => {
-                document.title = title;
-            };
-            this.setNavimiLinks = () => {
-                document.querySelectorAll('[navimi-link]').forEach(el => {
-                    el.removeAttribute('navimi-link');
-                    el.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        window.navigateTo(event.target.pathname);
-                    });
-                });
-            };
-            this.removeHash = (url) => {
-                const hashPos = url.indexOf('#');
-                return hashPos > 0 ? url.substring(0, hashPos) : url;
-            };
-            this.stringify = (obj) => {
-                const visited = new Map();
-                let index = 0;
-                const iterateObject = (obj) => {
-                    if (typeof obj === 'function') {
-                        return String(obj);
-                    }
-                    if (obj instanceof Error) {
-                        return obj.message;
-                    }
-                    if (obj === null || typeof obj !== 'object') {
-                        return obj;
-                    }
-                    if (visited.has(obj)) {
-                        return `[Circular: ${visited.get(obj)}]`;
-                    }
-                    visited.set(obj, index++);
-                    if (Array.isArray(obj)) {
-                        const aResult = obj.map(iterateObject);
-                        visited.delete(obj);
-                        return aResult;
-                    }
-                    const result = Object.keys(obj).reduce((result, prop) => {
-                        result[prop] = iterateObject(((obj, prop) => {
-                            if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-                                try {
-                                    return obj[prop];
-                                }
-                                catch (_a) {
-                                    return;
-                                }
-                            }
-                            return obj[prop];
-                        })(obj, prop));
-                        return result;
-                    }, {});
-                    visited.delete(obj);
-                    return result;
-                };
-                return JSON.stringify(iterateObject(obj));
-            };
-            this.cloneObject = (obj) => {
-                if (obj === null || typeof obj !== 'object') {
-                    return obj;
-                }
-                if (obj instanceof Error) {
-                    return new Error(obj.message);
-                }
-                if (Array.isArray(obj)) {
-                    return obj.map(this.cloneObject);
-                }
-                return Object.assign({}, ...Object.entries(obj).map(([key, value]) => ({
-                    [key]: this.cloneObject(value)
-                })));
-            };
-            this.getRouteAndParams = (url, routingList) => {
-                const urlParams = this.splitPath(url);
-                const catchAll = routingList['*'];
-                let routeItem, params;
-                for (const routeUrl in routingList) {
-                    const routeParams = this.splitPath(routeUrl);
-                    if (routeParams.length === urlParams.length) {
-                        params = this.parsePath(url, routeUrl);
-                        if (params) {
-                            routeItem = routingList[routeUrl];
-                            break;
-                        }
-                    }
-                }
-                if (!routeItem && catchAll) {
-                    params = this.parsePath(url, url);
-                    routeItem = catchAll;
-                }
-                return { routeItem, params };
-            };
-            this.getNodeType = (node) => {
-                switch (node.nodeType) {
-                    case Node.TEXT_NODE:
-                        return 'text';
-                    case Node.COMMENT_NODE:
-                        return 'comment';
-                    default:
-                        return node.tagName.toLowerCase();
-                }
-            };
-            this.getNodeContent = (node) => {
-                if (node.childNodes.length > 0) {
-                    return null;
-                }
-                return node.textContent;
-            };
-            this.mergeHtmlElement = (templateNode, documentNode, callback) => {
-                // Clear child nodes
-                if (documentNode.childNodes.length > 0 && !templateNode.childNodes.length) {
-                    documentNode.innerHTML = '';
-                    return;
-                }
-                // Prepare empty node for next round
-                if (!documentNode.childNodes.length && templateNode.childNodes.length) {
-                    const fragment = document.createDocumentFragment();
-                    callback(templateNode, fragment);
-                    documentNode.appendChild(fragment);
-                    return;
-                }
-                // Dive deeper into the tree
-                if (templateNode.childNodes.length > 0) {
-                    callback(templateNode, documentNode);
-                }
-            };
-            this.syncAttributes = (templateNode, documentNode) => {
-                if (templateNode.tagName.toLowerCase() !== documentNode.tagName.toLowerCase()) {
-                    return;
-                }
-                const documentNodeAttr = [].slice.call(documentNode.attributes);
-                const templateNodeAttr = [].slice.call(templateNode.attributes);
-                const update = templateNodeAttr.filter(templateAttr => {
-                    const documentAttr = documentNodeAttr.find((docAttr) => templateAttr.name === docAttr.name);
-                    return documentAttr && templateAttr.value !== documentAttr.value;
-                });
-                const remove = documentNodeAttr.filter((docAttr) => !templateNodeAttr.some((templateAttr) => docAttr.name === templateAttr.name));
-                const add = templateNodeAttr.filter((templateAttr) => !documentNodeAttr.some((docAttr) => templateAttr.name === docAttr.name));
-                remove.forEach((attr) => {
-                    documentNode.removeAttribute(attr.name);
-                });
-                [...update, ...add].forEach(({ name, value }) => {
-                    documentNode.setAttribute(name, value);
-                });
-            };
+    const getNodeContent = (node) => {
+        if (node.childNodes.length > 0) {
+            return null;
         }
-    }
+        return node.textContent;
+    };
+
+    const getNodeType = (node) => {
+        switch (node.nodeType) {
+            case Node.TEXT_NODE:
+                return 'text';
+            case Node.COMMENT_NODE:
+                return 'comment';
+            default:
+                return node.tagName.toLowerCase();
+        }
+    };
+
+    const mergeHtmlElement = (templateNode, documentNode, callback) => {
+        // Clear child nodes
+        if (documentNode.childNodes.length > 0 && !templateNode.childNodes.length) {
+            documentNode.innerHTML = '';
+            return;
+        }
+        // Prepare empty node for next round
+        if (!documentNode.childNodes.length && templateNode.childNodes.length) {
+            const fragment = document.createDocumentFragment();
+            callback(templateNode, fragment);
+            documentNode.appendChild(fragment);
+            return;
+        }
+        // Dive deeper into the tree
+        if (templateNode.childNodes.length > 0) {
+            callback(templateNode, documentNode);
+        }
+    };
+
+    const syncAttributes = (templateNode, documentNode) => {
+        if (templateNode.tagName.toLowerCase() !== documentNode.tagName.toLowerCase()) {
+            return;
+        }
+        const documentNodeAttr = [].slice.call(documentNode.attributes);
+        const templateNodeAttr = [].slice.call(templateNode.attributes);
+        const update = templateNodeAttr.filter(templateAttr => {
+            const documentAttr = documentNodeAttr.find((docAttr) => templateAttr.name === docAttr.name);
+            return documentAttr && templateAttr.value !== documentAttr.value;
+        });
+        const remove = documentNodeAttr.filter((docAttr) => !templateNodeAttr.some((templateAttr) => docAttr.name === templateAttr.name));
+        const add = templateNodeAttr.filter((templateAttr) => !documentNodeAttr.some((docAttr) => templateAttr.name === docAttr.name));
+        remove.forEach((attr) => {
+            documentNode.removeAttribute(attr.name);
+        });
+        [...update, ...add].forEach(({ name, value }) => {
+            documentNode.setAttribute(name, value);
+        });
+    };
+
+    const throttle = (task, wait, context) => {
+        let timeout;
+        let lastTime;
+        return function (...args) {
+            const now = Date.now();
+            if (lastTime && now < lastTime + wait) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    lastTime = now;
+                    task.apply(context, args);
+                }, wait - (now - lastTime));
+            }
+            else {
+                lastTime = now;
+                task.apply(context, args);
+            }
+        };
+    };
 
     class __Navimi_Components {
         constructor() {
             this._components = {};
             this._uidCounter = 0;
             this._removeComponent = (node) => {
-                if (node.localName && !node.__removed && this._components[node.localName]) {
-                    node.__removed = true;
-                    this._navimiState.unwatchState(node.__uid);
-                    this._removeChildComponents(node);
-                    this._disconnectComponent(node);
-                    node.remove();
-                    node.onUnmount && node.onUnmount();
+                if (node.localName && this._components[node.localName] && node.__wrapper) {
+                    node.__wrapper.unmount();
                 }
             };
-            this._disconnectComponent = (node) => {
+            this._disconnectFromParent = (node) => {
                 if (node.parentComponent) {
                     node.parentComponent.childComponents =
                         node.parentComponent.childComponents
@@ -1316,7 +1325,7 @@ var Navimi = (function () {
                 node.childComponents = [];
                 this._findParentComponent(node, parentNode);
                 this._readAttributes(node);
-                const component = new componentClass(node);
+                const component = new componentClass(node, node.props);
                 component.init();
             };
             this._findParentComponent = (node, parentNode) => {
@@ -1379,7 +1388,7 @@ var Navimi = (function () {
                         continue;
                     }
                     // add/remove nodes to match the template
-                    if (this._navimiHelpers.getNodeType(templateNode) !== this._navimiHelpers.getNodeType(documentNode)) {
+                    if (getNodeType(templateNode) !== getNodeType(documentNode)) {
                         if (diffCount > 0) {
                             this._traverseComponentsTree(documentNode, this._removeComponent);
                             if (documentNode.parentNode) {
@@ -1394,16 +1403,16 @@ var Navimi = (function () {
                         continue;
                     }
                     // update text content
-                    const templateContent = this._navimiHelpers.getNodeContent(templateNode);
-                    const documentContent = this._navimiHelpers.getNodeContent(documentNode);
+                    const templateContent = getNodeContent(templateNode);
+                    const documentContent = getNodeContent(documentNode);
                     if (templateContent && templateContent !== documentContent) {
                         documentNode.textContent = templateContent;
                     }
                     if (templateNode.localName) {
-                        this._navimiHelpers.syncAttributes(templateNode, documentNode);
+                        syncAttributes(templateNode, documentNode);
                         // Check if the element is a component and stop
                         if (!this._components[templateNode.localName]) {
-                            this._navimiHelpers.mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
+                            mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
                         }
                     }
                 }
@@ -1427,41 +1436,62 @@ var Navimi = (function () {
                 }
                 // eslint-disable-next-line @typescript-eslint/no-this-alias
                 const that = this;
-                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
                 const wrappedComponentClass = class {
                     constructor(node) {
                         this.init = async () => {
                             await this.render();
-                            this._component.onMount && await this._component.onMount.call(this._node);
+                            this._node.onMount && await this._node.onMount.call(this._node);
                         };
                         this.render = async () => {
-                            const html = this._component.render && await this._component.render.call(this._node, this._initalInnerHTML);
-                            if (html && html !== this._previousTemplate) {
-                                this._previousTemplate = html;
-                                const template = new DOMParser().parseFromString(html, 'text/html');
-                                that._mergeHtml(template.querySelector('body'), this._node);
+                            const { render } = this._node;
+                            if (!render) {
+                                return;
                             }
-                            this._component.onRender && this._component.onRender.call(this._node);
+                            const html = await render.call(this._node, this._initialInnerHTML);
+                            if (this._removed || !html || html === this._previousTemplate) {
+                                return;
+                            }
+                            this._previousTemplate = html;
+                            const template = new DOMParser().parseFromString(html, 'text/html');
+                            that._mergeHtml(template.querySelector('body'), this._node);
+                            this._node.onRender && this._node.onRender.call(this._node);
                         };
-                        const uid = `component:${that._uidCounter++}`;
+                        this.unmount = () => {
+                            if (!this._removed) {
+                                this._removed = true;
+                                that._navimiState.unwatchState(this._uid);
+                                that._removeChildComponents(this._node);
+                                that._disconnectFromParent(this._node);
+                                this._node.remove();
+                                this._node.onUnmount && this._node.onUnmount();
+                                this._node.update = undefined;
+                                this._node.__wrapper = undefined;
+                                delete this._node;
+                                delete this._uid;
+                                delete this._previousTemplate;
+                                delete this._initialInnerHTML;
+                            }
+                        };
+                        this._uid = `component:${that._uidCounter++}`;
                         this._node = node;
                         this._previousTemplate = undefined;
-                        this._initalInnerHTML = node.innerHTML;
+                        this._initialInnerHTML = node.innerHTML;
                         node.innerHTML = '';
-                        this._component = new componentClass(this._node.props, getFunctions(uid), services);
-                        this._component.__uid = uid;
-                        // connects the component code to the tag 
-                        Object.setPrototypeOf(this._node, this._component);
+                        node.__wrapper = this;
+                        // inherits from HTMLElement
+                        Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+                        const component = new componentClass(node.props, getFunctions(this._uid), services);
                         // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
-                        this._component.update = that._navimiHelpers.throttle(this.render, 16, this._node);
+                        node.update = throttle(this.render.bind(this), 16, this);
+                        // connects the component code to the tag 
+                        Object.setPrototypeOf(node, component);
                     }
                 };
                 this._components[componentName] = wrappedComponentClass;
                 return wrappedComponentClass;
             };
         }
-        init(navimiHelpers, navimiState) {
-            this._navimiHelpers = navimiHelpers;
+        init(navimiState) {
             this._navimiState = navimiState;
             new window.MutationObserver((mutations) => {
                 mutations.forEach(mutation => {
@@ -1479,7 +1509,6 @@ var Navimi = (function () {
                             this._traverseComponentsTree(addedNode, this._registerTag);
                         });
                         [].slice.call(mutation.removedNodes).map((removedNode) => {
-                            // todo: create a queue to remove components and give priority to adding components
                             this._traverseComponentsTree(removedNode, this._removeComponent);
                         });
                     }
@@ -1490,7 +1519,7 @@ var Navimi = (function () {
 
     class Navimi {
         constructor(routes, options, services, core) {
-            let { navimiFetch, navimiCSSs, navimiJSs, navimiTemplates, navimiMiddlewares, navimiState, navimiHot, navimiHelpers, navimiComponents } = services || {};
+            let { navimiFetch, navimiCSSs, navimiJSs, navimiTemplates, navimiMiddlewares, navimiState, navimiHot, navimiComponents } = services || {};
             navimiFetch = navimiFetch || new __Navimi_Fetch();
             navimiCSSs = navimiCSSs || new __Navimi_CSSs();
             navimiJSs = navimiJSs || new __Navimi_JSs();
@@ -1498,15 +1527,14 @@ var Navimi = (function () {
             navimiMiddlewares = navimiMiddlewares || new __Navimi_Middlewares();
             navimiState = navimiState || new __Navimi_State();
             navimiHot = navimiHot || new __Navimi_Hot();
-            navimiHelpers = navimiHelpers || new __Navimi_Helpers();
             navimiComponents = navimiComponents || new __Navimi_Components();
             // setup DI
-            navimiComponents.init(navimiHelpers, navimiState);
+            navimiComponents.init(navimiState);
             navimiFetch.init(options);
             navimiCSSs.init(navimiFetch);
-            navimiJSs.init(navimiHelpers, navimiFetch, navimiCSSs, navimiTemplates, navimiState, navimiComponents, options);
+            navimiJSs.init(navimiFetch, navimiCSSs, navimiTemplates, navimiState, navimiComponents, options);
             navimiTemplates.init(navimiFetch);
-            navimiState.init(navimiHelpers);
+            navimiState.init();
             const _services = {
                 navimiFetch,
                 navimiJSs,
@@ -1515,7 +1543,6 @@ var Navimi = (function () {
                 navimiMiddlewares,
                 navimiState,
                 navimiHot,
-                navimiHelpers,
                 navimiComponents
             };
             core ? core(routes, _services, options) :

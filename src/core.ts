@@ -1,6 +1,5 @@
 import { INavimi_CSSs } from './@types/INavimi_CSSs';
 import { INavimi_Fetch } from './@types/INavimi_Fetch';
-import { INavimi_Helpers } from './@types/INavimi_Helpers';
 import { INavimi_Hot } from './@types/INavimi_Hot';
 import { INavimi_JSs } from './@types/INavimi_JSs';
 import { INavimi_Middlewares } from './@types/INavimi_Middleware';
@@ -12,6 +11,11 @@ import {
     INavimi_Services, 
     INavimi_Context 
 } from './@types/Navimi';
+import { removeHash } from './helpers/removeHash';
+import { getUrl } from './helpers/getUrl';
+import { getRouteAndParams } from './helpers/getRouteAndParams';
+import { setTitle } from './helpers/setTitle';
+import { setNavimiLinks } from './helpers/setNavimiLinks';
 
 class __Navimi_Core implements INavimi_Core {
 
@@ -31,7 +35,6 @@ class __Navimi_Core implements INavimi_Core {
     private _navimiTemplates: INavimi_Templates;
     private _navimiMiddlewares: INavimi_Middlewares;
     private _navimiHot: INavimi_Hot;
-    private _navimiHelpers: INavimi_Helpers;
 
     constructor(routes: Record<string, INavimi_Route>, services: INavimi_Services, options?: INavimi_Options) {
 
@@ -51,7 +54,6 @@ class __Navimi_Core implements INavimi_Core {
         this._navimiTemplates = services.navimiTemplates;
         this._navimiMiddlewares = services.navimiMiddlewares;
         this._navimiHot = services.navimiHot;
-        this._navimiHelpers = services.navimiHelpers;
 
         this._win.addEventListener('popstate', () => {
             this._initRoute();
@@ -139,7 +141,7 @@ class __Navimi_Core implements INavimi_Core {
     private _initRoute = async (urlToGo?: string, navParams?: Record<string, unknown>, force?: boolean): Promise<void> => {
         try {
 
-            const url = this._navimiHelpers.removeHash(urlToGo || this._navimiHelpers.getUrl());
+            const url = removeHash(urlToGo || getUrl());
 
             if (!force) {
                 if (this._currentUrl === url) {
@@ -152,7 +154,7 @@ class __Navimi_Core implements INavimi_Core {
             const callId = ++this._callId;
             const pushState = urlToGo !== undefined;
 
-            const { routeItem, params } = this._navimiHelpers.getRouteAndParams(url, this._routesList);
+            const { routeItem, params } = getRouteAndParams(url, this._routesList);
 
             const routeParams: INavimi_Context = {
                 url,
@@ -239,7 +241,7 @@ class __Navimi_Core implements INavimi_Core {
             //wait global css and template to load, if any
             await this._waitForAssets(callId);
 
-            this._navimiHelpers.setTitle(title);
+            setTitle(title);
 
             if (!this._globalCssInserted) {
                 this._globalCssInserted = true;
@@ -257,7 +259,7 @@ class __Navimi_Core implements INavimi_Core {
             }
 
             if (callId === this._callId) {
-                this._navimiHelpers.setNavimiLinks();
+                setNavimiLinks();
                 this._navimiCSSs.insertCss(cssUrl, 'routeCss');
 
                 this._options.onAfterRoute &&

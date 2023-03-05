@@ -13,7 +13,6 @@ jest.mock('./state', () => jest.fn(() => ({ init: jest.fn() })));
 jest.mock('./hot', () => jest.fn(() => ({ init: jest.fn() })));
 jest.mock('./components', () => jest.fn(() => ({ init: jest.fn() })));
 jest.mock('./middlewares', () => jest.fn());
-jest.mock('./helpers', () => jest.fn());
 
 import Navimi from "./navimi";
 
@@ -57,8 +56,7 @@ describe('navimi.spec', () => {
             navimiState: { init: () => { } },
             navimiHot: { init: () => { } },
             navimiComponents: { init: () => { } },
-            navimiMiddlewares: {},
-            navimiHelpers: {}
+            navimiMiddlewares: {}
         } as unknown as INavimi_Services;
 
         new Navimi(routes, options, services, (_routes, _services, _options) => {

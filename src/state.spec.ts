@@ -1,5 +1,4 @@
 import { INavimi_State } from "./@types/INavimi_State";
-import helpers from "./helpers";
 import state from "./state";
 
 describe('state.spec', () => {
@@ -9,9 +8,8 @@ describe('state.spec', () => {
 
     beforeAll(() => {
         navimi_state = new state() as INavimi_State;
-        const navimi_helpers = new helpers();
 
-        navimi_state.init(navimi_helpers)
+        navimi_state.init();
     });
 
     test('Initial state', () => {

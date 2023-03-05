@@ -6,7 +6,6 @@ import __Navimi_Templates from './templates';
 import __Navimi_Middlewares from './middlewares';
 import __Navimi_State from './state';
 import __Navimi_Hot from './hot';
-import __Navimi_Helpers from './helpers';
 import __Navimi_Components from './components';
 import { 
     INavimi_Route, 
@@ -27,7 +26,6 @@ class Navimi implements INavimi {
             navimiMiddlewares,
             navimiState,
             navimiHot,
-            navimiHelpers,
             navimiComponents  
         } = services || {};
 
@@ -38,11 +36,10 @@ class Navimi implements INavimi {
         navimiMiddlewares = navimiMiddlewares || new __Navimi_Middlewares();
         navimiState = navimiState || new __Navimi_State();
         navimiHot = navimiHot || new __Navimi_Hot();
-        navimiHelpers = navimiHelpers || new __Navimi_Helpers();
         navimiComponents = navimiComponents || new __Navimi_Components();
 
         // setup DI
-        navimiComponents.init(navimiHelpers, navimiState);
+        navimiComponents.init(navimiState);
 
         navimiFetch.init(options);
 
@@ -51,7 +48,6 @@ class Navimi implements INavimi {
         );
 
         navimiJSs.init(
-            navimiHelpers,
             navimiFetch,
             navimiCSSs,
             navimiTemplates,
@@ -62,7 +58,7 @@ class Navimi implements INavimi {
 
         navimiTemplates.init(navimiFetch);
 
-        navimiState.init(navimiHelpers);
+        navimiState.init();
 
         const _services = {
             navimiFetch,
@@ -72,7 +68,6 @@ class Navimi implements INavimi {
             navimiMiddlewares,
             navimiState,
             navimiHot,
-            navimiHelpers,
             navimiComponents
         };
 

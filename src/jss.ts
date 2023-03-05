@@ -1,7 +1,6 @@
 import { INavimi_Components } from './@types/INavimi_Components';
 import { INavimi_CSSs } from './@types/INavimi_CSSs';
 import { INavimi_Fetch } from './@types/INavimi_Fetch';
-import { INavimi_Helpers } from './@types/INavimi_Helpers';
 import { INavimi_JSs, jsType } from './@types/INavimi_JSs';
 import { INavimi_State } from './@types/INavimi_State';
 import { INavimi_Templates } from './@types/INavimi_Templates';
@@ -11,6 +10,8 @@ import {
     INavimi_Functions, 
     INavimi_HotPayload 
 } from './@types/Navimi';
+import { setNavimiLinks } from './helpers/setNavimiLinks';
+import { setTitle } from './helpers/setTitle';
 
 class __Navimi_JSs implements INavimi_JSs {
 
@@ -28,7 +29,6 @@ class __Navimi_JSs implements INavimi_JSs {
     private _options: INavimi_Options;
     private _uidCounter = 0;
 
-    private _navimiHelpers: INavimi_Helpers;
     private _navimiFetch: INavimi_Fetch;
     private _navimiCSSs: INavimi_CSSs;
     private _navimiTemplates: INavimi_Templates;
@@ -36,7 +36,6 @@ class __Navimi_JSs implements INavimi_JSs {
     private _navimiComponents: INavimi_Components;
 
     public init(
-        navimiHelpers: INavimi_Helpers,
         navimiFetch: INavimi_Fetch,
         navimiCSSs: INavimi_CSSs,
         navimiTemplates: INavimi_Templates,
@@ -44,8 +43,6 @@ class __Navimi_JSs implements INavimi_JSs {
         navimiComponents: INavimi_Components,
         options: INavimi_Options
     ) {
-
-        this._navimiHelpers = navimiHelpers;
         this._navimiFetch = navimiFetch;
         this._navimiCSSs = navimiCSSs;
         this._navimiTemplates = navimiTemplates;
@@ -173,7 +170,7 @@ class __Navimi_JSs implements INavimi_JSs {
     private _getFunctions = (callerUid: string, jsUrl: string): INavimi_Functions => {
         return Object.freeze({
             addLibrary: this._addLibrary,
-            setTitle: this._navimiHelpers.setTitle,
+            setTitle,
             navigateTo: (window as any).navigateTo,
             getTemplate: this._navimiTemplates.getTemplate,
             fetchJS: (url: string | string[]) => {
@@ -192,7 +189,7 @@ class __Navimi_JSs implements INavimi_JSs {
             style: this._navimiCSSs.style,
             setState: this._navimiState.setState,
             getState: this._navimiState.getState,
-            setNavimiLinks: this._navimiHelpers.setNavimiLinks,
+            setNavimiLinks,
             unwatchState: (key: string) => this._navimiState.unwatchState(callerUid, key),
             watchState: (key: string, callback: (state: Record<string, any>) => void) =>
                 this._navimiState.watchState(callerUid, key, callback)
@@ -323,7 +320,7 @@ class __Navimi_JSs implements INavimi_JSs {
                     await this._buildRoute(jsUrl, JsCode) :
                     await this._buildComponentClass(jsUrl, JsCode);
 
-                //keep this instance to reuse later
+                //keep this instance to reuse later -- component = class / route = object
                 this._jsInstances[jsUrl] = instance;
 
                 return this._resolvePromise(instance, jsUrl);

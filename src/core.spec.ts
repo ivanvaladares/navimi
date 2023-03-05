@@ -7,7 +7,6 @@ import { INavimi_State } from "./@types/INavimi_State";
 import { INavimi_Templates } from "./@types/INavimi_Templates";
 import { INavimi_Services } from "./@types/Navimi";
 import core from "./core";
-import helpers from "./helpers";
 
 describe('core.spec', () => {
 
@@ -15,8 +14,6 @@ describe('core.spec', () => {
     window['AbortController'] = undefined;
 
     const report_error = jest.fn();
-
-    const navimi_helpers = new helpers();
 
     const fetch_data_mock = {} as any;
     const navimi_fetch_mock = {
@@ -74,8 +71,7 @@ describe('core.spec', () => {
         navimiTemplates: navimi_templates_mock,
         navimiMiddlewares: navimi_middleware_mock,
         navimiState: navimi_state_mock,
-        navimiHot: navimi_hot_mock,
-        navimiHelpers: navimi_helpers
+        navimiHot: navimi_hot_mock
     } as INavimi_Services;
 
     test('test no routes', () => {

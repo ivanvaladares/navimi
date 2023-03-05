@@ -1,7 +1,6 @@
 import { INavimi_Components } from './INavimi_Components';
 import { INavimi_CSSs } from './INavimi_CSSs';
 import { INavimi_Fetch } from './INavimi_Fetch';
-import { INavimi_Helpers } from './INavimi_Helpers';
 import { INavimi_Hot } from './INavimi_Hot';
 import { INavimi_JSs } from './INavimi_JSs';
 import { INavimi_Middlewares } from './INavimi_Middleware';
@@ -63,7 +62,6 @@ interface INavimi_Services {
     navimiMiddlewares?: INavimi_Middlewares;
     navimiState?: INavimi_State;
     navimiHot?: INavimi_Hot;
-    navimiHelpers?: INavimi_Helpers;
     navimiComponents?: INavimi_Components;
 }
 

@@ -1,6 +1,5 @@
 import { INavimi_State } from './@types/INavimi_State';
 import { INavimi_Component, INavimi_Components } from './@types/INavimi_Components';
-import helpers from './helpers';
 import components from './components';
 
 //@ts-nocheck
@@ -12,9 +11,8 @@ describe('components.spec', () => {
     } as unknown as INavimi_State;
 
     beforeAll(() => {
-        const navimi_helpers = new helpers();
         navimi_components = new components() as INavimi_Components;
-        navimi_components.init(navimi_helpers, navimi_state_mock);
+        navimi_components.init(navimi_state_mock);
     });
 
     test('Test anonymous class', (done) => {
@@ -112,7 +110,7 @@ describe('components.spec', () => {
 
     test('Test event handling', (done) => {
 
-        navimi_components.registerComponent('click-component', class {
+        navimi_components.registerComponent('click-component', class implements Partial<INavimi_Component> {
             lines: any[];
             renderCount = 0;
 
@@ -191,6 +189,74 @@ describe('components.spec', () => {
             done();
 
         }, 20);
+
+    });
+
+    
+    test('Test event handling 3', (done) => {
+
+        navimi_components.registerComponent('domclick-component', class {
+            lines: any[];
+            renderCount = 0;
+
+            constructor() {
+                this.lines = [];
+            }
+
+            addChild() {
+                this.lines.push('<anon-class></anon-class>');
+                //@ts-ignore
+                this.update();
+            }
+
+            onMount() {
+                //@ts-ignore
+                this.onclick = this.addChild;
+            }
+
+            render() {
+                return `<div>
+                            <div id="click-component-children">
+                                ${this.lines.join('\n')}
+                            </div>
+                        </div>`;
+            }
+
+            onRender() {
+                this.renderCount++;
+            }
+
+        });
+
+        window.document.querySelector('body')?.insertAdjacentHTML('beforeend', `
+            <domclick-component></domclick-component>
+        `);
+
+        setTimeout(() => {
+
+            const component = window.document.querySelector('domclick-component') as INavimi_Component;
+
+            expect(component.childComponents?.length).toEqual(0);
+
+            component.querySelector('div')?.click();
+
+            //@ts-ignore
+            expect(component.renderCount).toEqual(1);
+
+            setTimeout(() => {
+
+                expect(component.childComponents?.length).toEqual(1);
+
+                //@ts-ignore
+                expect(component.renderCount).toEqual(2);
+
+                expect(component.innerHTML.indexOf('<div>OK!</div>') > 0).toBeTruthy();
+
+                done();
+
+            }, 10);
+
+        }, 10);
 
     });
     

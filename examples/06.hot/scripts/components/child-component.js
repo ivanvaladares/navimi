@@ -1,6 +1,6 @@
 class ChildComponentClass {
 
-    constructor(node, functions) {
+    constructor(props, functions) {
         this.functions = functions;
         this.count = this.functions.getState('test.clicks') || 0;
         this.color = this.getRandomColor();
