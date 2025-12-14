@@ -81,11 +81,7 @@ class __Navimi_Hot implements INavimi_Hot {
                     .catch(() => {/*ignore*/});
                     break;
 
-                case 'gif':
-                case 'jpg':
-                case 'jpeg':
-                case 'png':
-                case 'svg':
+                default:
                     this._initRouteFunc();
                     break;
             }

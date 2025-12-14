@@ -10,10 +10,11 @@ describe('fetch.spec', () => {
         global.fetch = jest.fn((url: string) =>
             new Promise((resolve, reject) => {
                 if (fetch_data_mock[url]) {
-                    const { text, ok } = fetch_data_mock[url];
+                    const { text, ok, headers } = fetch_data_mock[url];
                     resolve({
                         text: async () => { return Promise.resolve(text); },
-                        ok
+                        ok,
+                        headers
                     } as any);
                     return;
                 }
@@ -57,6 +58,19 @@ describe('fetch.spec', () => {
         fetch_data_mock[url] = { ok: false };
 
         navimi_fetch.fetchFile(url).then(() => {
+            done('Should not get here!');
+        }).catch(() => {
+            done();
+        });
+
+    });
+
+    it('Test type mismatch', (done) => {
+
+        const url = '/script-error.js';
+        fetch_data_mock[url] = { text: 'html error', ok: true, headers: { get: (type: string) => { console.log('type', type); return 'text/html' } } };
+
+        navimi_fetch.fetchFile(url, { headers: { Accept: 'application/javascript' }}).then(() => {
             done('Should not get here!');
         }).catch(() => {
             done();

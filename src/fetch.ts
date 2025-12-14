@@ -28,6 +28,16 @@ class __Navimi_Fetch implements INavimi_Fetch {
                         this.loadErrors[url] = error;
                         return reject(error);
                     }
+                    const contentType = data.headers?.get('Content-Type');
+                    // @ts-ignore
+                    const accept = options?.headers?.Accept;
+                    if (accept && contentType) {
+                        if ((contentType.indexOf('javascript') < 0 && accept.indexOf('javascript') >= 0) ||
+                            (contentType.indexOf('css') < 0 && accept.indexOf('css') >= 0)) {
+                                this.loadErrors[url] = error;
+                                return reject(error);
+                        }
+                    }
                     data.text().then(resolve);
                 })
                 .catch(() => {

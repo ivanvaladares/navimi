@@ -89,10 +89,11 @@ var Navimi = (function () {
 
     const setNavimiLinks = () => {
         document.querySelectorAll('[navimi-link]').forEach(el => {
-            el.removeAttribute('navimi-link');
             el.addEventListener('click', (e) => {
                 e.preventDefault();
-                window.navigateTo(event.target.pathname);
+                // @ts-ignore
+                const link = e.target.closest('[navimi-link]');
+                link && window.navigateTo(link.pathname);
             });
         });
     };
@@ -202,13 +203,21 @@ var Navimi = (function () {
                             history.pushState(null, null, urlToGo);
                         }
                     }
+                    if (jsUrl) {
+                        try {
+                            await this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route');
+                        }
+                        catch (ex) {
+                            this._reportError(new Error('Route file load failed'));
+                            return;
+                        }
+                    }
                     // load all (css, templates and js) from the route in parallel
                     await Promise.all([
                         this._navimiJSs.loadServices(this._abortController, jsUrl || url, services),
                         this._navimiJSs.loadComponents(this._abortController, jsUrl || url, components),
                         this._navimiCSSs.fetchCss(this._abortController, cssUrl),
-                        this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl),
-                        (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'))
+                        this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl)
                     ]).catch(this._reportError);
                     //wait global css and template to load, if any
                     await this._waitForAssets(callId);
@@ -300,9 +309,20 @@ var Navimi = (function () {
                     //todo: add retry with options
                     fetch(requestUrl, options)
                         .then((data) => {
+                        var _a, _b;
                         if (!data || !data.ok) {
                             this.loadErrors[url] = error;
                             return reject(error);
+                        }
+                        const contentType = (_a = data.headers) === null || _a === void 0 ? void 0 : _a.get('Content-Type');
+                        // @ts-ignore
+                        const accept = (_b = options === null || options === void 0 ? void 0 : options.headers) === null || _b === void 0 ? void 0 : _b.Accept;
+                        if (accept && contentType) {
+                            if ((contentType.indexOf('javascript') < 0 && accept.indexOf('javascript') >= 0) ||
+                                (contentType.indexOf('css') < 0 && accept.indexOf('css') >= 0)) {
+                                this.loadErrors[url] = error;
+                                return reject(error);
+                            }
                         }
                         data.text().then(resolve);
                     })
@@ -1167,11 +1187,7 @@ var Navimi = (function () {
                                 .then(() => this._initRouteFunc())
                                 .catch(() => { });
                             break;
-                        case 'gif':
-                        case 'jpg':
-                        case 'jpeg':
-                        case 'png':
-                        case 'svg':
+                        default:
                             this._initRouteFunc();
                             break;
                     }
