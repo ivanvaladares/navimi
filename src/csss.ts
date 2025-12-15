@@ -71,7 +71,7 @@ class __Navimi_CSSs implements INavimi_CSSs {
                 Accept: 'text/css'
             },
             signal: abortController ? abortController.signal : undefined
-        }).then(cssCode => {
+        }, true).then(cssCode => {
             this._loadedCsss[url] = cssCode;
         })
 

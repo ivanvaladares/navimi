@@ -70,7 +70,7 @@ describe('fetch.spec', () => {
         const url = '/script-error.js';
         fetch_data_mock[url] = { text: 'html error', ok: true, headers: { get: (type: string) => { console.log('type', type); return 'text/html' } } };
 
-        navimi_fetch.fetchFile(url, { headers: { Accept: 'application/javascript' }}).then(() => {
+        navimi_fetch.fetchFile(url, { headers: { Accept: 'application/javascript' }}, true).then(() => {
             done('Should not get here!');
         }).catch(() => {
             done();

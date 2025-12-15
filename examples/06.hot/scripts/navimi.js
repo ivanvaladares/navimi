@@ -203,17 +203,9 @@ var Navimi = (function () {
                             history.pushState(null, null, urlToGo);
                         }
                     }
-                    if (jsUrl) {
-                        try {
-                            await this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route');
-                        }
-                        catch (ex) {
-                            this._reportError(new Error('Route file load failed'));
-                            return;
-                        }
-                    }
                     // load all (css, templates and js) from the route in parallel
                     await Promise.all([
+                        this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'),
                         this._navimiJSs.loadServices(this._abortController, jsUrl || url, services),
                         this._navimiJSs.loadComponents(this._abortController, jsUrl || url, components),
                         this._navimiCSSs.fetchCss(this._abortController, cssUrl),
@@ -301,7 +293,7 @@ var Navimi = (function () {
             this.getErrors = (url) => {
                 return this.loadErrors[url];
             };
-            this.fetchFile = (url, options) => {
+            this.fetchFile = (url, options, checkType) => {
                 return new Promise((resolve, reject) => {
                     delete this.loadErrors[url];
                     const requestUrl = url + (this._bustCache ? '?v=' + this._bustCache : '');
@@ -314,14 +306,16 @@ var Navimi = (function () {
                             this.loadErrors[url] = error;
                             return reject(error);
                         }
-                        const contentType = (_a = data.headers) === null || _a === void 0 ? void 0 : _a.get('Content-Type');
-                        // @ts-ignore
-                        const accept = (_b = options === null || options === void 0 ? void 0 : options.headers) === null || _b === void 0 ? void 0 : _b.Accept;
-                        if (accept && contentType) {
-                            if ((contentType.indexOf('javascript') < 0 && accept.indexOf('javascript') >= 0) ||
-                                (contentType.indexOf('css') < 0 && accept.indexOf('css') >= 0)) {
-                                this.loadErrors[url] = error;
-                                return reject(error);
+                        if (checkType) {
+                            const contentType = (_a = data.headers) === null || _a === void 0 ? void 0 : _a.get('Content-Type');
+                            // @ts-ignore
+                            const accept = (_b = options === null || options === void 0 ? void 0 : options.headers) === null || _b === void 0 ? void 0 : _b.Accept;
+                            if (accept && contentType) {
+                                if ((contentType.indexOf('javascript') < 0 && accept.indexOf('javascript') >= 0) ||
+                                    (contentType.indexOf('css') < 0 && accept.indexOf('css') >= 0)) {
+                                    this.loadErrors[url] = error;
+                                    return reject(error);
+                                }
                             }
                         }
                         data.text().then(resolve);
@@ -391,7 +385,7 @@ var Navimi = (function () {
                         Accept: 'text/css'
                     },
                     signal: abortController ? abortController.signal : undefined
-                }).then(cssCode => {
+                }, true).then(cssCode => {
                     this._loadedCsss[url] = cssCode;
                 });
             };
@@ -522,8 +516,8 @@ var Navimi = (function () {
                         headers: {
                             Accept: 'application/javascript'
                         },
-                        signal: abortController ? abortController.signal : undefined
-                    });
+                        signal: abortController ? abortController.signal : undefined,
+                    }, true);
                 }
                 this._jsType[url] = type;
                 this._insertJS(url, jsCode.replace(/^\s+|\s+$/g, ''), type);
@@ -722,7 +716,14 @@ var Navimi = (function () {
                         // let the js resolve the promise itself when it loads (in _insertJS or _instantiateJS)
                         this._navimiLoader[this._promiseNS + url] = resolve;
                         this._navimiLoader[this._promiseNS + url + '_reject'] = reject;
-                        this._fetch(abortController, url, type).catch(reject);
+                        this._fetch(abortController, url, type).catch(error => {
+                            if (type === 'route') {
+                                reject(new Error('Route file load failed'));
+                            }
+                            else {
+                                reject(error);
+                            }
+                        });
                     });
                 };
                 return urls.length > 1 ? Promise.all(urls.map(init)) : init(urls[0]);
