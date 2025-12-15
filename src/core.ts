@@ -228,13 +228,14 @@ class __Navimi_Core implements INavimi_Core {
                     history.pushState(null, null, urlToGo);
                 }
             }
+
             // load all (css, templates and js) from the route in parallel
             await Promise.all([
-                this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'),
                 this._navimiJSs.loadServices(this._abortController, jsUrl || url, services),
                 this._navimiJSs.loadComponents(this._abortController, jsUrl || url, components),
                 this._navimiCSSs.fetchCss(this._abortController, cssUrl),
-                this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl)
+                this._navimiTemplates.fetchTemplate(this._abortController, templatesUrl),
+                (jsUrl && this._navimiJSs.fetchJS(this._abortController, [jsUrl], 'route'))
             ]).catch(this._reportError);
 
             //wait global css and template to load, if any
