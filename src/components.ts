@@ -121,14 +121,12 @@ class __Navimi_Components implements INavimi_Components {
 
                 this._instance = new componentClass(this.props, getFuncs(this._uid), services);
                 
-                // Injeções
                 this._instance.props = this.props;
                 this._instance.element = this;
                 this._instance.childComponents = [];
                 this._instance.parentComponent = null;
                 this._instance.update = throttle(this.render.bind(this), 16, this);
 
-                // Mixins e Polyfills
                 this._injectDomPolyfills();
                 this._mixinClassMethods(componentClass);
             }
@@ -204,10 +202,8 @@ class __Navimi_Components implements INavimi_Components {
                         });
 
                         if (hasChanges) {
-                            // Atualiza a instância
                             this._instance.props = this.props;
 
-                            // Respeita o shouldUpdate do usuário
                             if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
                                 this._instance.update();
                             }
@@ -226,7 +222,6 @@ class __Navimi_Components implements INavimi_Components {
             }
 
             disconnectedCallback() {
-                // Desliga o observer para evitar memory leak
                 if (this._attrObserver) {
                     this._attrObserver.disconnect();
                     this._attrObserver = null;
