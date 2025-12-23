@@ -1289,10 +1289,12 @@ var Navimi = (function () {
         };
     };
 
+    // Configuração do Registry Global para Hot Reload
+    const globalRegistry = window.__NAVIMI_REGISTRY__ || {};
+    window.__NAVIMI_REGISTRY__ = globalRegistry;
     class __Navimi_Components {
         constructor() {
             this._uidCounter = 0;
-            // --- Motor de Renderização ---
             this._mergeHtml = (template, node) => {
                 var _a, _b;
                 const getCleanNodes = (n) => {
@@ -1320,13 +1322,15 @@ var Navimi = (function () {
                     }
                     if (!typeMatch || !keyMatch) {
                         const nextSibling = documentNode.nextSibling;
-                        // Nota: O disconnectedCallback dos web components cuida da limpeza
                         const newNode = templateNode.cloneNode(true);
                         if (documentNode.parentNode === node) {
-                            node.replaceChild(newNode, documentNode);
+                            documentNode.replaceWith(newNode);
+                        }
+                        else if (nextSibling) {
+                            nextSibling.before(newNode);
                         }
                         else {
-                            node.insertBefore(newNode, nextSibling);
+                            node.append(newNode);
                         }
                         continue;
                     }
@@ -1344,37 +1348,65 @@ var Navimi = (function () {
                 }
                 for (let i = documentNodesLen - 1; i >= templateNodesLen; i--) {
                     const nodeToRemove = documentNodes[i];
-                    if (nodeToRemove.parentNode) {
-                        nodeToRemove.parentNode.removeChild(nodeToRemove);
-                    }
+                    nodeToRemove.remove();
                 }
             };
             this.registerComponent = (componentName, componentClass, getFunctions, services) => {
-                if (!componentName || !/-/.test(componentName) || customElements.get(componentName)) {
+                if (!componentName || !/-/.test(componentName)) {
                     return;
                 }
-                const getFuncs = getFunctions || (() => undefined);
+                // [HOT RELOAD - PASSO 1]
+                // Sempre atualizamos o Registry com a versão mais nova da classe e dependências
+                globalRegistry[componentName] = {
+                    Class: componentClass,
+                    getFunctions,
+                    services
+                };
+                // [HOT RELOAD - PASSO 2]
+                // Se já existe, executamos o Hot Swap e paramos por aqui (não tentamos redefinir a tag)
+                //removeIf(minify)
+                if (customElements.get(componentName)) {
+                    this._performHotSwap(componentName);
+                    // Retorna o construtor do componente já registrado
+                    return customElements.get(componentName);
+                }
+                //endRemoveIf(minify)
                 const self = this;
                 const wrappedComponentClass = class NavimiWebComponent extends HTMLElement {
                     constructor() {
                         super();
                         this._mounted = false;
-                        // [NOVO] Observer interno para garantir liberdade total de atributos
                         this._attrObserver = null;
+                        this._shadowRoot = null;
                         this.props = {};
                         this._uid = `component:${self._uidCounter++}`;
                         this._initialInnerHTML = this.innerHTML;
                         this._syncPropsFromAttributes();
-                        this._instance = new componentClass(this.props, getFuncs(this._uid), services);
-                        // Injeções
+                        // 1. Shadow DOM Opcional
+                        if (this.hasAttribute('shadow')) {
+                            this._shadowRoot = this.attachShadow({ mode: 'open' });
+                        }
+                        // [HOT RELOAD - PASSO 3]
+                        // Instanciação Dinâmica: Não usamos a 'componentClass' do closure,
+                        // mas sim a que está no Registry global (que pode ter sido atualizada).
+                        this._initializeInstance();
+                    }
+                    // Método extraído para permitir re-inicialização durante o Hot Swap
+                    _initializeInstance() {
+                        const def = globalRegistry[componentName];
+                        const CurrentClass = def.Class;
+                        // @ts-ignore
+                        const getFuncs = def.getFunctions || (() => undefined);
+                        // Instancia a classe mais atual
+                        this._instance = new CurrentClass(this.props, getFuncs(this._uid), def.services);
+                        // Configurações Padrão
                         this._instance.props = this.props;
                         this._instance.element = this;
                         this._instance.childComponents = [];
                         this._instance.parentComponent = null;
                         this._instance.update = throttle(this.render.bind(this), 16, this);
-                        // Mixins e Polyfills
                         this._injectDomPolyfills();
-                        this._mixinClassMethods(componentClass);
+                        this._mixinClassMethods(CurrentClass);
                     }
                     _injectDomPolyfills() {
                         const domMethods = ['querySelector', 'querySelectorAll', 'getAttribute', 'setAttribute', 'removeAttribute', 'getBoundingClientRect', 'closest'];
@@ -1395,6 +1427,7 @@ var Navimi = (function () {
                             });
                         });
                     }
+                    // Agora público para ser acessado pelo _performHotSwap
                     _mixinClassMethods(originalClass) {
                         const proto = originalClass.prototype;
                         const methods = Object.getOwnPropertyNames(proto);
@@ -1402,88 +1435,135 @@ var Navimi = (function () {
                             const internalProps = ['constructor', 'render', 'update', 'onMount', 'onRender', 'onUnmount'];
                             if (internalProps.includes(method) || method.startsWith('_'))
                                 return;
+                            // Sobrescrevemos o método no wrapper para apontar para a nova instância
                             // @ts-ignore
-                            if (!this[method]) {
-                                // @ts-ignore
-                                this[method] = (...args) => this._instance[method].apply(this._instance, args);
-                            }
+                            this[method] = (...args) => this._instance[method](...args);
                         });
+                        // Garante que o getter de state aponte para a nova instância
                         Object.defineProperty(this, 'state', {
                             get: () => this._instance.state,
-                            set: (v) => this._instance.state = v
+                            set: (v) => this._instance.state = v,
+                            configurable: true // Importante para permitir redefinição
                         });
                     }
                     async connectedCallback() {
+                        var _a, _b;
                         if (!this._mounted) {
-                            this._connectToParent();
-                            // [LIBERDADE TOTAL] Observer escopado APENAS neste elemento.
-                            // Isso permite detectar QUALQUER atributo novo (data-x, custom-prop)
-                            // sem precisar declarar 'observedAttributes'.
-                            this._attrObserver = new MutationObserver((mutations) => {
-                                let hasChanges = false;
-                                const oldProps = Object.assign({}, this.props);
-                                mutations.forEach(mutation => {
-                                    if (mutation.type === 'attributes') {
-                                        const name = mutation.attributeName;
-                                        const val = this.getAttribute(name);
-                                        // Se o valor mudou
-                                        if (this.props[name] !== val) {
-                                            this.props[name] = val;
-                                            hasChanges = true;
+                            try {
+                                this._connectToParent();
+                                this._attrObserver = new MutationObserver((mutations) => {
+                                    let hasChanges = false;
+                                    const oldProps = Object.assign({}, this.props);
+                                    mutations.forEach(mutation => {
+                                        if (mutation.type === 'attributes') {
+                                            const name = mutation.attributeName;
+                                            const val = this.getAttribute(name);
+                                            // 2. Tratamento de Booleanos
+                                            if (val === null) {
+                                                delete this.props[name];
+                                            }
+                                            else if (val === '') {
+                                                this.props[name] = true;
+                                            }
+                                            else {
+                                                this.props[name] = val;
+                                            }
+                                            if (this.props[name] !== oldProps[name]) {
+                                                hasChanges = true;
+                                            }
+                                        }
+                                    });
+                                    if (hasChanges) {
+                                        this._instance.props = this.props;
+                                        if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
+                                            this._instance.update();
                                         }
                                     }
                                 });
-                                if (hasChanges) {
-                                    // Atualiza a instância
-                                    this._instance.props = this.props;
-                                    // Respeita o shouldUpdate do usuário
-                                    if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
-                                        this._instance.update();
-                                    }
-                                }
-                            });
-                            this._attrObserver.observe(this, { attributes: true });
-                            await this.render();
-                            if (this._instance.onMount) {
-                                await this._instance.onMount.call(this._instance);
+                                this._attrObserver.observe(this, { attributes: true });
+                                await this.render();
+                                await ((_b = (_a = this._instance).onMount) === null || _b === void 0 ? void 0 : _b.call(_a));
+                                this._mounted = true;
                             }
-                            this._mounted = true;
+                            catch (e) {
+                                console.error(`[Navimi] Erro ao montar <${this.localName}>:`, e);
+                                // Opcional: renderizar erro se falhar no mount
+                            }
                         }
                     }
                     disconnectedCallback() {
-                        // Desliga o observer para evitar memory leak
+                        var _a, _b;
                         if (this._attrObserver) {
                             this._attrObserver.disconnect();
                             this._attrObserver = null;
                         }
-                        if (this._instance.parentComponent) {
+                        // Limpeza segura
+                        if (this._instance && this._instance.parentComponent) {
                             this._instance.parentComponent.childComponents =
                                 this._instance.parentComponent.childComponents.filter((child) => child !== this._instance);
                         }
                         if (self._navimiState) {
                             self._navimiState.unwatchState(this._uid);
                         }
-                        if (this._instance.onUnmount) {
-                            this._instance.onUnmount.call(this._instance);
-                        }
+                        (_b = (_a = this._instance).onUnmount) === null || _b === void 0 ? void 0 : _b.call(_a);
                         this._mounted = false;
                     }
                     async render() {
-                        if (!this._instance.render)
+                        var _a, _b, _c, _d;
+                        // Se a instância não existe ou não tem render, aborta
+                        if (!this._instance || !this._instance.render)
                             return;
-                        const html = await this._instance.render.call(this._instance, this._initialInnerHTML);
-                        if (!html || html === this._previousTemplate)
-                            return;
-                        this._previousTemplate = html;
-                        const template = new DOMParser().parseFromString(html, 'text/html');
-                        self._mergeHtml(template.querySelector('body'), this);
-                        if (this._instance.onRender) {
-                            this._instance.onRender.call(this._instance);
+                        try {
+                            // 1. Tenta executar o render do usuário
+                            // Nota: Já removi o .call() redundante conforme conversamos
+                            const html = await this._instance.render(this._initialInnerHTML);
+                            const target = this._shadowRoot || this;
+                            // Limpeza se vazio
+                            if (!html) {
+                                target.innerHTML = '';
+                                return;
+                            }
+                            // Cache check (simples string check)
+                            if (html === this._previousTemplate)
+                                return;
+                            this._previousTemplate = html;
+                            // Parse e Merge
+                            const template = document.createElement('template');
+                            template.innerHTML = html;
+                            const frag = template.content;
+                            self._mergeHtml(frag, target);
+                            // 2. Só chama onRender se tudo acima funcionou
+                            (_b = (_a = this._instance).onRender) === null || _b === void 0 ? void 0 : _b.call(_a);
+                        }
+                        catch (e) {
+                            // --- ZONA DE SEGURANÇA ---
+                            console.error(`[Navimi] Erro fatal no componente <${this.localName}>:`, e);
+                            // Renderiza um Fallback Visual para o desenvolvedor/usuário saber que ali deu erro
+                            // em vez de deixar um buraco branco na tela.
+                            const target = this._shadowRoot || this;
+                            // Você pode customizar esse HTML de erro
+                            target.innerHTML = `
+                        <div style="
+                            padding: 8px; 
+                            border: 1px dashed #ff4d4f; 
+                            background: #fff2f0; 
+                            color: #ff4d4f; 
+                            font-family: monospace; 
+                            font-size: 12px;
+                            border-radius: 4px;
+                            margin: 4px 0;
+                        ">
+                            ⚠️ <strong>&lt;${this.localName}&gt; Error:</strong><br>
+                            ${e.message}
+                        </div>
+                    `;
+                            // Opcional: Se tiver um método onError no componente, chama ele
+                            (_d = (_c = this._instance).onError) === null || _d === void 0 ? void 0 : _d.call(_c, e);
                         }
                     }
                     _syncPropsFromAttributes() {
                         for (const attr of Array.from(this.attributes)) {
-                            this.props[attr.name] = attr.value;
+                            this.props[attr.name] = attr.value === '' ? true : attr.value;
                         }
                         if (this._instance) {
                             this._instance.props = this.props;
@@ -1509,9 +1589,37 @@ var Navimi = (function () {
                 customElements.define(componentName, wrappedComponentClass);
                 return wrappedComponentClass;
             };
+            //endRemoveIf(minify)
         }
         init(navimiState) {
             this._navimiState = navimiState;
+        }
+        // [HOT RELOAD - PASSO 4]
+        // A mágica acontece aqui: Substituímos o cérebro (_instance) mantendo o corpo (DOM)
+        //removeIf(minify)    
+        _performHotSwap(componentName) {
+            const elements = document.querySelectorAll(componentName);
+            elements.forEach((el) => {
+                if (el._instance) {
+                    // 1. Salva o estado antigo para restaurar (State Preservation)
+                    const oldState = el._instance.state;
+                    // 2. Chama onUnmount da instância antiga (Cleanup)
+                    if (el._instance.onUnmount)
+                        el._instance.onUnmount();
+                    // 3. Reinicializa usando a NOVA classe do Registry
+                    // Isso cria o novo this._instance
+                    el._initializeInstance();
+                    // 4. Restaura o estado (se possível)
+                    if (oldState && el._instance.state) {
+                        // Merge cuidadoso ou substituição total
+                        el._instance.state = Object.assign(Object.assign({}, el._instance.state), oldState);
+                    }
+                    // 5. Reconecta e Renderiza
+                    if (el._instance.onMount)
+                        el._instance.onMount();
+                    el.render(); // Força update visual imediato
+                }
+            });
         }
     }
 

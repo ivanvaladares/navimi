@@ -23,19 +23,19 @@
 - **Scoped CSS**
   - Use global and route-scoped CSS with automatic addition and removal to avoid conflicts.
 
-- **Atomic CSS-in-JS**
-  - Write CSS using JavaScript in a declarative, conflict-free and reusable way.
+- **Scoped CSS & Atomic CSS-in-JS**
+  - Use route-scoped CSS files or write CSS-in-JS that generates conflict-free atomic classes automatically.
 
-- **Auto Lazy load scripts, templates, css and libraries**
-  - Only load what you need, when you need it.
+- **Auto Lazy load**
+  - Scripts, templates, CSS, and libraries are only loaded when needed.
 
 - **Hot reload**
-  - Make it easier to create pages without having to refresh after every single modification. <br>
-  <small>(This funcionality is only enabled in the unminified version)</small>
+  - Modify your files and see changes instantly without refreshing. <br>
+  <small>(Enabled in unminified version)</small>
 
 <br>
 
-> All that in just ~7kb (compressed).
+> All that in just ~8kb (compressed).
 
 <br>
 
