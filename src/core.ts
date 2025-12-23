@@ -171,7 +171,7 @@ class __Navimi_Core implements INavimi_Core {
                     }
                 }
 
-                if (this._currentJSUrl) {
+                if (this._currentJSUrl && routeItem.jsUrl !== this._currentJSUrl) {
                     const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
 
                     if (currentRoute) {
@@ -190,6 +190,9 @@ class __Navimi_Core implements INavimi_Core {
                         currentRoute.onLeave && currentRoute.onLeave();
                     }
                 }
+            } else {
+                const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
+                currentRoute?.onLeave();
             }
 
             if (!routeItem) {

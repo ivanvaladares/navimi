@@ -1,4 +1,4 @@
-import { INavimi_Components, INavimi_Component, INavimi_WrappedComponent } from './@types/INavimi_Components';
+import { INavimi_Components, INavimi_Component } from './@types/INavimi_Components';
 import { INavimi_State } from './@types/INavimi_State';
 import { INavimi_Functions } from './@types/Navimi';
 import { getNodeContent } from './helpers/getNodeContent';
@@ -10,160 +10,23 @@ import { throttle } from './helpers/throttle';
 class __Navimi_Components implements INavimi_Components {
 
     private _navimiState: INavimi_State;
-    private _components: Record<string, InstanceType<any>> = {};
     private _uidCounter = 0;
 
     public init(navimiState: INavimi_State): void {
-
         this._navimiState = navimiState;
-
-        new window.MutationObserver((mutations: MutationRecord[]) => {
-            mutations.forEach(mutation => {
-                if (mutation.type === 'attributes') {
-                    const node = mutation.target as INavimi_Component;
-                    if (this._components[node.localName]) {
-                        const prevAttributes = this._readAttributes(node);
-                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                            node.update && node.update();
-                        }
-                    }
-                } else {
-                    [].slice.call(mutation.addedNodes).map((addedNode: INavimi_Component) => {
-                        this._traverseComponentsTree(addedNode, this._registerTag);
-                    });
-                    [].slice.call(mutation.removedNodes).map((removedNode: INavimi_Component) => {
-                        this._traverseComponentsTree(removedNode, this._removeComponent);
-                    });
-                }
-            });
-        }).observe(document, { childList: true, subtree: true, attributes: true });
     }
 
-    private _removeComponent = (node: INavimi_Component): void => {
-        if (node.localName && this._components[node.localName] && node.__wrapper) {
-            node.__wrapper.unmount();
-        }
-    }
-
-    private _disconnectFromParent = (node: INavimi_Component): void => {
-        if (node.parentComponent) {
-            node.parentComponent.childComponents =
-                node.parentComponent.childComponents
-                    .filter(child => child !== node);
-        }
-    };
-
-    private _removeChildComponents = (node: INavimi_Component): void => {
-        node.childComponents &&
-            node.childComponents.map(child => {
-                this._removeComponent(child);
-            });
-    };
-
-    private _readAttributes = (node: INavimi_Component): Record<string, string> => {
-        const prevAttributes = node.props;
-        node.props = {};
-        [].slice.call(node.attributes).map((attr: any) => {
-            const name = attr.name;
-            //@ts-ignore
-            if (typeof node[name] !== 'function') {
-                node.props = {
-                    ...node.props || {},
-                    [name]: attr.value
-                };
-            }
-        });
-        return prevAttributes;
-    };
-
-    private _traverseComponentsTree = (node: Element, callback: (node: Element) => void): void => {
-        if (node.localName) {
-            if (this._components[node.localName]) {
-                callback(node);
-            } else {
-                [].slice.call(node.childNodes).map((childNode: INavimi_Component) => {
-                    this._traverseComponentsTree(childNode, callback);
-                });
-            }
-        }
-    };
-
-    private _registerTag = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
-        if (node.props || !this._components[node.localName]) {
-            return;
-        }
-
-        const componentClass = this._components[node.localName];
-
-        // initializes the component props
-        node.props = {};
-        node.parentComponent = undefined;
-        node.childComponents = [];
-
-        this._findParentComponent(node, parentNode);
-        this._readAttributes(node);
-
-        const component = new componentClass(node, node.props);
-
-        component.init();
-    };
-
-    private _findParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
-
-        const register = (parent: INavimi_Component) => {
-            node.parentComponent = parent;
-            parent.childComponents = [
-                ...parent.childComponents || [],
-                node,
-            ];
-        }
-
-        if (parentNode) {
-            register(parentNode);
-            return;
-        }
-
-        let parent = node.parentNode as INavimi_Component;
-
-        while (parent) {
-            if (/-/.test(parent.localName) && this._components[parent.localName]) {
-                register(parent);
-                return;
-            }
-            parent = parent.parentNode as INavimi_Component;
-        }
-    }
-
-    private _bindChildEvents = (parentNode: Element, childNode: Element): void => {
-        if (childNode.attributes) {
-            [].slice.call(childNode.attributes).map((attr: any) => {
-                const name = attr.name;
-                //@ts-ignore
-                if (typeof childNode[name] === 'function') {
-                    //@ts-ignore
-                    childNode[name] = childNode[name].bind(parentNode);
-                }
-            });
-        }
-    };
-
-    private _registerChildNodes = (parentNode: Element): void => {
-        const traverse = (node: Element): void => {
-            [].slice.call(node.childNodes).map((childNode: Element) => {
-                if (!this._components[childNode.localName]) {
-                    // bind child tags events to the parent
-                    this._bindChildEvents(parentNode, childNode);
-                    traverse(childNode);
-                }
+    // --- Motor de Renderização ---
+    private _mergeHtml = (template: Element | DocumentFragment, node: Element | DocumentFragment | ShadowRoot) => {
+        const getCleanNodes = (n: NodeList) => {
+            return [].slice.call(n).filter((child: Node) => {
+                return child.nodeType !== 3 || (child.textContent && child.textContent.trim().length > 0);
             });
         };
-        traverse(parentNode);
-    };
 
-    private _mergeHtml = (template: Element, node: Element | DocumentFragment) => {
-        const templateNodes: Element[] = [].slice.call(template.childNodes);
-        const documentNodes: Element[] = [].slice.call(node.childNodes);
-        let diffCount = documentNodes.length - templateNodes.length;
+        const templateNodes: Element[] = getCleanNodes(template.childNodes) as Element[];
+        const documentNodes: Element[] = getCleanNodes(node.childNodes) as Element[];
+
         const templateNodesLen = templateNodes.length;
         const documentNodesLen = documentNodes.length;
 
@@ -171,28 +34,32 @@ class __Navimi_Components implements INavimi_Components {
             const templateNode = templateNodes[i];
             const documentNode = documentNodes[i];
 
-            // new node, create it
             if (!documentNode) {
                 node.appendChild(templateNode.cloneNode(true));
                 continue;
             }
 
-            // add/remove nodes to match the template
-            if (getNodeType(templateNode) !== getNodeType(documentNode)) {
-                if (diffCount > 0) {
-                    this._traverseComponentsTree(documentNode as Element, this._removeComponent);
-                    if (documentNode.parentNode) {
-                        documentNode.parentNode.removeChild(documentNode);
-                    }
-                    i--;
-                    diffCount--;
+            const typeMatch = getNodeType(templateNode) === getNodeType(documentNode);
+            const tKey = templateNode.id || templateNode.getAttribute?.('key');
+            const dKey = documentNode.id || documentNode.getAttribute?.('key');
+
+            let keyMatch = true;
+            if ((tKey && tKey !== '') || (dKey && dKey !== '')) {
+                keyMatch = tKey === dKey;
+            }
+
+            if (!typeMatch || !keyMatch) {
+                const nextSibling = documentNode.nextSibling;
+                const newNode = templateNode.cloneNode(true);
+
+                if (documentNode.parentNode === node) {
+                    node.replaceChild(newNode, documentNode);
                 } else {
-                    node.insertBefore(templateNode.cloneNode(true), documentNode);
+                    node.insertBefore(newNode, nextSibling);
                 }
                 continue;
             }
 
-            // update text content
             const templateContent = getNodeContent(templateNode);
             const documentContent = getNodeContent(documentNode);
             if (templateContent && templateContent !== documentContent) {
@@ -201,119 +68,249 @@ class __Navimi_Components implements INavimi_Components {
 
             if (templateNode.localName) {
                 syncAttributes(templateNode, documentNode);
-                // Check if the element is a component and stop
-                if (!this._components[templateNode.localName]) {
+                if (!templateNode.localName.includes('-')) {
+                    // Type cast seguro pois sabemos que não é fragmento se tem localName
                     mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
                 }
             }
         }
 
-        // remove extra elements
-        diffCount = documentNodesLen - templateNodesLen;
         for (let i = documentNodesLen - 1; i >= templateNodesLen; i--) {
-            this._traverseComponentsTree(documentNodes[i] as Element, this._removeComponent);
-            if (documentNodes[i].parentNode) {
-                documentNodes[i].parentNode.removeChild(documentNodes[i]);
+            const nodeToRemove = documentNodes[i];
+            if (nodeToRemove.parentNode) {
+                nodeToRemove.parentNode.removeChild(nodeToRemove);
             }
-            diffCount--;
         }
-
-        this._registerChildNodes(node as HTMLElement);
     };
 
     public registerComponent = (
         componentName: string,
-        componentClass: typeof INavimi_Component,
+        componentClass: any,
         getFunctions?: (callerUid: string) => INavimi_Functions,
         services?: Record<string, InstanceType<any>>): InstanceType<any> => {
 
-        if (!componentName || !/-/.test(componentName)) {
+        if (!componentName || !/-/.test(componentName) || customElements.get(componentName)) {
             return;
         }
 
-        if (!getFunctions) {
-            getFunctions = () => undefined;
-        }
+        const getFuncs = getFunctions || (() => undefined);
+        const self = this;
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const that = this;
-
-        const wrappedComponentClass = class implements INavimi_WrappedComponent {
-            private _node: INavimi_Component;
-            private _removed: boolean;
+        const wrappedComponentClass = class NavimiWebComponent extends HTMLElement {
+            private _instance: any;
             private _uid: string;
+            private _mounted = false;
             private _previousTemplate: string | undefined;
             private _initialInnerHTML: string;
+            private _attrObserver: MutationObserver | null = null;
+            private _shadowRoot: ShadowRoot | null = null;
 
-            constructor(node: INavimi_Component) {
-                this._uid = `component:${that._uidCounter++}`;
-                this._node = node;
-                this._previousTemplate = undefined;
-                this._initialInnerHTML = node.innerHTML;
+            public props: Record<string, any> = {};
 
-                node.innerHTML = '';               
-                node.__wrapper = this;
+            constructor() {
+                super();
+                this._uid = `component:${self._uidCounter++}`;
+                this._initialInnerHTML = this.innerHTML;
 
-                // inherits from HTMLElement
-                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
+                this._syncPropsFromAttributes();
 
-                const component = new componentClass(node.props, getFunctions(this._uid), services);
+                // 1. Shadow DOM Opcional
+                if (this.hasAttribute('shadow')) {
+                    this._shadowRoot = this.attachShadow({ mode: 'open' });
+                }
 
-                // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
-                node.update = throttle(this.render.bind(this), 16, this);
+                this._instance = new componentClass(this.props, getFuncs(this._uid), services);
+                
+                // Injeções
+                this._instance.props = this.props;
+                this._instance.element = this;
+                this._instance.childComponents = [];
+                this._instance.parentComponent = null;
+                this._instance.update = throttle(this.render.bind(this), 16, this);
 
-                // connects the component code to the tag 
-                Object.setPrototypeOf(node, component);
-
+                // Mixins e Polyfills
+                this._injectDomPolyfills();
+                this._mixinClassMethods(componentClass);
             }
 
-            init = async () => {
-                await this.render();
-                this._node.onMount && await this._node.onMount.call(this._node);
+            private _injectDomPolyfills() {
+                const domMethods = ['querySelector', 'querySelectorAll', 'getAttribute', 'setAttribute', 'removeAttribute', 'getBoundingClientRect', 'closest'];
+                domMethods.forEach(method => {
+                    // @ts-ignore
+                    if (this[method]) {
+                         // @ts-ignore
+                        this._instance[method] = this[method].bind(this);
+                    }
+                });
+
+                const domProps = ['classList', 'style', 'innerHTML', 'innerText'];
+                domProps.forEach(prop => {
+                    Object.defineProperty(this._instance, prop, {
+                        // @ts-ignore
+                        get: () => this[prop],
+                        enumerable: true,
+                        configurable: true
+                    });
+                });
             }
 
-            render = async () => {
-                const { render } = this._node;
-                if (!render) {
+            private _mixinClassMethods(originalClass: any) {
+                const proto = originalClass.prototype;
+                const methods = Object.getOwnPropertyNames(proto);
+
+                methods.forEach(method => {
+                    const internalProps = ['constructor', 'render', 'update', 'onMount', 'onRender', 'onUnmount'];
+                    if (internalProps.includes(method) || method.startsWith('_')) return;
+
+                    // @ts-ignore
+                    if (!this[method]) {
+                        // @ts-ignore
+                        this[method] = (...args) => this._instance[method].apply(this._instance, args);
+                    }
+                });
+
+                Object.defineProperty(this, 'state', {
+                    get: () => this._instance.state,
+                    set: (v) => this._instance.state = v
+                });
+            }
+
+            async connectedCallback() {
+                if (!this._mounted) {
+                    this._connectToParent();
+
+                    this._attrObserver = new MutationObserver((mutations) => {
+                        let hasChanges = false;
+                        const oldProps = { ...this.props };
+
+                        mutations.forEach(mutation => {
+                            if (mutation.type === 'attributes') {
+                                const name = mutation.attributeName!;
+                                const val = this.getAttribute(name);
+                                
+                                // 2. Tratamento de Booleanos
+                                if (val === null) {
+                                    delete this.props[name];
+                                } else if (val === '') {
+                                    this.props[name] = true;
+                                } else {
+                                    this.props[name] = val;
+                                }
+
+                                if (this.props[name] !== oldProps[name]) {
+                                    hasChanges = true;
+                                }
+                            }
+                        });
+
+                        if (hasChanges) {
+                            // Atualiza a instância
+                            this._instance.props = this.props;
+
+                            // Respeita o shouldUpdate do usuário
+                            if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
+                                this._instance.update();
+                            }
+                        }
+                    });
+
+                    this._attrObserver.observe(this, { attributes: true });
+
+                    await this.render();
+
+                    if (this._instance.onMount) {
+                        await this._instance.onMount.call(this._instance);
+                    }
+                    this._mounted = true;
+                }
+            }
+
+            disconnectedCallback() {
+                // Desliga o observer para evitar memory leak
+                if (this._attrObserver) {
+                    this._attrObserver.disconnect();
+                    this._attrObserver = null;
+                }
+
+                if (this._instance.parentComponent) {
+                    this._instance.parentComponent.childComponents =
+                        this._instance.parentComponent.childComponents.filter(
+                            (child: any) => child !== this._instance
+                        );
+                }
+
+                if (self._navimiState) {
+                    self._navimiState.unwatchState(this._uid);
+                }
+
+                if (this._instance.onUnmount) {
+                    this._instance.onUnmount.call(this._instance);
+                }
+
+                this._mounted = false;
+            }
+
+            async render() {
+                if (!this._instance.render) return;
+
+                const html = await this._instance.render.call(this._instance, this._initialInnerHTML);
+
+                // 3. Suporte a Shadow DOM ou Light DOM
+                const target = this._shadowRoot || this;
+
+                // 4. Limpeza se vazio
+                if (!html) {
+                    target.innerHTML = '';
                     return;
                 }
 
-                const html = await render.call(this._node, this._initialInnerHTML);
-                if (this._removed || !html || html === this._previousTemplate) {
-                    return;
-                }
-
+                if (html === this._previousTemplate) return;
                 this._previousTemplate = html;
-                const template = new DOMParser().parseFromString(html, 'text/html');
-                that._mergeHtml(template.querySelector('body'), this._node);
 
-                this._node.onRender && this._node.onRender.call(this._node);
-            }
+                // 5. Parse sem cache (mais seguro para templates dinâmicos)
+                const template = document.createElement('template');
+                template.innerHTML = html;
+                const frag = template.content;
 
-            unmount = () => {
-                if (!this._removed) {
-                    this._removed = true;
-                    that._navimiState.unwatchState(this._uid);
-                    that._removeChildComponents(this._node);
-                    that._disconnectFromParent(this._node);
-                    this._node.remove();
-                    this._node.onUnmount && this._node.onUnmount();
-                    this._node.update = undefined;
-                    this._node.__wrapper = undefined;
-                    delete this._node;
-                    delete this._uid;
-                    delete this._previousTemplate;
-                    delete this._initialInnerHTML;
+                // Diffing no target correto
+                self._mergeHtml(frag, target);
+
+                if (this._instance.onRender) {
+                    this._instance.onRender.call(this._instance);
                 }
             }
 
-        };
+            private _syncPropsFromAttributes() {
+                for (const attr of Array.from(this.attributes)) {
+                    // Tratamento de Booleanos na inicialização
+                    this.props[attr.name] = attr.value === '' ? true : attr.value;
+                }
+                if (this._instance) {
+                    this._instance.props = this.props;
+                }
+            }
 
-        this._components[componentName] = wrappedComponentClass;
+            private _connectToParent() {
+                let parent = this.parentElement;
+                while (parent) {
+                    if (parent.tagName.includes('-') && customElements.get(parent.tagName.toLowerCase())) {
+                        const parentInstance = (parent as any)._instance;
+                        if (parentInstance) {
+                            this._instance.parentComponent = parentInstance;
+                            if (!parentInstance.childComponents.includes(this._instance)) {
+                                parentInstance.childComponents.push(this._instance);
+                            }
+                            return;
+                        }
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+        }
 
+        customElements.define(componentName, wrappedComponentClass);
         return wrappedComponentClass;
     };
-
 }
 
 export default __Navimi_Components;

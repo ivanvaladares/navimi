@@ -156,7 +156,7 @@ var Navimi = (function () {
                                 return;
                             }
                         }
-                        if (this._currentJSUrl) {
+                        if (this._currentJSUrl && routeItem.jsUrl !== this._currentJSUrl) {
                             const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
                             if (currentRoute) {
                                 const onBeforeLeave = currentRoute.onBeforeLeave;
@@ -172,6 +172,10 @@ var Navimi = (function () {
                                 currentRoute.onLeave && currentRoute.onLeave();
                             }
                         }
+                    }
+                    else {
+                        const currentRoute = this._navimiJSs.getInstance(this._currentJSUrl);
+                        currentRoute === null || currentRoute === void 0 ? void 0 : currentRoute.onLeave();
                     }
                     if (!routeItem) {
                         callId === this._callId && this._reportError(new Error('No route match for url: ' + url));
@@ -1287,139 +1291,45 @@ var Navimi = (function () {
 
     class __Navimi_Components {
         constructor() {
-            this._components = {};
             this._uidCounter = 0;
-            this._removeComponent = (node) => {
-                if (node.localName && this._components[node.localName] && node.__wrapper) {
-                    node.__wrapper.unmount();
-                }
-            };
-            this._disconnectFromParent = (node) => {
-                if (node.parentComponent) {
-                    node.parentComponent.childComponents =
-                        node.parentComponent.childComponents
-                            .filter(child => child !== node);
-                }
-            };
-            this._removeChildComponents = (node) => {
-                node.childComponents &&
-                    node.childComponents.map(child => {
-                        this._removeComponent(child);
-                    });
-            };
-            this._readAttributes = (node) => {
-                const prevAttributes = node.props;
-                node.props = {};
-                [].slice.call(node.attributes).map((attr) => {
-                    const name = attr.name;
-                    //@ts-ignore
-                    if (typeof node[name] !== 'function') {
-                        node.props = Object.assign(Object.assign({}, node.props || {}), { [name]: attr.value });
-                    }
-                });
-                return prevAttributes;
-            };
-            this._traverseComponentsTree = (node, callback) => {
-                if (node.localName) {
-                    if (this._components[node.localName]) {
-                        callback(node);
-                    }
-                    else {
-                        [].slice.call(node.childNodes).map((childNode) => {
-                            this._traverseComponentsTree(childNode, callback);
-                        });
-                    }
-                }
-            };
-            this._registerTag = (node, parentNode) => {
-                if (node.props || !this._components[node.localName]) {
-                    return;
-                }
-                const componentClass = this._components[node.localName];
-                // initializes the component props
-                node.props = {};
-                node.parentComponent = undefined;
-                node.childComponents = [];
-                this._findParentComponent(node, parentNode);
-                this._readAttributes(node);
-                const component = new componentClass(node, node.props);
-                component.init();
-            };
-            this._findParentComponent = (node, parentNode) => {
-                const register = (parent) => {
-                    node.parentComponent = parent;
-                    parent.childComponents = [
-                        ...parent.childComponents || [],
-                        node,
-                    ];
-                };
-                if (parentNode) {
-                    register(parentNode);
-                    return;
-                }
-                let parent = node.parentNode;
-                while (parent) {
-                    if (/-/.test(parent.localName) && this._components[parent.localName]) {
-                        register(parent);
-                        return;
-                    }
-                    parent = parent.parentNode;
-                }
-            };
-            this._bindChildEvents = (parentNode, childNode) => {
-                if (childNode.attributes) {
-                    [].slice.call(childNode.attributes).map((attr) => {
-                        const name = attr.name;
-                        //@ts-ignore
-                        if (typeof childNode[name] === 'function') {
-                            //@ts-ignore
-                            childNode[name] = childNode[name].bind(parentNode);
-                        }
-                    });
-                }
-            };
-            this._registerChildNodes = (parentNode) => {
-                const traverse = (node) => {
-                    [].slice.call(node.childNodes).map((childNode) => {
-                        if (!this._components[childNode.localName]) {
-                            // bind child tags events to the parent
-                            this._bindChildEvents(parentNode, childNode);
-                            traverse(childNode);
-                        }
-                    });
-                };
-                traverse(parentNode);
-            };
+            // --- Motor de Renderização ---
             this._mergeHtml = (template, node) => {
-                const templateNodes = [].slice.call(template.childNodes);
-                const documentNodes = [].slice.call(node.childNodes);
-                let diffCount = documentNodes.length - templateNodes.length;
+                var _a, _b;
+                const getCleanNodes = (n) => {
+                    return [].slice.call(n).filter((child) => {
+                        return child.nodeType !== 3 || (child.textContent && child.textContent.trim().length > 0);
+                    });
+                };
+                const templateNodes = getCleanNodes(template.childNodes);
+                const documentNodes = getCleanNodes(node.childNodes);
                 const templateNodesLen = templateNodes.length;
                 const documentNodesLen = documentNodes.length;
                 for (let i = 0; i < templateNodesLen; i++) {
                     const templateNode = templateNodes[i];
                     const documentNode = documentNodes[i];
-                    // new node, create it
                     if (!documentNode) {
                         node.appendChild(templateNode.cloneNode(true));
                         continue;
                     }
-                    // add/remove nodes to match the template
-                    if (getNodeType(templateNode) !== getNodeType(documentNode)) {
-                        if (diffCount > 0) {
-                            this._traverseComponentsTree(documentNode, this._removeComponent);
-                            if (documentNode.parentNode) {
-                                documentNode.parentNode.removeChild(documentNode);
-                            }
-                            i--;
-                            diffCount--;
+                    const typeMatch = getNodeType(templateNode) === getNodeType(documentNode);
+                    const tKey = templateNode.id || ((_a = templateNode.getAttribute) === null || _a === void 0 ? void 0 : _a.call(templateNode, 'key'));
+                    const dKey = documentNode.id || ((_b = documentNode.getAttribute) === null || _b === void 0 ? void 0 : _b.call(documentNode, 'key'));
+                    let keyMatch = true;
+                    if ((tKey && tKey !== '') || (dKey && dKey !== '')) {
+                        keyMatch = tKey === dKey;
+                    }
+                    if (!typeMatch || !keyMatch) {
+                        const nextSibling = documentNode.nextSibling;
+                        // Nota: O disconnectedCallback dos web components cuida da limpeza
+                        const newNode = templateNode.cloneNode(true);
+                        if (documentNode.parentNode === node) {
+                            node.replaceChild(newNode, documentNode);
                         }
                         else {
-                            node.insertBefore(templateNode.cloneNode(true), documentNode);
+                            node.insertBefore(newNode, nextSibling);
                         }
                         continue;
                     }
-                    // update text content
                     const templateContent = getNodeContent(templateNode);
                     const documentContent = getNodeContent(documentNode);
                     if (templateContent && templateContent !== documentContent) {
@@ -1427,110 +1337,181 @@ var Navimi = (function () {
                     }
                     if (templateNode.localName) {
                         syncAttributes(templateNode, documentNode);
-                        // Check if the element is a component and stop
-                        if (!this._components[templateNode.localName]) {
+                        if (!templateNode.localName.includes('-')) {
                             mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
                         }
                     }
                 }
-                // remove extra elements
-                diffCount = documentNodesLen - templateNodesLen;
                 for (let i = documentNodesLen - 1; i >= templateNodesLen; i--) {
-                    this._traverseComponentsTree(documentNodes[i], this._removeComponent);
-                    if (documentNodes[i].parentNode) {
-                        documentNodes[i].parentNode.removeChild(documentNodes[i]);
+                    const nodeToRemove = documentNodes[i];
+                    if (nodeToRemove.parentNode) {
+                        nodeToRemove.parentNode.removeChild(nodeToRemove);
                     }
-                    diffCount--;
                 }
-                this._registerChildNodes(node);
             };
             this.registerComponent = (componentName, componentClass, getFunctions, services) => {
-                if (!componentName || !/-/.test(componentName)) {
+                if (!componentName || !/-/.test(componentName) || customElements.get(componentName)) {
                     return;
                 }
-                if (!getFunctions) {
-                    getFunctions = () => undefined;
-                }
-                // eslint-disable-next-line @typescript-eslint/no-this-alias
-                const that = this;
-                const wrappedComponentClass = class {
-                    constructor(node) {
-                        this.init = async () => {
+                const getFuncs = getFunctions || (() => undefined);
+                const self = this;
+                const wrappedComponentClass = class NavimiWebComponent extends HTMLElement {
+                    constructor() {
+                        super();
+                        this._mounted = false;
+                        // [NOVO] Observer interno para garantir liberdade total de atributos
+                        this._attrObserver = null;
+                        this.props = {};
+                        this._uid = `component:${self._uidCounter++}`;
+                        this._initialInnerHTML = this.innerHTML;
+                        this._syncPropsFromAttributes();
+                        this._instance = new componentClass(this.props, getFuncs(this._uid), services);
+                        // Injeções
+                        this._instance.props = this.props;
+                        this._instance.element = this;
+                        this._instance.childComponents = [];
+                        this._instance.parentComponent = null;
+                        this._instance.update = throttle(this.render.bind(this), 16, this);
+                        // Mixins e Polyfills
+                        this._injectDomPolyfills();
+                        this._mixinClassMethods(componentClass);
+                    }
+                    _injectDomPolyfills() {
+                        const domMethods = ['querySelector', 'querySelectorAll', 'getAttribute', 'setAttribute', 'removeAttribute', 'getBoundingClientRect', 'closest'];
+                        domMethods.forEach(method => {
+                            // @ts-ignore
+                            if (this[method]) {
+                                // @ts-ignore
+                                this._instance[method] = this[method].bind(this);
+                            }
+                        });
+                        const domProps = ['classList', 'style', 'innerHTML', 'innerText'];
+                        domProps.forEach(prop => {
+                            Object.defineProperty(this._instance, prop, {
+                                // @ts-ignore
+                                get: () => this[prop],
+                                enumerable: true,
+                                configurable: true
+                            });
+                        });
+                    }
+                    _mixinClassMethods(originalClass) {
+                        const proto = originalClass.prototype;
+                        const methods = Object.getOwnPropertyNames(proto);
+                        methods.forEach(method => {
+                            const internalProps = ['constructor', 'render', 'update', 'onMount', 'onRender', 'onUnmount'];
+                            if (internalProps.includes(method) || method.startsWith('_'))
+                                return;
+                            // @ts-ignore
+                            if (!this[method]) {
+                                // @ts-ignore
+                                this[method] = (...args) => this._instance[method].apply(this._instance, args);
+                            }
+                        });
+                        Object.defineProperty(this, 'state', {
+                            get: () => this._instance.state,
+                            set: (v) => this._instance.state = v
+                        });
+                    }
+                    async connectedCallback() {
+                        if (!this._mounted) {
+                            this._connectToParent();
+                            // [LIBERDADE TOTAL] Observer escopado APENAS neste elemento.
+                            // Isso permite detectar QUALQUER atributo novo (data-x, custom-prop)
+                            // sem precisar declarar 'observedAttributes'.
+                            this._attrObserver = new MutationObserver((mutations) => {
+                                let hasChanges = false;
+                                const oldProps = Object.assign({}, this.props);
+                                mutations.forEach(mutation => {
+                                    if (mutation.type === 'attributes') {
+                                        const name = mutation.attributeName;
+                                        const val = this.getAttribute(name);
+                                        // Se o valor mudou
+                                        if (this.props[name] !== val) {
+                                            this.props[name] = val;
+                                            hasChanges = true;
+                                        }
+                                    }
+                                });
+                                if (hasChanges) {
+                                    // Atualiza a instância
+                                    this._instance.props = this.props;
+                                    // Respeita o shouldUpdate do usuário
+                                    if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
+                                        this._instance.update();
+                                    }
+                                }
+                            });
+                            this._attrObserver.observe(this, { attributes: true });
                             await this.render();
-                            this._node.onMount && await this._node.onMount.call(this._node);
-                        };
-                        this.render = async () => {
-                            const { render } = this._node;
-                            if (!render) {
-                                return;
+                            if (this._instance.onMount) {
+                                await this._instance.onMount.call(this._instance);
                             }
-                            const html = await render.call(this._node, this._initialInnerHTML);
-                            if (this._removed || !html || html === this._previousTemplate) {
-                                return;
+                            this._mounted = true;
+                        }
+                    }
+                    disconnectedCallback() {
+                        // Desliga o observer para evitar memory leak
+                        if (this._attrObserver) {
+                            this._attrObserver.disconnect();
+                            this._attrObserver = null;
+                        }
+                        if (this._instance.parentComponent) {
+                            this._instance.parentComponent.childComponents =
+                                this._instance.parentComponent.childComponents.filter((child) => child !== this._instance);
+                        }
+                        if (self._navimiState) {
+                            self._navimiState.unwatchState(this._uid);
+                        }
+                        if (this._instance.onUnmount) {
+                            this._instance.onUnmount.call(this._instance);
+                        }
+                        this._mounted = false;
+                    }
+                    async render() {
+                        if (!this._instance.render)
+                            return;
+                        const html = await this._instance.render.call(this._instance, this._initialInnerHTML);
+                        if (!html || html === this._previousTemplate)
+                            return;
+                        this._previousTemplate = html;
+                        const template = new DOMParser().parseFromString(html, 'text/html');
+                        self._mergeHtml(template.querySelector('body'), this);
+                        if (this._instance.onRender) {
+                            this._instance.onRender.call(this._instance);
+                        }
+                    }
+                    _syncPropsFromAttributes() {
+                        for (const attr of Array.from(this.attributes)) {
+                            this.props[attr.name] = attr.value;
+                        }
+                        if (this._instance) {
+                            this._instance.props = this.props;
+                        }
+                    }
+                    _connectToParent() {
+                        let parent = this.parentElement;
+                        while (parent) {
+                            if (parent.tagName.includes('-') && customElements.get(parent.tagName.toLowerCase())) {
+                                const parentInstance = parent._instance;
+                                if (parentInstance) {
+                                    this._instance.parentComponent = parentInstance;
+                                    if (!parentInstance.childComponents.includes(this._instance)) {
+                                        parentInstance.childComponents.push(this._instance);
+                                    }
+                                    return;
+                                }
                             }
-                            this._previousTemplate = html;
-                            const template = new DOMParser().parseFromString(html, 'text/html');
-                            that._mergeHtml(template.querySelector('body'), this._node);
-                            this._node.onRender && this._node.onRender.call(this._node);
-                        };
-                        this.unmount = () => {
-                            if (!this._removed) {
-                                this._removed = true;
-                                that._navimiState.unwatchState(this._uid);
-                                that._removeChildComponents(this._node);
-                                that._disconnectFromParent(this._node);
-                                this._node.remove();
-                                this._node.onUnmount && this._node.onUnmount();
-                                this._node.update = undefined;
-                                this._node.__wrapper = undefined;
-                                delete this._node;
-                                delete this._uid;
-                                delete this._previousTemplate;
-                                delete this._initialInnerHTML;
-                            }
-                        };
-                        this._uid = `component:${that._uidCounter++}`;
-                        this._node = node;
-                        this._previousTemplate = undefined;
-                        this._initialInnerHTML = node.innerHTML;
-                        node.innerHTML = '';
-                        node.__wrapper = this;
-                        // inherits from HTMLElement
-                        Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-                        const component = new componentClass(node.props, getFunctions(this._uid), services);
-                        // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
-                        node.update = throttle(this.render.bind(this), 16, this);
-                        // connects the component code to the tag 
-                        Object.setPrototypeOf(node, component);
+                            parent = parent.parentElement;
+                        }
                     }
                 };
-                this._components[componentName] = wrappedComponentClass;
+                customElements.define(componentName, wrappedComponentClass);
                 return wrappedComponentClass;
             };
         }
         init(navimiState) {
             this._navimiState = navimiState;
-            new window.MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    if (mutation.type === 'attributes') {
-                        const node = mutation.target;
-                        if (this._components[node.localName]) {
-                            const prevAttributes = this._readAttributes(node);
-                            if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                                node.update && node.update();
-                            }
-                        }
-                    }
-                    else {
-                        [].slice.call(mutation.addedNodes).map((addedNode) => {
-                            this._traverseComponentsTree(addedNode, this._registerTag);
-                        });
-                        [].slice.call(mutation.removedNodes).map((removedNode) => {
-                            this._traverseComponentsTree(removedNode, this._removeComponent);
-                        });
-                    }
-                });
-            }).observe(document, { childList: true, subtree: true, attributes: true });
         }
     }
 
