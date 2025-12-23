@@ -1,5 +1,5 @@
 import { INavimi_State } from './@types/INavimi_State';
-import { INavimi_Component, INavimi_Components } from './@types/INavimi_Components';
+import { INavimi_Component, INavimi_Components, INavimi_HTMLElement } from './@types/INavimi_Components';
 import components from './components';
 
 //@ts-nocheck
@@ -94,11 +94,11 @@ describe('components.spec', () => {
 
         setTimeout(() => {
 
-            const component = window.document.querySelector('outer-component') as INavimi_Component;
+            const component = window.document.querySelector('outer-component') as INavimi_HTMLElement;
 
-            expect(component.childComponents?.length).toEqual(1);
+            expect(component._instance.childComponents?.length).toEqual(1);
 
-            expect(component.childComponents?.[0].parentComponent).toEqual(component);
+            expect(component._instance?.childComponents?.[0].parentComponent?.element).toEqual(component);
 
             expect(component.innerHTML).toEqual('<anon-class><div>OK!</div></anon-class>');
     
@@ -110,7 +110,7 @@ describe('components.spec', () => {
 
     test('Test event handling', (done) => {
 
-        navimi_components.registerComponent('click-component', class implements Partial<INavimi_Component> {
+        navimi_components.registerComponent('click-component', class implements Partial<INavimi_HTMLElement> {
             lines: any[];
             renderCount = 0;
 
@@ -150,21 +150,21 @@ describe('components.spec', () => {
 
         setTimeout(() => {
 
-            const component = window.document.querySelector('click-component') as INavimi_Component;
+            const component = window.document.querySelector('click-component') as INavimi_HTMLElement;
 
-            expect(component.childComponents?.length).toEqual(0);
+            expect(component._instance.childComponents?.length).toEqual(0);
 
             component.querySelector('button')?.click();
 
             //@ts-ignore
-            expect(component.renderCount).toEqual(1);
+            expect(component._instance.renderCount).toEqual(1);
 
             setTimeout(() => {
 
-                expect(component.childComponents?.length).toEqual(1);
+                expect(component._instance.childComponents?.length).toEqual(1);
 
                 //@ts-ignore
-                expect(component.renderCount).toEqual(2);
+                expect(component._instance.renderCount).toEqual(2);
 
                 expect(component.innerHTML.indexOf('<div>OK!</div>') > 0).toBeTruthy();
 
@@ -172,19 +172,19 @@ describe('components.spec', () => {
 
             }, 10);
 
-        }, 10);
+        }, 100);
 
     });
 
     test('Test event handling 2', (done) => {
 
-        const component = window.document.querySelector('click-component') as INavimi_Component;
+        const component = window.document.querySelector('click-component') as INavimi_HTMLElement;
         
         component.querySelector('button')?.click();
 
         setTimeout(() => {
 
-            expect(component.childComponents?.length).toEqual(2);
+            expect(component._instance.childComponents?.length).toEqual(2);
 
             done();
 
@@ -211,13 +211,13 @@ describe('components.spec', () => {
 
             onMount() {
                 //@ts-ignore
-                this.onclick = this.addChild;
+                this.element.onclick = this.addChild.bind(this);
             }
 
             render() {
                 return `<div>
                             <div id="click-component-children">
-                                ${this.lines.join('\n')}
+                                ${(this as any).lines.join('\n')}
                             </div>
                         </div>`;
             }
@@ -234,27 +234,27 @@ describe('components.spec', () => {
 
         setTimeout(() => {
 
-            const component = window.document.querySelector('domclick-component') as INavimi_Component;
+            const component = window.document.querySelector('domclick-component') as INavimi_HTMLElement;
 
-            expect(component.childComponents?.length).toEqual(0);
+            expect(component._instance.childComponents?.length).toEqual(0);
 
             component.querySelector('div')?.click();
 
             //@ts-ignore
-            expect(component.renderCount).toEqual(1);
+            expect(component._instance.renderCount).toEqual(1);
 
             setTimeout(() => {
 
-                expect(component.childComponents?.length).toEqual(1);
+                expect(component._instance.childComponents?.length).toEqual(1);
 
                 //@ts-ignore
-                expect(component.renderCount).toEqual(2);
+                expect(component._instance.renderCount).toEqual(2);
 
                 expect(component.innerHTML.indexOf('<div>OK!</div>') > 0).toBeTruthy();
 
                 done();
 
-            }, 10);
+            }, 100);
 
         }, 10);
 
@@ -262,14 +262,14 @@ describe('components.spec', () => {
     
     test('Test child removal', (done) => {
 
-        const component = window.document.querySelector('click-component') as INavimi_Component;
+        const component = window.document.querySelector('click-component') as INavimi_HTMLElement;
         
         //@ts-ignore
         component.querySelector('#click-component-children').innerHTML = '';
 
         setTimeout(() => {
 
-            expect(component.childComponents?.length).toEqual(0);
+            expect(component._instance.childComponents?.length).toEqual(0);
 
             expect(navimi_state_mock.unwatchState).toHaveBeenCalledTimes(2);
             expect(navimi_state_mock.unwatchState).toHaveBeenCalledWith('component:5');
@@ -283,18 +283,18 @@ describe('components.spec', () => {
 
     test('Test parent removal', (done) => {
 
-        const wrapperComponent = window.document.querySelector('outer-component') as INavimi_Component;
-        const innerComponent = wrapperComponent.querySelector('anon-class') as INavimi_Component;
+        const wrapperComponent = window.document.querySelector('outer-component') as INavimi_HTMLElement;
+        const innerComponent = wrapperComponent.querySelector('anon-class') as INavimi_HTMLElement;
 
         //@ts-ignore
         window.document.querySelector('outer-component').outerHTML = '';
 
         setTimeout(() => {
 
-            expect(wrapperComponent.childComponents?.length).toEqual(0);
+            expect(wrapperComponent._instance.childComponents?.length).toEqual(0);
 
             //@ts-ignore
-            expect(innerComponent.wasRemoved).toEqual(true);
+            expect(innerComponent._instance.wasRemoved).toEqual(true);
    
             done();
 
@@ -325,7 +325,7 @@ describe('components.spec', () => {
         
         setTimeout(() => {
 
-            const component = window.document.querySelector('counter-component') as INavimi_Component;
+            const component = window.document.querySelector('counter-component') as INavimi_HTMLElement;
             const counter1 = component.querySelector('#div-count')?.innerHTML;
 
             expect(component.props?.count).toEqual('1');
@@ -339,7 +339,7 @@ describe('components.spec', () => {
 
     test('Test shouldUpdate 2', (done) => {
 
-        const component = window.document.querySelector('counter-component') as INavimi_Component;
+        const component = window.document.querySelector('counter-component') as INavimi_HTMLElement;
 
         const timer1 = component.querySelector('#div-date')?.innerHTML;
 
@@ -362,7 +362,7 @@ describe('components.spec', () => {
 
     test('Test shouldUpdate 3', (done) => {
 
-        const component = window.document.querySelector('counter-component') as INavimi_Component;
+        const component = window.document.querySelector('counter-component') as INavimi_HTMLElement;
 
         const counter2 = component.querySelector('#div-count')?.innerHTML;
         const timer2 = component.querySelector('#div-date')?.innerHTML;

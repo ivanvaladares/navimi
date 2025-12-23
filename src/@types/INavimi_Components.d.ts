@@ -10,21 +10,34 @@ declare class INavimi_Components {
         services?: Record<string, InstanceType<any>>) => InstanceType<any>;
 }
 
-declare class INavimi_Component extends Element {
-    __wrapper?: INavimi_WrappedComponent;
-    props: Record<string, string>;
-    parentComponent: INavimi_Component;
+declare class INavimi_Component {
+    // [NOVO] Referência ao Web Component real (DOM) injetada pelo framework
+    // Use this.element para: querySelector, classList, style, events, etc.
+    element: HTMLElement;
+
+    // Props agora podem ser qualquer coisa (vindos dos atributos)
+    props: Record<string, any>;
+
+    // Referências para as instâncias lógicas de Pai/Filhos
+    parentComponent?: INavimi_Component;
     childComponents: INavimi_Component[];
 
-    constructor(props: Record<string, string>, functions: INavimi_Functions, services: Record<string, InstanceType<any>>);
+    constructor(props: Record<string, any>, functions: INavimi_Functions, services: Record<string, InstanceType<any>>);
+
+    // Ciclo de Vida
     render: (children?: string) => Promise<string> | string;
     update?: () => Promise<void> | void;
-    shouldUpdate?: (prevAttributes: Record<string, string>, nextAttributes: Record<string, string>) => boolean;
+    shouldUpdate?: (prevAttributes: Record<string, any>, nextAttributes: Record<string, any>) => boolean;
+    
     onMount?: () => void;
     onRender?: () => void;
     onUnmount?: () => void;
 }
 
+interface INavimi_HTMLElement extends HTMLElement {
+    _instance: INavimi_Component; // Acesso direto à lógica interna
+    [key: string]: any; // Permite acesso aos métodos proxied (ex: el.addChild())
+}
 declare class INavimi_WrappedComponent {
     constructor(node: INavimi_Component);
     init: () => Promise<void>;    
@@ -32,4 +45,4 @@ declare class INavimi_WrappedComponent {
     unmount: () => void;
 }
 
-export { INavimi_Components, INavimi_Component, INavimi_WrappedComponent };
+export { INavimi_Components, INavimi_Component, INavimi_HTMLElement, INavimi_WrappedComponent };
