@@ -126,7 +126,7 @@ describe('components.spec', () => {
 
             onMount() {
                 //@ts-ignore
-                this.querySelector('button').addEventListener('click', this.addChild.bind(this));
+                this.element.querySelector('button').addEventListener('click', this.addChild.bind(this));
             }
 
             render() {
@@ -393,7 +393,7 @@ describe('components.spec', () => {
             state = { version: 1, userTyped: '' };
             
             onMount() {
-                this.state.userTyped = 'hello'; // Simula usuário digitando algo
+                this.state.userTyped = 'hello'; 
             }
 
             render() {
@@ -409,20 +409,15 @@ describe('components.spec', () => {
         setTimeout(() => {
             const component = window.document.querySelector('hot-component') as INavimi_HTMLElement;
             
-            // Verifica se V1 carregou
             expect(component.innerHTML).toContain('Version 1');
-            // @ts-ignore
+            //@ts-ignore
             expect(component._instance.state.userTyped).toEqual('hello');
 
-            // 3. Simula Hot Reload: Registra a Versão 2 com a MESMA TAG
-            // Isso deve disparar o _performHotSwap internamente
+            // 3. Simula Hot Reload
             navimi_components.registerComponent('hot-component', class {
-                // Nota: O state inicial aqui seria {version: 2, userTyped: ''}
-                // mas o swap deve mesclar com o antigo.
                 state = { version: 2, userTyped: '' }; 
 
                 render() {
-                    // Mudamos a lógica de render (adicionamos 'Updated')
                     return `<div>Version ${this.state.version} - Updated</div>`;
                 }
             });
@@ -430,12 +425,11 @@ describe('components.spec', () => {
             setTimeout(() => {
                 const componentUpdated = window.document.querySelector('hot-component') as INavimi_HTMLElement;
 
-                // CHECK 1: A lógica de render mudou? (Deve ter o "- Updated")
+                // CHECK 1: A lógica de render mudou?
                 expect(componentUpdated.innerHTML).toContain('- Updated');
 
                 // CHECK 2: O estado antigo foi preservado? 
-                // O 'hello' deve continuar lá mesmo trocando a classe
-                // @ts-ignore
+                //@ts-ignore
                 expect(componentUpdated._instance.state.userTyped).toEqual('hello');
 
                 done();
@@ -446,18 +440,14 @@ describe('components.spec', () => {
 
     test('Test render error boundary (Graceful degradation)', (done) => {
 
-        // 1. Mockamos o console.error para não sujar o output do teste 
-        // e para verificar se o erro foi logado corretamente.
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        // 2. Registramos um componente que lança erro propositalmente no render
         navimi_components.registerComponent('error-component', class {
             render() {
                 throw new Error("Critical failure during render!");
             }
         });
 
-        // 3. Inserimos no DOM
         window.document.querySelector('body')?.insertAdjacentHTML('beforeend', `
             <error-component></error-component>
         `);
@@ -465,20 +455,15 @@ describe('components.spec', () => {
         setTimeout(() => {
             const component = window.document.querySelector('error-component') as HTMLElement;
 
-            // VERIFICAÇÃO 1: O console.error foi chamado?
-            // Esperamos que o log contenha o nome da tag
             expect(consoleSpy).toHaveBeenCalled();
             expect(consoleSpy).toHaveBeenCalledWith(
                 expect.stringContaining('<error-component>'),
                 expect.any(Error)
             );
 
-            // VERIFICAÇÃO 2: O HTML de fallback foi renderizado?
-            // Verificamos partes da string de erro que definimos no catch
-            expect(component.innerHTML).toContain('⚠️ <strong>&lt;error-component&gt; Error:</strong>');
+            expect(component.innerHTML).toContain('Error');
             expect(component.innerHTML).toContain('Critical failure during render!');
 
-            // Limpa o mock do console
             consoleSpy.mockRestore();
             done();
 

@@ -1405,27 +1405,7 @@ var Navimi = (function () {
                         this._instance.childComponents = [];
                         this._instance.parentComponent = null;
                         this._instance.update = throttle(this.render.bind(this), 16, this);
-                        this._injectDomPolyfills();
                         this._mixinClassMethods(CurrentClass);
-                    }
-                    _injectDomPolyfills() {
-                        const domMethods = ['querySelector', 'querySelectorAll', 'getAttribute', 'setAttribute', 'removeAttribute', 'getBoundingClientRect', 'closest'];
-                        domMethods.forEach(method => {
-                            // @ts-ignore
-                            if (this[method]) {
-                                // @ts-ignore
-                                this._instance[method] = this[method].bind(this);
-                            }
-                        });
-                        const domProps = ['classList', 'style', 'innerHTML', 'innerText'];
-                        domProps.forEach(prop => {
-                            Object.defineProperty(this._instance, prop, {
-                                // @ts-ignore
-                                get: () => this[prop],
-                                enumerable: true,
-                                configurable: true
-                            });
-                        });
                     }
                     // Agora público para ser acessado pelo _performHotSwap
                     _mixinClassMethods(originalClass) {
