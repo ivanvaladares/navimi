@@ -14,7 +14,7 @@ class __Navimi_Fetch implements INavimi_Fetch {
         return this.loadErrors[url];
     };
 
-    public fetchFile = (url: string, options?: RequestInit): Promise<string> => {
+    public fetchFile = (url: string, options?: RequestInit, checkType?: boolean): Promise<string> => {
         return new Promise((resolve, reject) => {
             delete this.loadErrors[url];
             const requestUrl = url + (this._bustCache ? '?v=' + this._bustCache : '');
@@ -27,6 +27,18 @@ class __Navimi_Fetch implements INavimi_Fetch {
                     if (!data || !data.ok) {
                         this.loadErrors[url] = error;
                         return reject(error);
+                    }
+                    if (checkType) {
+                        const contentType = data.headers?.get('Content-Type');
+                        // @ts-ignore
+                        const accept = options?.headers?.Accept;
+                        if (accept && contentType) {
+                            if ((contentType.indexOf('javascript') < 0 && accept.indexOf('javascript') >= 0) ||
+                                (contentType.indexOf('css') < 0 && accept.indexOf('css') >= 0)) {
+                                    this.loadErrors[url] = error;
+                                    return reject(error);
+                            }
+                        }
                     }
                     data.text().then(resolve);
                 })

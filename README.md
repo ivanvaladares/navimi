@@ -5,8 +5,8 @@
 
 ## Features
 
-- **Components**
-  - Create reusable custom elements with encapsulated functionality.
+- **Native Web Components**
+  - Create reusable Custom Elements (V1) with encapsulated functionality, Shadow DOM support, and standard lifecycle events.
 
 - **Routing with path and queryString parsing**
   - Use the widely-adopted syntax for routes, including support for path and query string parsing.
@@ -23,19 +23,19 @@
 - **Scoped CSS**
   - Use global and route-scoped CSS with automatic addition and removal to avoid conflicts.
 
-- **Atomic CSS-in-JS**
-  - Write CSS using JavaScript in a declarative, conflict-free and reusable way.
+- **Scoped CSS & Atomic CSS-in-JS**
+  - Use route-scoped CSS files or write CSS-in-JS that generates conflict-free atomic classes automatically.
 
-- **Auto Lazy load scripts, templates, css and libraries**
-  - Only load what you need, when you need it.
+- **Auto Lazy load**
+  - Scripts, templates, CSS, and libraries are only loaded when needed.
 
 - **Hot reload**
-  - Make it easier to create pages without having to refresh after every single modification. <br>
-  <small>(This funcionality is only enabled in the unminified version)</small>
+  - Modify your files and see changes instantly without refreshing. <br>
+  <small>(Enabled in unminified version)</small>
 
 <br>
 
-> All that in just ~7kb (compressed).
+> All that in just ~8kb (compressed).
 
 <br>
 
@@ -45,13 +45,15 @@ https://navimi.web.app
 <br>
 
 ## Browser compatibility
+Navimi uses **Custom Elements V1**.
+
 | Browser Version  | Date     |
 |------------------|-------   |
-| Chrome 55        | Oct 2016 |
-| Firefox 52       | Mar 2017 |
-| Edge 15          | Oct 2017 |
-| Safari 11        | Sep 2017 |
-| Opera 42         | Dec 2016 |
+| Chrome 67+       | May 2018 |
+| Firefox 63+      | Oct 2018 |
+| Edge 79+         | Jan 2020 |
+| Safari 10.1+     | Mar 2017 |
+| Opera 64+        | Oct 2019 |
 
 <br>
 
@@ -241,14 +243,18 @@ Routes can have services declared on the Navimi constructor.
 
 ```js
   class {
+    // Props are automatically populated from HTML attributes.
+    // e.g. <my-component title="Hello"> -> props.title = "Hello"
     constructor(props, functions, {yourServices ... }) {
         // (OPTIONAL)
-        // variables initialization and binding events handlers
+        // props: Record<string, any>
+        // access the DOM via: this.element
     }
 
     onMount() {
         // (OPTIONAL)
-        // invoked when the components is mounted.
+        // Invoked when the component is connected to the DOM (connectedCallback).
+        // Good place to add event listeners to this.element
     };
 
     render(children) {
@@ -258,28 +264,50 @@ Routes can have services declared on the Navimi constructor.
 
     onRender() {
         // (OPTIONAL)
-        // invoked when the components is rendered.
+        // Invoked after the HTML returned by render() is diffed and applied to the DOM.
     };
 
     shouldUpdate(prevProps, nextProps) {
         // (OPTIONAL)
-        // this method will get called when any html property change on the component's tag
-        // return false if you wish to prevent a rerender
+        // This method will get called when any HTML attribute changes on the component tag.
+        // Navimi uses a MutationObserver to react to any attribute change.
+        // return false if you wish to prevent a rerender.
+    }
+
+    update() {
+        // Manually trigger a re-render.
+        // Calling update() will not trigger shouldUpdate.
     }
 
     onUnmount() {
         // (OPTIONAL)
-        // destroy timers and event handlers
+        // Invoked when the component is removed from the DOM (disconnectedCallback).
+        // Destroy timers and event listeners here.
     }
   };
 ```
 
-By default, when your component’s props change, your component will re-render. 
-If your render() method depends on some other data, you can force the rerender by calling update().
-Calling update() will not trigguer shouldUpdate.
+Shadow DOM & Boolean Attributes
+Shadow DOM: Add the shadow attribute to your HTML tag to render the component inside a Shadow Root (e.g., `<my-component shadow></my-component>`).
+
+Boolean Attributes: Attributes without values are treated as true in props (e.g., `<my-component is-active>` results in `props['is-active'] === true`).
+
+Accessing Component Methods
+Methods defined in your component class are automatically proxied to the DOM element.
+
+```
+  // In your component class
+  class MyComponent {
+      alertMe() { alert('Hello!'); }
+  }
+
+  // In external code
+  document.querySelector('my-component').alertMe(); // Works!
+```
+
+By default, when your component’s props change via HTML attributes, your component will re-render. If your `render()` method depends on internal state, you can force the rerender by calling `this.update()`.
 
 <br />
-
 
 ### Page navigation
 

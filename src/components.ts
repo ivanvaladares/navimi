@@ -1,4 +1,4 @@
-import { INavimi_Components, INavimi_Component, INavimi_WrappedComponent } from './@types/INavimi_Components';
+import { INavimi_Components } from './@types/INavimi_Components';
 import { INavimi_State } from './@types/INavimi_State';
 import { INavimi_Functions } from './@types/Navimi';
 import { getNodeContent } from './helpers/getNodeContent';
@@ -7,163 +7,29 @@ import { mergeHtmlElement } from './helpers/mergeHtmlElement';
 import { syncAttributes } from './helpers/syncAttributes';
 import { throttle } from './helpers/throttle';
 
+// Configuração do Registry Global para Hot Reload
+const globalRegistry = (window as any).__NAVIMI_REGISTRY__ || {};
+(window as any).__NAVIMI_REGISTRY__ = globalRegistry;
+
 class __Navimi_Components implements INavimi_Components {
 
     private _navimiState: INavimi_State;
-    private _components: Record<string, InstanceType<any>> = {};
     private _uidCounter = 0;
 
     public init(navimiState: INavimi_State): void {
-
         this._navimiState = navimiState;
-
-        new window.MutationObserver((mutations: MutationRecord[]) => {
-            mutations.forEach(mutation => {
-                if (mutation.type === 'attributes') {
-                    const node = mutation.target as INavimi_Component;
-                    if (this._components[node.localName]) {
-                        const prevAttributes = this._readAttributes(node);
-                        if (!node.shouldUpdate || node.shouldUpdate(prevAttributes, node.props)) {
-                            node.update && node.update();
-                        }
-                    }
-                } else {
-                    [].slice.call(mutation.addedNodes).map((addedNode: INavimi_Component) => {
-                        this._traverseComponentsTree(addedNode, this._registerTag);
-                    });
-                    [].slice.call(mutation.removedNodes).map((removedNode: INavimi_Component) => {
-                        this._traverseComponentsTree(removedNode, this._removeComponent);
-                    });
-                }
-            });
-        }).observe(document, { childList: true, subtree: true, attributes: true });
     }
 
-    private _removeComponent = (node: INavimi_Component): void => {
-        if (node.localName && this._components[node.localName] && node.__wrapper) {
-            node.__wrapper.unmount();
-        }
-    }
-
-    private _disconnectFromParent = (node: INavimi_Component): void => {
-        if (node.parentComponent) {
-            node.parentComponent.childComponents =
-                node.parentComponent.childComponents
-                    .filter(child => child !== node);
-        }
-    };
-
-    private _removeChildComponents = (node: INavimi_Component): void => {
-        node.childComponents &&
-            node.childComponents.map(child => {
-                this._removeComponent(child);
-            });
-    };
-
-    private _readAttributes = (node: INavimi_Component): Record<string, string> => {
-        const prevAttributes = node.props;
-        node.props = {};
-        [].slice.call(node.attributes).map((attr: any) => {
-            const name = attr.name;
-            //@ts-ignore
-            if (typeof node[name] !== 'function') {
-                node.props = {
-                    ...node.props || {},
-                    [name]: attr.value
-                };
-            }
-        });
-        return prevAttributes;
-    };
-
-    private _traverseComponentsTree = (node: Element, callback: (node: Element) => void): void => {
-        if (node.localName) {
-            if (this._components[node.localName]) {
-                callback(node);
-            } else {
-                [].slice.call(node.childNodes).map((childNode: INavimi_Component) => {
-                    this._traverseComponentsTree(childNode, callback);
-                });
-            }
-        }
-    };
-
-    private _registerTag = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
-        if (node.props || !this._components[node.localName]) {
-            return;
-        }
-
-        const componentClass = this._components[node.localName];
-
-        // initializes the component props
-        node.props = {};
-        node.parentComponent = undefined;
-        node.childComponents = [];
-
-        this._findParentComponent(node, parentNode);
-        this._readAttributes(node);
-
-        const component = new componentClass(node, node.props);
-
-        component.init();
-    };
-
-    private _findParentComponent = (node: INavimi_Component, parentNode?: INavimi_Component): void => {
-
-        const register = (parent: INavimi_Component) => {
-            node.parentComponent = parent;
-            parent.childComponents = [
-                ...parent.childComponents || [],
-                node,
-            ];
-        }
-
-        if (parentNode) {
-            register(parentNode);
-            return;
-        }
-
-        let parent = node.parentNode as INavimi_Component;
-
-        while (parent) {
-            if (/-/.test(parent.localName) && this._components[parent.localName]) {
-                register(parent);
-                return;
-            }
-            parent = parent.parentNode as INavimi_Component;
-        }
-    }
-
-    private _bindChildEvents = (parentNode: Element, childNode: Element): void => {
-        if (childNode.attributes) {
-            [].slice.call(childNode.attributes).map((attr: any) => {
-                const name = attr.name;
-                //@ts-ignore
-                if (typeof childNode[name] === 'function') {
-                    //@ts-ignore
-                    childNode[name] = childNode[name].bind(parentNode);
-                }
-            });
-        }
-    };
-
-    private _registerChildNodes = (parentNode: Element): void => {
-        const traverse = (node: Element): void => {
-            [].slice.call(node.childNodes).map((childNode: Element) => {
-                if (!this._components[childNode.localName]) {
-                    // bind child tags events to the parent
-                    this._bindChildEvents(parentNode, childNode);
-                    traverse(childNode);
-                }
+    private _mergeHtml = (template: Element | DocumentFragment, node: Element | DocumentFragment | ShadowRoot) => {
+        const getCleanNodes = (n: NodeList) => {
+            return [].slice.call(n).filter((child: Node) => {
+                return child.nodeType !== 3 || (child.textContent && child.textContent.trim().length > 0);
             });
         };
-        traverse(parentNode);
-    };
 
-    private _mergeHtml = (template: Element, node: Element | DocumentFragment) => {
-        const templateNodes: Element[] = [].slice.call(template.childNodes);
-        const documentNodes: Element[] = [].slice.call(node.childNodes);
-        let diffCount = documentNodes.length - templateNodes.length;
+        const templateNodes: Element[] = getCleanNodes(template.childNodes) as Element[];
+        const documentNodes: Element[] = getCleanNodes(node.childNodes) as Element[];
+
         const templateNodesLen = templateNodes.length;
         const documentNodesLen = documentNodes.length;
 
@@ -171,28 +37,34 @@ class __Navimi_Components implements INavimi_Components {
             const templateNode = templateNodes[i];
             const documentNode = documentNodes[i];
 
-            // new node, create it
             if (!documentNode) {
                 node.appendChild(templateNode.cloneNode(true));
                 continue;
             }
 
-            // add/remove nodes to match the template
-            if (getNodeType(templateNode) !== getNodeType(documentNode)) {
-                if (diffCount > 0) {
-                    this._traverseComponentsTree(documentNode as Element, this._removeComponent);
-                    if (documentNode.parentNode) {
-                        documentNode.parentNode.removeChild(documentNode);
-                    }
-                    i--;
-                    diffCount--;
+            const typeMatch = getNodeType(templateNode) === getNodeType(documentNode);
+            const tKey = templateNode.id || templateNode.getAttribute?.('key');
+            const dKey = documentNode.id || documentNode.getAttribute?.('key');
+
+            let keyMatch = true;
+            if ((tKey && tKey !== '') || (dKey && dKey !== '')) {
+                keyMatch = tKey === dKey;
+            }
+
+            if (!typeMatch || !keyMatch) {
+                const nextSibling = documentNode.nextSibling;
+                const newNode = templateNode.cloneNode(true);
+
+                if (documentNode.parentNode === node) {
+                    documentNode.replaceWith(newNode);
+                } else if (nextSibling) {
+                    nextSibling.before(newNode);
                 } else {
-                    node.insertBefore(templateNode.cloneNode(true), documentNode);
+                    node.append(newNode);
                 }
                 continue;
             }
 
-            // update text content
             const templateContent = getNodeContent(templateNode);
             const documentContent = getNodeContent(documentNode);
             if (templateContent && templateContent !== documentContent) {
@@ -201,29 +73,21 @@ class __Navimi_Components implements INavimi_Components {
 
             if (templateNode.localName) {
                 syncAttributes(templateNode, documentNode);
-                // Check if the element is a component and stop
-                if (!this._components[templateNode.localName]) {
+                if (!templateNode.localName.includes('-')) {
                     mergeHtmlElement(templateNode, documentNode, this._mergeHtml);
                 }
             }
         }
 
-        // remove extra elements
-        diffCount = documentNodesLen - templateNodesLen;
         for (let i = documentNodesLen - 1; i >= templateNodesLen; i--) {
-            this._traverseComponentsTree(documentNodes[i] as Element, this._removeComponent);
-            if (documentNodes[i].parentNode) {
-                documentNodes[i].parentNode.removeChild(documentNodes[i]);
-            }
-            diffCount--;
+            const nodeToRemove = documentNodes[i];
+            nodeToRemove.remove();
         }
-
-        this._registerChildNodes(node as HTMLElement);
     };
 
     public registerComponent = (
         componentName: string,
-        componentClass: typeof INavimi_Component,
+        componentClass: any,
         getFunctions?: (callerUid: string) => INavimi_Functions,
         services?: Record<string, InstanceType<any>>): InstanceType<any> => {
 
@@ -231,89 +95,299 @@ class __Navimi_Components implements INavimi_Components {
             return;
         }
 
-        if (!getFunctions) {
-            getFunctions = () => undefined;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const that = this;
-
-        const wrappedComponentClass = class implements INavimi_WrappedComponent {
-            private _node: INavimi_Component;
-            private _removed: boolean;
-            private _uid: string;
-            private _previousTemplate: string | undefined;
-            private _initialInnerHTML: string;
-
-            constructor(node: INavimi_Component) {
-                this._uid = `component:${that._uidCounter++}`;
-                this._node = node;
-                this._previousTemplate = undefined;
-                this._initialInnerHTML = node.innerHTML;
-
-                node.innerHTML = '';               
-                node.__wrapper = this;
-
-                // inherits from HTMLElement
-                Object.setPrototypeOf(componentClass.prototype, HTMLElement.prototype);
-
-                const component = new componentClass(node.props, getFunctions(this._uid), services);
-
-                // todo: check if this timer (16ms = 60fps) can become an option in case someone needs different fps
-                node.update = throttle(this.render.bind(this), 16, this);
-
-                // connects the component code to the tag 
-                Object.setPrototypeOf(node, component);
-
-            }
-
-            init = async () => {
-                await this.render();
-                this._node.onMount && await this._node.onMount.call(this._node);
-            }
-
-            render = async () => {
-                const { render } = this._node;
-                if (!render) {
-                    return;
-                }
-
-                const html = await render.call(this._node, this._initialInnerHTML);
-                if (this._removed || !html || html === this._previousTemplate) {
-                    return;
-                }
-
-                this._previousTemplate = html;
-                const template = new DOMParser().parseFromString(html, 'text/html');
-                that._mergeHtml(template.querySelector('body'), this._node);
-
-                this._node.onRender && this._node.onRender.call(this._node);
-            }
-
-            unmount = () => {
-                if (!this._removed) {
-                    this._removed = true;
-                    that._navimiState.unwatchState(this._uid);
-                    that._removeChildComponents(this._node);
-                    that._disconnectFromParent(this._node);
-                    this._node.remove();
-                    this._node.onUnmount && this._node.onUnmount();
-                    this._node.update = undefined;
-                    this._node.__wrapper = undefined;
-                    delete this._node;
-                    delete this._uid;
-                    delete this._previousTemplate;
-                    delete this._initialInnerHTML;
-                }
-            }
-
+        // [HOT RELOAD - PASSO 1]
+        // Sempre atualizamos o Registry com a versão mais nova da classe e dependências
+        globalRegistry[componentName] = {
+            Class: componentClass,
+            getFunctions,
+            services
         };
 
-        this._components[componentName] = wrappedComponentClass;
+        // [HOT RELOAD - PASSO 2]
+        // Se já existe, executamos o Hot Swap e paramos por aqui (não tentamos redefinir a tag)
+        //removeIf(minify)
+        if (customElements.get(componentName)) {
+            this._performHotSwap(componentName);
 
+            // Retorna o construtor do componente já registrado
+            return customElements.get(componentName);
+        }
+        //endRemoveIf(minify)
+
+        const self = this;
+
+        const wrappedComponentClass = class NavimiWebComponent extends HTMLElement {
+            private _instance: any;
+            private _uid: string;
+            private _mounted = false;
+            private _previousTemplate: string | undefined;
+            private _initialInnerHTML: string;
+            private _attrObserver: MutationObserver | null = null;
+            private _shadowRoot: ShadowRoot | null = null;
+
+            public props: Record<string, any> = {};
+
+            constructor() {
+                super();
+                this._uid = `component:${self._uidCounter++}`;
+                this._initialInnerHTML = this.innerHTML;
+
+                this._syncPropsFromAttributes();
+
+                // 1. Shadow DOM Opcional
+                if (this.hasAttribute('shadow')) {
+                    this._shadowRoot = this.attachShadow({ mode: 'open' });
+                }
+
+                // [HOT RELOAD - PASSO 3]
+                // Instanciação Dinâmica: Não usamos a 'componentClass' do closure,
+                // mas sim a que está no Registry global (que pode ter sido atualizada).
+                this._initializeInstance();
+            }
+
+            // Método extraído para permitir re-inicialização durante o Hot Swap
+            _initializeInstance() {
+                const def = globalRegistry[componentName];
+                const CurrentClass = def.Class;
+                // @ts-ignore
+                const getFuncs = def.getFunctions || (() => undefined);
+                
+                // Instancia a classe mais atual
+                this._instance = new CurrentClass(this.props, getFuncs(this._uid), def.services);
+
+                // Configurações Padrão
+                this._instance.props = this.props;
+                this._instance.element = this;
+                this._instance.childComponents = [];
+                this._instance.parentComponent = null;
+                this._instance.update = throttle(this.render.bind(this), 16, this);
+
+                this._mixinClassMethods(CurrentClass);
+            }
+
+            // Agora público para ser acessado pelo _performHotSwap
+            public _mixinClassMethods(originalClass: any) {
+                const proto = originalClass.prototype;
+                const methods = Object.getOwnPropertyNames(proto);
+
+                methods.forEach(method => {
+                    const internalProps = ['constructor', 'render', 'update', 'onMount', 'onRender', 'onUnmount'];
+                    if (internalProps.includes(method) || method.startsWith('_')) return;
+
+                    // Sobrescrevemos o método no wrapper para apontar para a nova instância
+                    // @ts-ignore
+                    this[method] = (...args) => this._instance[method](...args);
+                });
+
+                // Garante que o getter de state aponte para a nova instância
+                Object.defineProperty(this, 'state', {
+                    get: () => this._instance.state,
+                    set: (v) => this._instance.state = v,
+                    configurable: true // Importante para permitir redefinição
+                });
+            }
+
+            async connectedCallback() {
+                if (!this._mounted) {
+                    try {
+                        this._connectToParent();
+
+                        this._attrObserver = new MutationObserver((mutations) => {
+                            let hasChanges = false;
+                            const oldProps = { ...this.props };
+
+                            mutations.forEach(mutation => {
+                                if (mutation.type === 'attributes') {
+                                    const name = mutation.attributeName!;
+                                    const val = this.getAttribute(name);
+                                    
+                                    // 2. Tratamento de Booleanos
+                                    if (val === null) {
+                                        delete this.props[name];
+                                    } else if (val === '') {
+                                        this.props[name] = true;
+                                    } else {
+                                        this.props[name] = val;
+                                    }
+
+                                    if (this.props[name] !== oldProps[name]) {
+                                        hasChanges = true;
+                                    }
+                                }
+                            });
+
+                            if (hasChanges) {
+                                this._instance.props = this.props;
+
+                                if (!this._instance.shouldUpdate || this._instance.shouldUpdate(oldProps, this.props)) {
+                                    this._instance.update();
+                                }
+                            }
+                        });
+
+                        this._attrObserver.observe(this, { attributes: true });
+
+                        await this.render();
+
+                        await this._instance.onMount?.();
+                        
+                        this._mounted = true;
+                        
+                    } catch (e) {
+                        console.error(`[Navimi] Erro ao montar <${this.localName}>:`, e);
+                        // Opcional: renderizar erro se falhar no mount
+                    }
+                }
+            }
+
+            disconnectedCallback() {
+                if (this._attrObserver) {
+                    this._attrObserver.disconnect();
+                    this._attrObserver = null;
+                }
+
+                // Limpeza segura
+                if (this._instance && this._instance.parentComponent) {
+                    this._instance.parentComponent.childComponents =
+                        this._instance.parentComponent.childComponents.filter(
+                            (child: any) => child !== this._instance
+                        );
+                }
+
+                if (self._navimiState) {
+                    self._navimiState.unwatchState(this._uid);
+                }
+
+                this._instance.onUnmount?.();
+
+                this._mounted = false;
+            }
+
+            async render() {
+                // Se a instância não existe ou não tem render, aborta
+                if (!this._instance || !this._instance.render) return;
+
+                try {
+                    // 1. Tenta executar o render do usuário
+                    // Nota: Já removi o .call() redundante conforme conversamos
+                    const html = await this._instance.render(this._initialInnerHTML);
+
+                    const target = this._shadowRoot || this;
+
+                    // Limpeza se vazio
+                    if (!html) {
+                        target.innerHTML = '';
+                        return;
+                    }
+
+                    // Cache check (simples string check)
+                    if (html === this._previousTemplate) return;
+                    this._previousTemplate = html;
+
+                    // Parse e Merge
+                    const template = document.createElement('template');
+                    template.innerHTML = html;
+                    const frag = template.content;
+
+                    self._mergeHtml(frag, target);
+
+                    // 2. Só chama onRender se tudo acima funcionou
+                    this._instance.onRender?.();
+
+                } catch (e) {
+                    // --- ZONA DE SEGURANÇA ---
+                    
+                    console.error(`[Navimi] Erro fatal no componente <${this.localName}>:`, e);
+                    
+                    // Renderiza um Fallback Visual para o desenvolvedor/usuário saber que ali deu erro
+                    // em vez de deixar um buraco branco na tela.
+                    const target = this._shadowRoot || this;
+                    
+                    // Você pode customizar esse HTML de erro
+                    target.innerHTML = `
+                        <div style="
+                            padding: 8px; 
+                            border: 1px dashed #ff4d4f; 
+                            background: #fff2f0; 
+                            color: #ff4d4f; 
+                            font-family: monospace; 
+                            font-size: 12px;
+                            border-radius: 4px;
+                            margin: 4px 0;
+                        ">
+                            ⚠️ <strong>&lt;${this.localName}&gt; Error:</strong><br>
+                            ${(e as Error).message}
+                        </div>
+                    `;
+                    
+                    // Opcional: Se tiver um método onError no componente, chama ele
+                    this._instance.onError?.(e);
+                }
+            }
+
+            private _syncPropsFromAttributes() {
+                for (const attr of Array.from(this.attributes)) {
+                    this.props[attr.name] = attr.value === '' ? true : attr.value;
+                }
+                if (this._instance) {
+                    this._instance.props = this.props;
+                }
+            }
+
+            private _connectToParent() {
+                let parent = this.parentElement;
+                while (parent) {
+                    if (parent.tagName.includes('-') && customElements.get(parent.tagName.toLowerCase())) {
+                        const parentInstance = (parent as any)._instance;
+                        if (parentInstance) {
+                            this._instance.parentComponent = parentInstance;
+                            if (!parentInstance.childComponents.includes(this._instance)) {
+                                parentInstance.childComponents.push(this._instance);
+                            }
+                            return;
+                        }
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+        }
+
+        customElements.define(componentName, wrappedComponentClass);
         return wrappedComponentClass;
     };
 
+    // [HOT RELOAD - PASSO 4]
+    // A mágica acontece aqui: Substituímos o cérebro (_instance) mantendo o corpo (DOM)
+    //removeIf(minify)    
+    private _performHotSwap(componentName: string) {
+        const elements = document.querySelectorAll(componentName);
+        
+        elements.forEach((el: any) => {
+            if (el._instance) {
+                // 1. Salva o estado antigo para restaurar (State Preservation)
+                const oldState = el._instance.state;
+                
+                // 2. Chama onUnmount da instância antiga (Cleanup)
+                if (el._instance.onUnmount) el._instance.onUnmount();
+
+                // 3. Reinicializa usando a NOVA classe do Registry
+                // Isso cria o novo this._instance
+                el._initializeInstance();
+
+                // 4. Restaura o estado (se possível)
+                if (oldState && el._instance.state) {
+                    // Merge cuidadoso ou substituição total
+                    el._instance.state = { ...el._instance.state, ...oldState };
+                }
+
+                // 5. Reconecta e Renderiza
+                if (el._instance.onMount) el._instance.onMount();
+                
+                el.render(); // Força update visual imediato
+            }
+        });
+    }
+    //endRemoveIf(minify)
 }
 
 export default __Navimi_Components;

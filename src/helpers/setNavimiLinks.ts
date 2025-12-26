@@ -1,9 +1,10 @@
 export const setNavimiLinks = (): void => {
     document.querySelectorAll('[navimi-link]').forEach(el => {
-        el.removeAttribute('navimi-link');
-        el.addEventListener('click', (e: MouseEvent) => {
+        el.addEventListener('click', (e) => {
             e.preventDefault();
-            (window as any).navigateTo((event.target as HTMLAnchorElement).pathname);
+            // @ts-ignore
+            const link = e.target.closest('[navimi-link]');
+            link && (window as any).navigateTo(link.pathname);
         });
     });
 };

@@ -135,8 +135,8 @@ class __Navimi_JSs implements INavimi_JSs {
                 headers: {
                     Accept: 'application/javascript'
                 },
-                signal: abortController ? abortController.signal : undefined
-            });
+                signal: abortController ? abortController.signal : undefined,
+            }, true);
         }
 
         this._jsType[url] = type;
@@ -405,7 +405,13 @@ class __Navimi_JSs implements INavimi_JSs {
                 this._navimiLoader[this._promiseNS + url] = resolve;
                 this._navimiLoader[this._promiseNS + url + '_reject'] = reject;
 
-                this._fetch(abortController, url, type).catch(reject);
+                this._fetch(abortController, url, type).catch(error => {
+                    if (type === 'route') {
+                        reject(new Error('Route file load failed'));
+                    } else {
+                        reject(error);
+                    }
+                });
             });
         }
 
